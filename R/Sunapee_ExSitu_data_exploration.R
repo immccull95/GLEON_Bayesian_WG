@@ -1,6 +1,7 @@
 ############################ Lake Sunapee ex situ data exploration #############################
 # Date: 1-24-18
 # updated:1-24-18
+# JAB check 2 Feb 2018
 # Authors: 
 ################################################################################################
 
@@ -8,6 +9,8 @@
 library(lubridate)
 library(zoo)
 library(ggplot2)
+library(tidyverse) #Loads all tidy verse packages
+#If you want to load dplyr or tidyr in addition to ggplot2 and lubridate
 
 #### input data ####
 setwd("C:/Users/FWL/Documents/GLEON_Bayesian_WG") #Ian working directory
