@@ -9,6 +9,8 @@
 library(lubridate)
 library(zoo)
 library(ggplot2)
+library(tidyverse) #Loads all tidy verse packages
+#If you want to load dplyr or tidyr in addition to ggplot2 and lubridate
 
 #### input data ####
 setwd("C:/Users/FWL/Documents/GLEON_Bayesian_WG") #Ian working directory
