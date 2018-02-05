@@ -112,3 +112,4 @@ ggplot(seasonal_tmax, aes(factor(WaterYear), tmax_C, fill = Season)) +
   labs(title='Newport Station', x='water Year',y='tmax (C)') +
   scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna'))
 
+#This is Mary Lofton making a test change!
