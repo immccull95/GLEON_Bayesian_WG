@@ -112,4 +112,9 @@ ggplot(seasonal_tmax, aes(factor(WaterYear), tmax_C, fill = Season)) +
   labs(title='Newport Station', x='water Year',y='tmax (C)') +
   scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna'))
 
+#command to save plots
+ggsave("Newport_weather.pdf",width=11, height=8.5)
+
+#This is Jennie making a test change
+
 #This is Mary Lofton making a test change!
