@@ -1,7 +1,6 @@
 ############################ Lake Sunapee ex situ data exploration #############################
 # Date: 1-24-18
 # updated:1-24-18
-# JAB check 2 Feb 2018
 # Authors: 
 ################################################################################################
 
@@ -114,7 +113,3 @@ ggplot(seasonal_tmax, aes(factor(WaterYear), tmax_C, fill = Season)) +
 
 #command to save plots
 ggsave("Newport_weather.pdf",width=11, height=8.5)
-
-#This is Jennie making a test change
-
-#This is Mary Lofton making a test change!
