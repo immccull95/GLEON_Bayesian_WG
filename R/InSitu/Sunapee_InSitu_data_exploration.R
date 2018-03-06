@@ -22,6 +22,7 @@ library(readr)
 
 
 #### Read in data for all sites from Shannon weekly summary ####
+#JAB updated Shannon weekly summary to include only observation per week
 #Sheet tells R what to pull from on the excel document which is handy insted of
 #loading multiple csv's
 coffin_gloeo = read_excel("Sunapee_weeklysummary_JBedits.xlsx", sheet='coffin_weeklygloeo')
