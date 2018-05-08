@@ -6,11 +6,7 @@
 ### Gloeo exploratory analysis
 #Created 1 January 2018 - JAB
 
-#### Set Working Directory ####
-setwd("~/Documents/GLEON_Bayesian_WG/Datasets/Sunapee/R Work")
-
 #### Install R Packages ####
-install.packages("tidyverse")
 library(tidyverse)
 library(readxl)
 library(lubridate)
@@ -22,7 +18,7 @@ library(readr)
 
 
 #### Read in data for all sites from Shannon weekly summary ####
-#JAB updated Shannon weekly summary to include only observation per week
+#JAB updated Shannon weekly summary to include only 1 observation per week
 #Sheet tells R what to pull from on the excel document which is handy insted of
 #loading multiple csv's
 coffin_gloeo = read_excel("Sunapee_weeklysummary_JBedits.xlsx", sheet='coffin_weeklygloeo')
@@ -57,7 +53,7 @@ newbury_all = full_join(newbury_gloeo,newbury_insitu_week,by = c("year", "week")
 write_csv(midge_all,"midge_all.csv")
 write_csv(newbury_all,"newbury_all.csv")
 
-#Read in water temp data combined and numeric
+#### Read in water temp data combined and numeric ####
 watertemp = read.csv("Sunapee_watertemp.csv")
 #Conver water temp to long data
 watertemp_long <- watertemp %>%
@@ -80,14 +76,106 @@ watertemp_all_long <- bind_rows(watertemp_long,watertemp_midge) %>%
 
 write_csv(watertemp_all_long,"watertemp_all_long.csv")  
 
-#Merge midge and newbury all with water temp, air temp, precip
+#Combine Midge data with water temp
+midge_all = read_csv("Datasets/Sunapee/R Work/Level 1/midge_all.csv")
+watertemp = read_csv("Datasets/Sunapee/R Work/Level 1/Sunapee_watertemp.csv")
 
-midge_all = read_csv("midge_all.csv")
-newbury_all = read_csv("newbury_all.csv")
+watertemp_midge <- watertemp %>%
+  select(week,year,midge.mean:midge.median) %>%
+  filter(!is.na(midge.mean)) %>%
+  gather(key=site, value = watertemp_c, midge.mean:midge.median) %>%
+  separate(col=site,into = c("site","method")) %>%
+  spread(key=method,value=watertemp_c) %>% 
+  arrange(year)
 
-midge_all2 <- left_join(midge_all,watertemp_midge,by = c("year", "week"))
+midge_all_temp <- left_join(midge_all,watertemp_midge,by = c("year", "week")) %>%
+  select(-site.y)
+
+write_csv(midge_all_temp, "Datasets/Sunapee/R Work/Level 1/midge_all_temp.csv")
+
+#### Read in light dataset ####
+
+light_allsites <- read_csv("Datasets/Sunapee/R Work/Level 1/templight_0916_L1_4sites_30Oct2017-JBedits.csv", col_types = cols(
+  temp_Coffin = col_double(),
+  temp_Fichter = col_double(),
+  temp_OldNewbury = col_double(),
+  light_Coffin = col_double(),
+  light_Fichter = col_double(),
+  light_OldNewbury = col_double()))
+
+str(light_allsites)
+
+#Count number of observations for each column
+
+light_allsites_count <- light_allsites %>% 
+  mutate(week = week(datetime)) %>%
+  select(year,temp_Coffin:week) %>% 
+  group_by(year,week) %>% 
+  summarize(count = n())
+
+light_allsites <- light_allsites %>% 
+  mutate(week = week(datetime)) %>%
+  mutate(week_day = wday(datetime)) %>% 
+  mutate(day = day(datetime))
+
+
+write_csv(light_allsites, "Datasets/Sunapee/R Work/Level 1/light_allsites_week_added.csv")
+
+#Separate out 10 min readings at 0 min vs. 7 min 2 min 9 min 8 1 min 3 4min
+light_10min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(0,10,20,30,40,50))
+
+light_9min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(7,17,27,37,47,57))
+
+light_8min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(7,17,27,37,47,57))
+
+light_7min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(7,17,27,37,47,57))
+
+write_csv(light_10min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_10min.csv")
+write_csv(light_7min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_7min.csv")
+
+#Calculate weekly median, mean, max for light & HOBO temp data at all sites
+
+light_summary_10min <- light_10min %>% 
+  mutate(month = month(datetime)) %>% 
+  mutate(week = week(datetime)) %>% 
+  group_by(year,week) %>% 
+  summarize_at(vars(temp_Coffin:light_OldNewbury),funs(mean, median, max (.,na.rm=T)))
   
+write_csv(light_summary_10min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_10min_take2.csv")
 
+light_summary_7min <- light_7min %>% 
+  mutate(month = month(datetime)) %>% 
+  mutate(week = week(datetime)) %>% 
+  group_by(year,week) %>% 
+  summarize_at(vars(temp_Coffin:light_OldNewbury),funs(mean, median, max (.,na.rm=T)))
+
+write_csv(light_summary_7min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_7min_take2.csv")
+
+#Join datasets by week
+light_summary <- full_join(light_summary_10min,light_summary_7min) #,by=c("year","month","week"))
+
+# Read in summarize dataset with -Inf changed to NA
+light_summary <- read_csv("Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary.csv")
+
+light_temp_long <- light_summary %>%
+  gather(key=site, value = light, temp_Coffin_mean:light_OldNewbury_max) %>%
+  separate(col=site,into = c("measure","site","method")) %>%
+  spread(key=method,value=light) %>%
+  arrange(year,site)
+
+write_csv(light_temp_long,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary-long.csv")
+
+#Filter for just Midge light data for now
+midge_light <- light_temp_long %>% 
+  filter(site=="Midge",measure=="light")
 
 ############### FIGURES ###############
 
@@ -205,3 +293,6 @@ ggplot(watertemp_2007, aes(x=week,y=coffin.min))+
 ggsave("All_Sites_minwatertemp-byyear_2007-2016.pdf",width=15, height=8.5)
 
 
+
+
+#cor() pearson used by default but can call spearman or kendall

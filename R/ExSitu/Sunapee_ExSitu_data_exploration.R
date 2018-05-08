@@ -1,7 +1,7 @@
 ############################ Lake Sunapee ex situ data exploration #############################
 # Date: 1-24-18
 # updated:1-24-18
-# Authors: 
+# Authors: Ian M, 
 ################################################################################################
 
 #### R libraries ####
@@ -12,7 +12,6 @@ library(tidyverse) #Loads all tidy verse packages
 #If you want to load dplyr or tidyr in addition to ggplot2 and lubridate
 
 #### input data ####
-setwd("C:/Users/FWL/Documents/GLEON_Bayesian_WG") #Ian working directory
 weather_summary_data <- read.csv(paste0(getwd(),"/Datasets/Sunapee/weather/Newport2005-2016_summary.csv"))
 weather_raw_data <- read.csv(paste0(getwd(),"/Datasets/Sunapee/weather/Newport2005-2016_raw.csv"))
 midge_gloeo_data <- read.csv(paste0(getwd(),"/Datasets/Sunapee/measured in-situ data/Midge_gloeo_2006_2016.csv"))
