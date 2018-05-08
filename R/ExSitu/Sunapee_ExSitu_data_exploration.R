@@ -112,18 +112,3 @@ ggplot(seasonal_tmax, aes(factor(WaterYear), tmax_C, fill = Season)) +
 
 #command to save plots
 ggsave("Newport_weather.pdf",width=11, height=8.5)
-#This is Jennie making a test change
-
-#This is Mary Lofton making a test change!
-
-#This is Ludmila making a test change!
-
-<<<<<<< HEAD:R/Sunapee_ExSitu_data_exploration.R
-=======
-
-#This is Jennie making a test change
-
-#This is Mary Lofton making a test change!
-
-#This is Ludmila making a test change!
->>>>>>> e9b498cf8d8180402de8edca7410028df7b42d4b:R/ExSitu/Sunapee_ExSitu_data_exploration.R
