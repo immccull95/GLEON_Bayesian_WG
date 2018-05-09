@@ -10,11 +10,6 @@
 library(tidyverse)
 library(readxl)
 library(lubridate)
-#In Tidy Verse
-library(ggplot2)
-library(dplyr)
-library(tidyr)
-library(readr)
 
 
 #### Read in data for all sites from Shannon weekly summary ####
