@@ -69,7 +69,8 @@ watertemp_hourly_true <- watertemp_hourly %>%
 # calculate weekly avg
 
 
-#Conver water temp to long data
+# this step was for merging the sites together
+#Convert water temp to long data
 watertemp_long <- watertemp %>%
   select(week:newbury.median) %>%
   filter(!is.na(coffin.mean)) %>%
@@ -189,10 +190,8 @@ midge_light <- light_temp_long %>%
 # Calculate monthly 
 midge_weekly = read_csv("Datasets/Sunapee/R Work/Level 1/midge_in-situ_weekly.csv")
 
-# Calculate monthly summary of totalperL, 
 
 # Read in hourly temp data and calculate monthly summary
-
 watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
   coffin = col_double(),
   fichter = col_double(),
