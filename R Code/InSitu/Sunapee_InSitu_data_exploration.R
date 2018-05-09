@@ -54,7 +54,21 @@ write_csv(midge_all,"midge_all.csv")
 write_csv(newbury_all,"newbury_all.csv")
 
 #### Read in water temp data combined and numeric ####
-watertemp = read.csv("Sunapee_watertemp.csv")
+watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
+  coffin = col_double(),
+  fichter = col_double(),
+  newbury = col_double()))
+
+str(watertemp_hourly)
+
+# 2009 data - readings every 30 min so filtered out to only include hourly readings
+watertemp_hourly_true <- watertemp_hourly %>% 
+  mutate(minute = minute(datetime)) %>% 
+  filter(minute == 0)
+
+# calculate weekly avg
+
+
 #Conver water temp to long data
 watertemp_long <- watertemp %>%
   select(week:newbury.median) %>%
@@ -64,21 +78,15 @@ watertemp_long <- watertemp %>%
   spread(key=method,value=watertemp_c) %>%
   arrange(year,site)
 
-watertemp_midge <- watertemp %>%
-  select(week,year,midge.mean:midge.median) %>%
-  filter(!is.na(midge.mean)) %>%
-  gather(key=site, value = watertemp_c, midge.mean:midge.median) %>%
-  separate(col=site,into = c("site","method")) %>%
-  spread(key=method,value=watertemp_c)
-
 watertemp_all_long <- bind_rows(watertemp_long,watertemp_midge) %>%
   arrange(year,site)
 
 write_csv(watertemp_all_long,"watertemp_all_long.csv")  
 
-#Combine Midge data with water temp
-midge_all = read_csv("Datasets/Sunapee/R Work/Level 1/midge_all.csv")
-watertemp = read_csv("Datasets/Sunapee/R Work/Level 1/Sunapee_watertemp.csv")
+#### Read in final Midge weekly data and water temp to combine ####
+#Combine Midge weekly data with water temp
+midge_weekly = read_csv("Datasets/Sunapee/R Work/Level 1/midge_in-situ_weekly.csv")
+watertemp = read_csv("Datasets/Sunapee/R Work/Level 1/Sunapee_watertemp.csv") #update with new weekly water temp data
 
 watertemp_midge <- watertemp %>%
   select(week,year,midge.mean:midge.median) %>%
@@ -88,7 +96,7 @@ watertemp_midge <- watertemp %>%
   spread(key=method,value=watertemp_c) %>% 
   arrange(year)
 
-midge_all_temp <- left_join(midge_all,watertemp_midge,by = c("year", "week")) %>%
+midge_all_temp <- left_join(midge_weekly,watertemp_midge,by = c("year", "week")) %>%
   select(-site.y)
 
 write_csv(midge_all_temp, "Datasets/Sunapee/R Work/Level 1/midge_all_temp.csv")
@@ -177,6 +185,50 @@ write_csv(light_temp_long,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_sum
 midge_light <- light_temp_long %>% 
   filter(site=="Midge",measure=="light")
 
+#### Monthly Summary ####
+# Calculate monthly 
+midge_weekly = read_csv("Datasets/Sunapee/R Work/Level 1/midge_in-situ_weekly.csv")
+
+# Calculate monthly summary of totalperL, 
+
+# Read in hourly temp data and calculate monthly summary
+
+watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
+  coffin = col_double(),
+  fichter = col_double(),
+  newbury = col_double()))
+
+str(watertemp_hourly)
+
+# 2009 data - readings every 30 min so filtered out to only include hourly readings
+watertemp_hourly_true <- watertemp_hourly %>% 
+  mutate(minute = minute(datetime)) %>% 
+  filter(minute == 0)
+
+#count to check number of values per month before averaging - 30 days = 720 readings, 31 days = 744
+watertemp_count_coffin <- watertemp_hourly_true %>% 
+  mutate(month = month(datetime)) %>% 
+  select(year,month,coffin) %>% 
+  group_by(year,month) %>% 
+  summarize(site_count = n())
+
+watertemp_count_fichter <- watertemp_hourly_true %>% 
+  mutate(month = month(datetime)) %>% 
+  filter(!is.na(fichter)) %>% 
+  select(year,month,fichter) %>% 
+  group_by(year,month) %>% 
+  summarize(site_count = n())
+
+# Monthly summary
+watertemp_monthly <- watertemp_hourly_true %>% 
+  mutate(month = month(datetime)) %>% 
+  group_by(year,month) %>% 
+  summarize_at(vars(coffin:midge),funs(mean, median, min, max (.,na.rm=T)))
+
+#Replace -Inf values with NA for all data
+watertemp_monthly2 <- replace(watertemp_monthly, x == -Inf, NA)
+
+  
 ############### FIGURES ###############
 
 #### Figures for gloeo all sites - facet wrap by year ####
@@ -256,8 +308,6 @@ ggplot(midge_gloeo_2013, aes(x=date,y=totalperL))+
         panel.grid.minor = element_blank())      
 
 
-#### Boxplot ####
-
 #### Water Temp Figure ####
 #Read in data combined and numeric
 watertemp = read.csv("Sunapee_watertemp.csv")
@@ -293,6 +343,6 @@ ggplot(watertemp_2007, aes(x=week,y=coffin.min))+
 ggsave("All_Sites_minwatertemp-byyear_2007-2016.pdf",width=15, height=8.5)
 
 
-
+#### Correlation Analysis ####
 
 #cor() pearson used by default but can call spearman or kendall
