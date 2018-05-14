@@ -1,6 +1,6 @@
 ############################ Lake Sunapee IN situ data exploration #############################
 # Date: 1-1-18
-# updated:2-28-18
+# updated:05-14-18 by LSB
 # Authors: JAB, MEL
 ################################################################################################
 ### Gloeo exploratory analysis
@@ -10,16 +10,16 @@
 library(tidyverse)
 library(readxl)
 library(lubridate)
-
+library(doBy) #included by LSB to aggregate water temp data following Bethel Steele code.
 
 #### Read in data for all sites from Shannon weekly summary ####
 #JAB updated Shannon weekly summary to include only 1 observation per week
 #Sheet tells R what to pull from on the excel document which is handy insted of
 #loading multiple csv's
-coffin_gloeo = read_excel("Sunapee_weeklysummary_JBedits.xlsx", sheet='coffin_weeklygloeo')
-fichter_gloeo = read_excel("Sunapee_weeklysummary_JBedits.xlsx", sheet='fichter_weeklygloeo')
-midge_gloeo = read_excel("Sunapee_weeklysummary_JBedits.xlsx", sheet='midge_weeklygloeo')
-newbury_gloeo = read_excel("Sunapee_weeklysummary_JBedits.xlsx", sheet='newbury_weeklygloeo')
+coffin_gloeo = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='coffin_weeklygloeo')
+fichter_gloeo = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='fichter_weeklygloeo')
+midge_gloeo = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='midge_weeklygloeo')
+newbury_gloeo = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='newbury_weeklygloeo')
 
 #check the data structure
 str(midge_gloeo)
@@ -30,8 +30,8 @@ write_csv(all_sites_gloeo, "All_Sites_Gloeo.csv")
 summary(all_sites_gloeo)
 
 #Merge in-situ data from newbury and midge with gloeo data
-midge_insitu = read_excel("Sunapee_weeklysummary.xlsx", sheet='midge_insitu_data')
-newbury_insitu = read_excel("Sunapee_weeklysummary.xlsx", sheet='newbury_insitu_data')
+midge_insitu = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='midge_insitu_data')
+newbury_insitu = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='newbury_insitu_data')
 
 #Add in week 
 midge_insitu_week <- midge_insitu %>%
@@ -48,12 +48,16 @@ newbury_all = full_join(newbury_gloeo,newbury_insitu_week,by = c("year", "week")
 write_csv(midge_all,"midge_all.csv")
 write_csv(newbury_all,"newbury_all.csv")
 
-#### Read in water temp data combined and numeric ####
+
+
+############################# WATER TEMP AGGREGATION #################################
+#Updated by LSB 14-May-2018
+
+#### Read in water temp data ####
 watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
   coffin = col_double(),
   fichter = col_double(),
   newbury = col_double()))
-
 str(watertemp_hourly)
 
 # 2009 data - readings every 30 min so filtered out to only include hourly readings
@@ -61,23 +65,68 @@ watertemp_hourly_true <- watertemp_hourly %>%
   mutate(minute = minute(datetime)) %>% 
   filter(minute == 0)
 
-# calculate weekly avg
+#### calculate weekly, monthly and  annual summaries ####
+#Add in week, month and year
+temp_L1 <- watertemp_hourly_true[,1:9] %>%
+  mutate(year = year(date)) %>% 
+  mutate(month = month(date)) %>% 
+  mutate(week = week(date)) #this way we are considering week numbers as the the number of complete seven day periods that have occurred between the date and January 1st, plus one.
 
+#Aggregate by week number, month and year
+sumfun <- function(x, ...){
+  c(mean=mean(x, na.rm=TRUE, ...), min=min(x), max=max(x), 
+    median=median(x, na.rm=TRUE, ...), obs=sum(!is.na(x)))}
+temp_L1 <- as.data.frame(temp_L1)
 
-# this step was for merging the sites together
-#Convert water temp to long data
-watertemp_long <- watertemp %>%
-  select(week:newbury.median) %>%
-  filter(!is.na(coffin.mean)) %>%
-  gather(key=site, value = watertemp_c, coffin.mean:newbury.median) %>%
-  separate(col=site,into = c("site","method")) %>%
-  spread(key=method,value=watertemp_c) %>%
-  arrange(year,site)
+watertemp_week <- summaryBy(coffin + fichter + newbury + midge ~ year + week, data=temp_L1, FUN=sumfun)
+watertemp_month <- summaryBy(coffin + fichter + newbury + midge ~ year + month, data=temp_L1, FUN=sumfun)
 
-watertemp_all_long <- bind_rows(watertemp_long,watertemp_midge) %>%
-  arrange(year,site)
+#drop weeks with less than 140 obs (~83% of the data, same as Bethel Steele did for the workshop) -----
+ix=which(watertemp_week$coffin.obs <140)
+for (i in c('coffin.min', 'coffin.max', 'coffin.mean', 'coffin.median')) {watertemp_week[ix,i]=NA}
 
-write_csv(watertemp_all_long,"watertemp_all_long.csv")  
+ix=which(watertemp_week$fichter.obs <140)
+for (i in c('fichter.min', 'fichter.max', 'fichter.mean', 'fichter.median')) {watertemp_week[ix,i]=NA}
+
+ix=which(watertemp_week$newbury.obs <140)
+for (i in c('newbury.min', 'newbury.max', 'newbury.mean', 'newbury.median')) {watertemp_week[ix,i]=NA}
+
+ix=which(watertemp_week$midge.obs <140)
+for (i in c('midge.min', 'midge.max', 'midge.mean', 'midge.median')) {watertemp_week[ix,i]=NA}
+
+#drop months with less than 75% of the observations -----
+dats<-as.Date(paste0(watertemp_month$year,'-',watertemp_month$month,'-10'),'%Y-%m-%d')
+watertemp_month$totalobs<-days_in_month(dats)*24
+
+ix=which(watertemp_month$coffin.obs < (0.75*watertemp_month$totalobs))
+for (i in c('coffin.min', 'coffin.max', 'coffin.mean', 'coffin.median')) {watertemp_month[ix,i]=NA}
+
+ix=which(watertemp_month$fichter.obs < (0.75*watertemp_month$totalobs))
+for (i in c('fichter.min', 'fichter.max', 'fichter.mean', 'fichter.median')) {watertemp_month[ix,i]=NA}
+
+ix=which(watertemp_month$newbury.obs < (0.75*watertemp_month$totalobs))
+for (i in c('newbury.min', 'newbury.max', 'newbury.mean', 'newbury.median')) {watertemp_month[ix,i]=NA}
+
+ix=which(watertemp_month$midge.obs < (0.75*watertemp_month$totalobs))
+for (i in c('midge.min', 'midge.max', 'midge.mean', 'midge.median')) {watertemp_month[ix,i]=NA}
+
+#drop years???? ----- 
+
+#Comented by LSB 14-May-2015
+# # this step was for merging the sites together
+# #Convert water temp to long data
+# watertemp_long <- watertemp %>%
+#   select(week:newbury.median) %>%
+#   filter(!is.na(coffin.mean)) %>%
+#   gather(key=site, value = watertemp_c, coffin.mean:newbury.median) %>%
+#   separate(col=site,into = c("site","method")) %>%
+#   spread(key=method,value=watertemp_c) %>%
+#   arrange(year,site)
+# 
+# watertemp_all_long <- bind_rows(watertemp_long,watertemp_midge) %>%
+#   arrange(year,site)
+# 
+# write_csv(watertemp_all_long,"watertemp_all_long.csv")  
 
 #### Read in final Midge weekly data and water temp to combine ####
 #Combine Midge weekly data with water temp
@@ -96,6 +145,8 @@ midge_all_temp <- left_join(midge_weekly,watertemp_midge,by = c("year", "week"))
   select(-site.y)
 
 write_csv(midge_all_temp, "Datasets/Sunapee/R Work/Level 1/midge_all_temp.csv")
+
+
 
 #### Read in light dataset ####
 
@@ -181,46 +232,48 @@ write_csv(light_temp_long,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_sum
 midge_light <- light_temp_long %>% 
   filter(site=="Midge",measure=="light")
 
-#### Monthly Summary ####
-# Calculate monthly 
-midge_weekly = read_csv("Datasets/Sunapee/R Work/Level 1/midge_in-situ_weekly.csv")
 
-
-# Read in hourly temp data and calculate monthly summary
-watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
-  coffin = col_double(),
-  fichter = col_double(),
-  newbury = col_double()))
-
-str(watertemp_hourly)
-
-# 2009 data - readings every 30 min so filtered out to only include hourly readings
-watertemp_hourly_true <- watertemp_hourly %>% 
-  mutate(minute = minute(datetime)) %>% 
-  filter(minute == 0)
-
-#count to check number of values per month before averaging - 30 days = 720 readings, 31 days = 744
-watertemp_count_coffin <- watertemp_hourly_true %>% 
-  mutate(month = month(datetime)) %>% 
-  select(year,month,coffin) %>% 
-  group_by(year,month) %>% 
-  summarize(site_count = n())
-
-watertemp_count_fichter <- watertemp_hourly_true %>% 
-  mutate(month = month(datetime)) %>% 
-  filter(!is.na(fichter)) %>% 
-  select(year,month,fichter) %>% 
-  group_by(year,month) %>% 
-  summarize(site_count = n())
-
-# Monthly summary
-watertemp_monthly <- watertemp_hourly_true %>% 
-  mutate(month = month(datetime)) %>% 
-  group_by(year,month) %>% 
-  summarize_at(vars(coffin:midge),funs(mean, median, min, max (.,na.rm=T)))
-
-#Replace -Inf values with NA for all data
-watertemp_monthly2 <- replace(watertemp_monthly, x == -Inf, NA)
+# #### Monthly Summary ####
+#Comented by LSB 14-May-2018, monthly and year aggregation foloow steps on Water Temp section code above
+# # Calculate monthly 
+# midge_weekly = read_csv("Datasets/Sunapee/R Work/Level 1/midge_in-situ_weekly.csv")
+# 
+# 
+# # Read in hourly temp data and calculate monthly summary
+# watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
+#   coffin = col_double(),
+#   fichter = col_double(),
+#   newbury = col_double()))
+# 
+# str(watertemp_hourly)
+# 
+# # 2009 data - readings every 30 min so filtered out to only include hourly readings
+# watertemp_hourly_true <- watertemp_hourly %>% 
+#   mutate(minute = minute(datetime)) %>% 
+#   filter(minute == 0)
+# 
+# #count to check number of values per month before averaging - 30 days = 720 readings, 31 days = 744
+# watertemp_count_coffin <- watertemp_hourly_true %>% 
+#   mutate(month = month(datetime)) %>% 
+#   select(year,month,coffin) %>% 
+#   group_by(year,month) %>% 
+#   summarize(site_count = n())
+# 
+# watertemp_count_fichter <- watertemp_hourly_true %>% 
+#   mutate(month = month(datetime)) %>% 
+#   filter(!is.na(fichter)) %>% 
+#   select(year,month,fichter) %>% 
+#   group_by(year,month) %>% 
+#   summarize(site_count = n())
+# 
+# # Monthly summary
+# watertemp_monthly <- watertemp_hourly_true %>% 
+#   mutate(month = month(datetime)) %>% 
+#   group_by(year,month) %>% 
+#   summarize_at(vars(coffin:midge),funs(mean, median, min, max (.,na.rm=T)))
+# 
+# #Replace -Inf values with NA for all data
+# watertemp_monthly2 <- replace(watertemp_monthly, x == -Inf, NA)
 
   
 ############### FIGURES ###############
