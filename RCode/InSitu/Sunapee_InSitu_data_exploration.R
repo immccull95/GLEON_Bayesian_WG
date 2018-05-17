@@ -1,6 +1,6 @@
 ############################ Lake Sunapee IN situ data exploration #############################
 # Date: 1-1-18
-# updated:05-14-18 by LSB
+# updated:05-17-18 by LSB
 # Authors: JAB, MEL
 ################################################################################################
 ### Gloeo exploratory analysis
@@ -11,6 +11,9 @@ library(tidyverse)
 library(readxl)
 library(lubridate)
 library(doBy) #included by LSB to aggregate water temp data following Bethel Steele code.
+
+### Set working directory to be the "GLEON_Bayesian_WG" folder
+setwd("~/GitHub/GLEON_Bayesian_WG") #may need to change according to the user's folder path
 
 #### Read in data for all sites from Shannon weekly summary ####
 #JAB updated Shannon weekly summary to include only 1 observation per week
@@ -51,7 +54,7 @@ write_csv(newbury_all,"newbury_all.csv")
 
 
 ############################# WATER TEMP AGGREGATION #################################
-#Updated by LSB 14-May-2018
+#Updated by LSB 17-May-2018
 
 #### Read in water temp data ####
 watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
@@ -74,24 +77,24 @@ temp_L1 <- watertemp_hourly_true[,1:9] %>%
 
 #Aggregate by week number, month and year
 sumfun <- function(x, ...){
-  c(mean=mean(x, na.rm=TRUE, ...), min=min(x), max=max(x), 
+  c(mean=mean(x, na.rm=TRUE, ...), min=min(x, na.rm=TRUE, ...), max=max(x, na.rm=TRUE, ...), 
     median=median(x, na.rm=TRUE, ...), obs=sum(!is.na(x)))}
 temp_L1 <- as.data.frame(temp_L1)
 
 watertemp_week <- summaryBy(coffin + fichter + newbury + midge ~ year + week, data=temp_L1, FUN=sumfun)
 watertemp_month <- summaryBy(coffin + fichter + newbury + midge ~ year + month, data=temp_L1, FUN=sumfun)
 
-#drop weeks with less than 140 obs (~83% of the data, same as Bethel Steele did for the workshop) -----
-ix=which(watertemp_week$coffin.obs <140)
+#drop weeks with less than 126 obs (75% of the data) -----
+ix=which(watertemp_week$coffin.obs <126)
 for (i in c('coffin.min', 'coffin.max', 'coffin.mean', 'coffin.median')) {watertemp_week[ix,i]=NA}
 
-ix=which(watertemp_week$fichter.obs <140)
+ix=which(watertemp_week$fichter.obs <126)
 for (i in c('fichter.min', 'fichter.max', 'fichter.mean', 'fichter.median')) {watertemp_week[ix,i]=NA}
 
-ix=which(watertemp_week$newbury.obs <140)
+ix=which(watertemp_week$newbury.obs <126)
 for (i in c('newbury.min', 'newbury.max', 'newbury.mean', 'newbury.median')) {watertemp_week[ix,i]=NA}
 
-ix=which(watertemp_week$midge.obs <140)
+ix=which(watertemp_week$midge.obs <126)
 for (i in c('midge.min', 'midge.max', 'midge.mean', 'midge.median')) {watertemp_week[ix,i]=NA}
 
 #drop months with less than 75% of the observations -----
@@ -110,7 +113,28 @@ for (i in c('newbury.min', 'newbury.max', 'newbury.mean', 'newbury.median')) {wa
 ix=which(watertemp_month$midge.obs < (0.75*watertemp_month$totalobs))
 for (i in c('midge.min', 'midge.max', 'midge.mean', 'midge.median')) {watertemp_month[ix,i]=NA}
 
-#drop years???? ----- 
+##aggregate years using only months from June to August -----
+filtered<-subset(temp_L1,temp_L1$month>5 & temp_L1$month<9)
+summary(filtered)
+watertemp_year <- summaryBy(coffin + fichter + newbury + midge ~ year, data=filtered, FUN=sumfun)
+
+#drop years with less than 75% of observations
+ix=which(watertemp_year$coffin.obs < (0.75*92*24)) #92 number of days from May to September
+for (i in c('coffin.min', 'coffin.max', 'coffin.mean', 'coffin.median')) {watertemp_year[ix,i]=NA}
+
+ix=which(watertemp_year$fichter.obs < (0.75*92*24))
+for (i in c('fichter.min', 'fichter.max', 'fichter.mean', 'fichter.median')) {watertemp_year[ix,i]=NA}
+
+ix=which(watertemp_year$newbury.obs < (0.75*92*24))
+for (i in c('newbury.min', 'newbury.max', 'newbury.mean', 'newbury.median')) {watertemp_year[ix,i]=NA}
+
+ix=which(watertemp_year$midge.obs < (0.75*92*24))
+for (i in c('midge.min', 'midge.max', 'midge.mean', 'midge.median')) {watertemp_year[ix,i]=NA}
+
+#Save data into .csv files
+write_csv(watertemp_week,"Datasets/Sunapee/R Work/Level 1/watertemp_week.csv")
+write_csv(watertemp_month,"Datasets/Sunapee/R Work/Level 1/watertemp_month.csv")
+write_csv(watertemp_year,"Datasets/Sunapee/R Work/Level 1/watertemp_year.csv")
 
 #Comented by LSB 14-May-2015
 # # this step was for merging the sites together
