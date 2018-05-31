@@ -1,6 +1,6 @@
 ############################ Lake Sunapee ex situ data exploration #############################
 # Date: 1-24-18
-# updated:5-10-18
+# updated:5-31-18
 # Authors: Ian McCullough 
 ################################################################################################
 
@@ -111,26 +111,23 @@ weather_monthly_compiled <- data.frame(MonthYear=monthly_precip_snow$MonthYear,P
 #write.csv(weather_monthly_compiled, file=paste0(getwd(),"/Datasets/Sunapee/SummarizedData/ExSitu/Newport_weather_monthly.csv"))
 
 #################### weekly weather summaries #########################
-# with help from: https://stackoverflow.com/questions/15102327/averaging-daily-data-into-weekly-data
 
-# extract day of the week (Saturday=6)
-weather_summary_data$WeekDay <- as.numeric(format(weather_summary_data$date, format='%w')) 
-
-# Adjust end-of-week date (first saturday from the original Date)
-weather_summary_data$End_of_Week <- weather_summary_data$date + (6 - weather_summary_data$WeekDay)
+# create week column and YearWeek column to distinguish weeks across years
+weather_summary_data$Week <- week(weather_summary_data$date)
+weather_summary_data$YearWeek <- paste0(weather_summary_data$CalYear,"_Week",weather_summary_data$Week)
 
 # aggregate precip and snow by week, then rename columns
 weekly_precip_snow <- aggregate(cbind(weather_summary_data$daily_precip_mm, weather_summary_data$daily_snowfall_mm),
-                                         by=list(weather_summary_data$End_of_Week),FUN=sum, na.rm=T)
-colnames(weekly_precip_snow) <- c('Date','Precip_mm','Snow_mm')
+                                         by=list(weather_summary_data$YearWeek),FUN=sum, na.rm=T)
+colnames(weekly_precip_snow) <- c('YearWeek','Precip_mm','Snow_mm')
 
 # aggregate tmax and tmin by week, then rename columns
 weekly_temp <- aggregate(cbind(weather_summary_data$max_dailytemp_C, weather_summary_data$min_dailytemp_C),
-                          by=list(weather_summary_data$End_of_Week),FUN=mean, na.rm=T)
-colnames(weekly_temp) <- c('Date','Tmax_C','Tmin_C')
+                          by=list(weather_summary_data$YearWeek),FUN=median, na.rm=T)
+colnames(weekly_temp) <- c('YearWeek','Tmax_C','Tmin_C')
 
 # compile weekly data into new data frame to be exported as CSV
-weather_weekly_compiled <- data.frame(Date=weekly_precip_snow$Date, Precip_mm=weekly_precip_snow$Precip_mm,
+weather_weekly_compiled <- data.frame(YearWeek=weekly_precip_snow$YearWeek, Precip_mm=weekly_precip_snow$Precip_mm,
                                       Tmax_C=weekly_temp$Tmax_C, Tmin_C=weekly_temp$Tmin_C,
                                       Snow_mm=weekly_precip_snow$Snow_mm)
 #write.csv(weather_weekly_compiled, file=paste0(getwd(),"/Datasets/Sunapee/SummarizedData/ExSitu/Newport_weather_weekly.csv"))
