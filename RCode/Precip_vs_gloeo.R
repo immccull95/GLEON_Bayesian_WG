@@ -8,6 +8,7 @@
 library(readxl)
 library(lubridate)
 library(zoo)
+library(ggplot2)
 
 #### set working directory ####
 #please comment out and make new line for your own directory
