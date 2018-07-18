@@ -1,6 +1,6 @@
 ############################ Lake Sunapee IN situ data exploration #############################
 # Date: 1-1-18
-# updated:05-17-18 by LSB
+# updated:06-26-18 by LSB
 # Authors: JAB, MEL
 ################################################################################################
 ### Gloeo exploratory analysis
@@ -54,7 +54,7 @@ write_csv(newbury_all,"newbury_all.csv")
 
 
 ############################# WATER TEMP AGGREGATION #################################
-#Updated by LSB 17-May-2018
+#Updated by LSB 26-June-2018
 
 #### Read in water temp data ####
 watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
@@ -75,7 +75,7 @@ temp_L1 <- watertemp_hourly_true[,1:9] %>%
   mutate(month = month(date)) %>% 
   mutate(week = week(date)) #this way we are considering week numbers as the the number of complete seven day periods that have occurred between the date and January 1st, plus one.
 
-#Aggregate by week number, month and year
+#Aggregate by week number, month, year and sampling period
 sumfun <- function(x, ...){
   c(mean=mean(x, na.rm=TRUE, ...), min=min(x, na.rm=TRUE, ...), max=max(x, na.rm=TRUE, ...), 
     median=median(x, na.rm=TRUE, ...), obs=sum(!is.na(x)))}
@@ -131,10 +131,57 @@ for (i in c('newbury.min', 'newbury.max', 'newbury.mean', 'newbury.median')) {wa
 ix=which(watertemp_year$midge.obs < (0.75*92*24))
 for (i in c('midge.min', 'midge.max', 'midge.mean', 'midge.median')) {watertemp_year[ix,i]=NA}
 
-#Save data into .csv files
+##aggregate by sampling period ----
+  #calculate average values for the period that we have Gloeo data
+#stipulating the begining and the end of sampling seasons for each site in each year
+samplingfun <- function(x, ...){
+  c(min=min(x, na.rm=TRUE, ...), max=max(x, na.rm=TRUE, ...))}
+all_sites_gloeo <- as.data.frame(all_sites_gloeo)
+gloeo_samplingperiod <- summaryBy(dayofyr ~ site + year, data=all_sites_gloeo, FUN=samplingfun)
+
+#filtering data
+filt_gloeo<-temp_L1
+for (i in 2005:2016) {
+  ix=which(gloeo_samplingperiod$site == 'Midge' & gloeo_samplingperiod$year == i)
+  start<-gloeo_samplingperiod$dayofyr.min[ix]
+  end<-gloeo_samplingperiod$dayofyr.max[ix]
+  ex=which(filt_gloeo$year == i & filt_gloeo$dayofyr < start & filt_gloeo$dayofyr > end)
+  filt_gloeo$midge[ex]=NA
+  }
+
+for (i in 2005:2016) {
+  ix=which(gloeo_samplingperiod$site == 'Coffin' & gloeo_samplingperiod$year == i)
+  start<-gloeo_samplingperiod$dayofyr.min[ix]
+  end<-gloeo_samplingperiod$dayofyr.max[ix]
+  ex=which(filt_gloeo$year == i & filt_gloeo$dayofyr < start & filt_gloeo$dayofyr > end)
+  filt_gloeo$coffin[ex]=NA
+}
+
+for (i in 2005:2016) {
+  ix=which(gloeo_samplingperiod$site == 'Fichter' & gloeo_samplingperiod$year == i)
+  start<-gloeo_samplingperiod$dayofyr.min[ix]
+  end<-gloeo_samplingperiod$dayofyr.max[ix]
+  ex=which(filt_gloeo$year == i & filt_gloeo$dayofyr < start & filt_gloeo$dayofyr > end)
+  filt_gloeo$fichter[ex]=NA
+}
+
+for (i in 2005:2016) {
+  ix=which(gloeo_samplingperiod$site == 'Newbury' & gloeo_samplingperiod$year == i)
+  start<-gloeo_samplingperiod$dayofyr.min[ix]
+  end<-gloeo_samplingperiod$dayofyr.max[ix]
+  ex=which(filt_gloeo$year == i & filt_gloeo$dayofyr < start & filt_gloeo$dayofyr > end)
+  filt_gloeo$newbury[ex]=NA
+}
+
+#sumarising
+watertemp_sampling <- summaryBy(coffin + fichter + newbury + midge ~ year, data=filt_gloeo, FUN=sumfun)
+
+
+##Save data into .csv files ----
 write_csv(watertemp_week,"Datasets/Sunapee/R Work/Level 1/watertemp_week.csv")
 write_csv(watertemp_month,"Datasets/Sunapee/R Work/Level 1/watertemp_month.csv")
 write_csv(watertemp_year,"Datasets/Sunapee/R Work/Level 1/watertemp_year.csv")
+write_csv(watertemp_sampling,"Datasets/Sunapee/R Work/Level 1/watertemp_sampling.csv")
 
 #Comented by LSB 14-May-2015
 # # this step was for merging the sites together
@@ -151,6 +198,7 @@ write_csv(watertemp_year,"Datasets/Sunapee/R Work/Level 1/watertemp_year.csv")
 #   arrange(year,site)
 # 
 # write_csv(watertemp_all_long,"watertemp_all_long.csv")  
+
 
 #### Read in final Midge weekly data and water temp to combine ####
 #Combine Midge weekly data with water temp
