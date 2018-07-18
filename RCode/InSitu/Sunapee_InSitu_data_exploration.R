@@ -198,27 +198,95 @@ light_allsites <- light_allsites %>%
   mutate(day = day(datetime))
 
 
-write_csv(light_allsites, "Datasets/Sunapee/R Work/Level 1/light_allsites_week_added.csv")
-
 #Separate out 10 min readings at 0 min vs. 7 min 2 min 9 min 8 1 min 3 4min
 light_10min <- light_allsites %>%
   mutate(minute = minute(time)) %>%
   filter(minute %in% c(0,10,20,30,40,50))
 
+write_csv(light_10min,"Datasets/Sunapee/R Work/Level 1/light_10min.csv")
+light_10min <- read_csv("Datasets/Sunapee/R Work/Level 1/light_10min.csv", col_types = cols(
+  temp_Coffin = col_double(),
+  temp_Fichter = col_double(),
+  temp_OldNewbury = col_double(),
+  light_Coffin = col_double(),
+  light_Fichter = col_double(),
+  light_OldNewbury = col_double()))
+
+str(light_10min)
+
 light_9min <- light_allsites %>%
   mutate(minute = minute(time)) %>%
-  filter(minute %in% c(7,17,27,37,47,57))
+  filter(minute %in% c(9,19,29,39,49,59))
 
 light_8min <- light_allsites %>%
   mutate(minute = minute(time)) %>%
-  filter(minute %in% c(7,17,27,37,47,57))
+  filter(minute %in% c(8,18,28,38,48,58))
 
 light_7min <- light_allsites %>%
   mutate(minute = minute(time)) %>%
   filter(minute %in% c(7,17,27,37,47,57))
 
-write_csv(light_10min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_10min.csv")
-write_csv(light_7min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_7min.csv")
+light_6min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(6,16,26,36,46,56))
+
+light_5min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(5,15,25,35,45,55))
+
+light_4min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(4,14,24,34,44,54))
+
+light_3min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(3,13,23,33,43,53))
+
+light_2min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(2,12,22,32,42,52))
+
+# Convert time to 10 min data so all collected at the same time interval
+
+newtime <- as.POSIXlt(light_2min$datetime, format = "%Y-%m-%d %H:%M")
+newtime <- (light_2min$datetime)
+head(newtime)
+
+
+for (i in seq_along(newtime)) {
+  if (newtime[i]$hour < 24) {
+    newtime[i]$min =  newtime[i]$min - 2
+  }
+  
+}
+
+light_9min_newtime = cbind(newtime,light_9min)
+light_8min_newtime = cbind(newtime,light_8min)
+light_7min_newtime = cbind(newtime,light_7min)
+light_6min_newtime = cbind(newtime,light_6min)
+light_5min_newtime = cbind(newtime,light_5min)
+light_4min_newtime = cbind(newtime,light_4min)
+light_3min_newtime = cbind(newtime,light_3min)
+light_2min_newtime = cbind(newtime,light_2min)
+
+#Join datasets by newtime
+light_newtime <- full_join(light_8min_newtime, light_6min_newtime)
+light_newtime2 <- full_join(light_5min_newtime, light_4min_newtime)
+light_newtime3 <- full_join(light_3min_newtime, light_2min_newtime)
+
+light_newtime4 <- full_join(light_newtime, light_newtime2)
+light_newtime5 <- full_join(light_newtime4, light_newtime3)
+light_newtime6 <- full_join(light_newtime5, light_9min_newtime)
+
+light_newtime7 <- full_join(light_10min, light_newtime6, by = c("newtime"))
+write_csv(light_newtime7,"Datasets/Sunapee/R Work/Level 1/light_newtime_joinall.csv")
+
+ficht <- sum(is.na(light_newtime6$light_OldNewbury))
+ficht2 <- sum(!is.na(light_newtime6$light_OldNewbury))
+
+View(ficht)
+
+write_csv(light_newtime5,"Datasets/Sunapee/R Work/Level 1/light_newtime_joinall.csv")
 
 #Calculate weekly median, mean, max for light & HOBO temp data at all sites
 
@@ -230,16 +298,7 @@ light_summary_10min <- light_10min %>%
   
 write_csv(light_summary_10min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_10min_take2.csv")
 
-light_summary_7min <- light_7min %>% 
-  mutate(month = month(datetime)) %>% 
-  mutate(week = week(datetime)) %>% 
-  group_by(year,week) %>% 
-  summarize_at(vars(temp_Coffin:light_OldNewbury),funs(mean, median, max (.,na.rm=T)))
 
-write_csv(light_summary_7min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_7min_take2.csv")
-
-#Join datasets by week
-light_summary <- full_join(light_summary_10min,light_summary_7min) #,by=c("year","month","week"))
 
 # Read in summarize dataset with -Inf changed to NA
 light_summary <- read_csv("Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary.csv")

@@ -1,0 +1,391 @@
+State-space model - revised by S. LaDeau (11/2017) from the EcoForecast Activity by Michael Dietze, with reference "Ecological Forecasting", chapter 8
+========================================================
+
+The data used for this example are from summer weekly(ish) Gloetrichia echinulata (Gloeo.) sampling at 4 locations in Lake Sunapee, NH. The data are provided by Kathryn Cottingham, and should not be used without permission outside this workshop.
+
+This activity will explore the state-space framework for modeling time-series and spatial data sets. It is based on separating the process model, which describes how the system evolves in time or space, from the observation (data) model. The state-space model gets its name because the model estimates that true value of the underlying **latent** state variables.
+
+
+
+```{r}
+install.packages("tidyverse")
+library(readxl)
+library(rjags)
+```
+
+Begin with data from one location:
+
+```{r}
+setwd("~/Documents/GLEON/Bayes Workshop/DATA/Sunapee/weekly gloeo")
+dat = read_excel("~/Documents/GLEON/Bayes Workshop/DATA/Sunapee/weekly gloeo/Sunapee_weeklysummary.xlsx", sheet='midge_weeklygloeo')
+
+str(dat)
+
+  time=as.character(dat$date)
+  times<-as.Date(time)
+ d= diff(times)  ##note that there are zeroes - indicating more than one record for a given date. These should be validated as real or corrected...but for now, we'll remove them.
+  
+dat$diff=c(NA,d)  
+  str(dat)
+dat.=subset(dat, diff>0, select= site:diff)  
+dat<-dat.
+
+ time=as.character(dat$date)
+  times<-as.Date(time)
+times[1]
+
+##look at response variable - what data distributions are appropriate?
+y.<-dat$coloniesperL
+  hist(y.)  
+n=length(y.)
+range(y.)
+```
+
+The large spread in the data AND the zero records for y present issues for choosing appropriate data model from standard distributions. For the purposes of this workshop we'll start with the common (but not necessarily desirable) practice of adding a small number to y so that all y > 0. Thus, we're assuming that there is some lower bound detection error and that gloeo are in fact present at some level at all samples. This assumption may be correct - or not- but should be carefully evaluated for any use outside this activity. We have introduced a systematic error or bias.
+
+Better way:
+Need to model probablility of 0 - poisson distribution?
+
+```{r}
+y<-y.+0.0001
+plot(times,y,type='l',ylab="gloeo colonies",lwd=2)
+   lines(times,y.,lty=2,col=2) ##compare with the unadulterated data
+
+```
+
+Next define the JAGS code. The code itself has three components, the data model, the process model, and the priors. The data model relates the observed data, y, at any time point to the latent variable, x. For this example we'll assume that the observation model just consists of Gaussian observation error. The process model relates the state of the system at one point in time to the state one time step ahead. In this case we'll start with the simplest possible process model, a random walk, which just consists of Gaussian process error centered around the current value of the system. Finally, we need to define priors for all stochastic variables, including the initial value of x, the process error, and the observation error.
+
+```{r}
+RandomWalk = "
+model{
+  
+  #### Data Model
+  for(i in 1:n){
+    y[i] ~ dnorm(x[i],tau_obs)
+  }
+  
+  #### Process Model
+  for(i in 2:n){
+    x[i]~dnorm(x[i-1],tau_add)
+  }
+  
+  #### Priors
+  x[1] ~ dnorm(x_ic,tau_ic) 
+  tau_obs ~ dgamma(a_obs,r_obs)
+  tau_add ~ dgamma(a_add,r_add)
+}
+"
+```
+
+Next we need to define the data and priors as a list. For this analysis we'll work with the log of y since the zero-bound on the index and the magnitudes of the changes appear much closer to a log-normal distribution than to a normal. [This only works for y>0]. The priors on error terms are standard, non-informative and the initial condition (x_ic) is parameterized to be within the range of known measurements.
+
+```{r}
+data <- list(y=log(y),n=length(y),x_ic=log(0.1),tau_ic=100,a_obs=.001,r_obs=.001,a_add=.001,r_add=.001)
+```
+
+Next we need to define the initial state of the model's parameters for each chain in the MCMC. The overall initialization is stored as a list the same length as the number of chains, where each chain is passed a list of the initial values for each parameter. Unlike the definition of the priors, which had to be done independent of the data, the inidialization of the MCMC is allowed (and even encouraged) to use the data. However, each chain should be started from different initial conditions. We handle this below by basing the initial conditions for each chain off of a different random sample of the original data. 
+
+```{r}
+nchain = 3
+init <- list()
+for(i in 1:nchain){
+  y.samp = sample(y,length(y),replace=TRUE)
+  init[[i]] <- list(tau_add=1/var(diff(log(y.samp))),tau_obs=1/var(log(y.samp)))
+}
+```
+
+Now that we've defined the model, the data, and the initialization, we need to send all this info to JAGS, which will return the JAGS model object.
+
+```{r}
+j.model   <- jags.model (file = textConnection(RandomWalk),
+                             data = data,
+                             inits = init,
+                             n.chains = 3)
+```
+
+Next, given the defined JAGS model, we'll want to take a few samples from the MCMC chain and assess when the model has converged. To take samples from the MCMC object we'll need to tell JAGS what variables to track and how many samples to take.
+
+```{r}
+## burn-in
+jags.out   <- coda.samples (model = j.model,
+                            variable.names = c("tau_add","tau_obs"),
+                                n.iter = 1000)
+plot(jags.out)
+```
+
+
+The model chains seem to converge fairly rapidly for both error terms. Since rjags returns the samples as a CODA object, we can use any of the diagnositics in the R *coda* library to test for convergence, summarize the output, or visualize the chains.
+
+Now that the model has converged we'll want to take a much larger sample from the MCMC and include the full vector of X's in the output.
+
+```{r}
+jags.out   <- coda.samples (model = j.model,
+                            variable.names = c("x","tau_add","tau_obs"),
+                                n.iter = 10000)
+
+```
+
+Given the full joint posterior samples, we're next going to visualize the output by just looking at the 95% credible interval of the timeseries of X's and compare that to the observed Y's. To do so we'll convert the coda output into a matrix and then calculate the quantiles. Looking at colnames(out) will show you that the first two columns are `tau_add` and `tau_obs`, so we calculate the CI starting from the 3rd column. We also transform the samples back from the log domain to the linear domain.
+
+```{r}
+time.rng = c(1,length(times)) ## adjust to zoom in and out
+ciEnvelope <- function(x,ylo,yhi,...){
+  polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
+                                      ylo[1])), border = NA,...) 
+}
+out <- as.matrix(jags.out)
+ci <- apply(exp(out[,3:ncol(out)]),2,quantile,c(0.025,0.5,0.975))
+
+plot(times,ci[2,],type='n',ylim=range(y,na.rm=TRUE),ylab="colonies/L",log='y',xlim=times[time.rng])
+
+ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
+points(times,y,pch="+",cex=0.5)
+```
+
+Next, lets look at the posterior distributions for `tau_add` and `tau_obs`, which we'll convert from precisions back into standard deviations. We'll also want to look at the joint distribution of the two parameters to check whether the two parameters strongly covary. 
+
+```{r}
+layout(matrix(c(1,2,3,3),2,2,byrow=TRUE))
+hist(1/sqrt(out[,1]),main=colnames(out)[1])
+hist(1/sqrt(out[,2]),main=colnames(out)[2])
+plot(out[,1],out[,2],pch=".",xlab=colnames(out)[1],ylab=colnames(out)[2])
+cor(out[,1:2])
+```
+
+There does appear to be  trade-off between the process and observation error terms. This is a sign that there isn't enough information in the data or model to identify both error terms. 
+
+Another way to look at how this simple process (i.e., random walk) captures the observed changes in algae is to compare the X's (estimated state) and the Y's (observed state). Unsurprisingly the model does the 'worst' when there is a really large algal bloom. 
+
+```{r}
+plot(y,ci[2,]); abline(0,1)
+
+resids<-rep(0,n)
+for (i in 1:n){
+  resids[i]<- y[i]-ci[2,i]
+}
+
+plot(times,resids)
+```
+
+
+###################################  On your own  ######################################
+Activity 1:  Rerun the model with (a) a fixed value for observation error and see how this changes the estimate of process error. Does it change the confidence intervals? How could you define a more informative prior on the observation error. Rerun the model and evaluate the influence of fixed error and informative priors.
+
+####################################
+
+
+One way to get more information from data is to add in replicate samples from additional sites. The sampling regime at the additional sites isn't the same as at our first site - it begins 2 years later. We could  treat these as different data models informing a common process OR as part of the same data model with NA values at one site for the initial two years.
+
+```{r}
+dat1 = read_excel("~/Documents/GLEON/Bayes Workshop/DATA/Sunapee/weekly gloeo/Sunapee_weeklysummary.xlsx", sheet='midge_weeklygloeo')
+
+dat2 = read_excel("~/Documents/GLEON/Bayes Workshop/DATA/Sunapee/weekly gloeo/Sunapee_weeklysummary.xlsx", sheet='fichter_weeklygloeo')
+
+  time1=as.character(dat1$date)
+  times1<-as.Date(time1)#,"%m/%d/%y")
+  times1[1]
+
+  time2=as.character(dat2$date)
+  times2<-as.Date(time2) 
+  times2[1]
+  
+  setdiff(times1,times2)
+
+```
+
+There are 42 'missing' data points at the beginning of the Fichter data. Observations contain zeroes at both sites. 
+
+```{r}
+y1.=dat1$coloniesperL
+y1=y1.+0.001  #make y >0 for log normal
+n1=length(y1)
+
+y2.=dat2$coloniesperL
+y2=y2.+0.001  #make y >0 for log normal
+n2=length(y2)
+
+#par(mfrow=c(2,1))
+plot(times1,y1,type='l',ylab="gloeo colonies",lty=2)
+lines(times2,y2,lty=1,col=3) ###add second dataset
+
+legend("topright", legend=c("Midge","Fichter"),lty=c(2,1),col=c(1,3))
+
+```
+
+
+The timing of 'blooms' does seem to be consistent across sites, although total colony # gets much higher at Midge. Still, we'll start with the assumption that these two datasets are sampling the same 'event' at two different sites. In the code below, we use both data sets to inform a common observation and process error. 
+
+
+```{r}
+RandomWalk2 = "
+model{
+  
+  #### Data Model
+  for(i in 1:n1){
+ y1[i] ~ dnorm(x1[i],tau_obs)
+}
+  for(j in 1:n2){
+ y2[j] ~ dnorm(x2[j],tau_obs)
+
+  }
+  
+  #### Process Model
+  for(i in 2:n1){
+    x1[i]~dnorm(x1[i-1],tau_add)
+  }
+  for(j in 2:n2){
+    x2[j]~dnorm(x2[j-1],tau_add)
+  }
+
+  
+  #### Priors
+  x1[1] ~ dnorm(x_ic,tau_ic)
+  x2[1] ~ dnorm(x_ic,tau_ic)
+tau_obs ~ dgamma(a_obs,r_obs)
+tau_add ~ dgamma(a_add,r_add)
+}
+"
+
+data <- list(y1=log(y1),y2=log(y2),n1=length(y1),n2=length(y2), x_ic=log(0.1), tau_ic=100, a_obs=.001, r_obs=.001, a_add=.001, r_add=.001)
+
+```
+
+The data list now contains the two observation sets (y1 and y2) but uses common estimates for generating the first X and both error terms
+
+```{r}
+j.model   <- jags.model (file = textConnection(RandomWalk2),
+                             data = data,
+                             inits = init,
+                             n.chains = 3)
+
+jags.out   <- coda.samples (model = j.model,
+                            variable.names = c("tau_add","tau_obs"),
+                                n.iter = 1000)
+plot(jags.out)
+
+
+```
+
+This looks like it has converged. Below is the code to get the samples from the posterior - but I've set it up to run a second time to generate the Xs for the second site rather than counting columns. 
+
+```{r}
+jags.out   <- coda.samples (model = j.model,
+                            variable.names = c("x1","tau_add","tau_obs"),n.iter = 10000)
+
+jags.out2   <- coda.samples (model = j.model,
+                            variable.names = c("x2"),n.iter = 10000)
+out <- as.matrix(jags.out) ##x1 starts at column 3
+out2 <- as.matrix(jags.out2) ##x2 starts at column 1
+
+hist(out[,1]) #tau_add
+hist(out[,2]) #tau_obs
+```
+
+Now make confidence intervals for both Xs
+
+```{r}
+time.rng = c(1,length(times1)) ## adjust to zoom in and out
+ciEnvelope <- function(x,ylo,yhi,...){
+  polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
+                                      ylo[1])), border = NA,...) 
+}
+
+ci <- apply(exp(out[,3:ncol(out)]),2,quantile,c(0.025,0.5,0.975))
+ci2 <- apply(exp(out2[,1:ncol(out2)]),2,quantile,c(0.025,0.5,0.975))
+
+plot(times1,ci[2,],type='n',ylim=range(y,na.rm=TRUE),log='y',ylab="log colonies/L",xlim=times1[time.rng])
+
+ciEnvelope(times1,ci[1,],ci[3,],col="lightBlue")
+points(times1,y1,pch="+",cex=0.5)
+
+ciEnvelope(times2,ci2[1,],ci2[3,],col="pink")
+points(times2,y2,pch="+",cex=0.5,col=2)
+
+```
+
+
+
+Activity 2: Add an explanatory variable (water temperature) 
+
+1. Need to choose and align a water temperature variable
+2. Decide on how to add this to process model
+3. Figure out how to make this 'spatial' - with multiple sites informing the same process. 
+
+Below is an example of how you might add a (currently fake) temperature variable. Using the real data requires a model to estimate the missing values and some thoughtful alignment of temp and gloeo measurements.
+
+```{r}
+
+tempdat = read_excel("C:/Users/ladeaus/Desktop/GLEON 2017/GLEON 2017/GLEON-Sunapee/weekly gloeo/Sunapee_weeklysummary.xlsx", sheet='weekly_summary_watertemp_06-16')
+str(tempdat)  #note that these don't align with sampling regime of gloeo...and some are missing
+
+temp.midge<-as.numeric(tempdat$midge.mean) ##this just converts from excel character format to numeric
+
+#for now, we'll make our own predictor data using a random sample from the real data
+midgeTemp<-subset(temp.midge,!is.na(temp.midge),temp.midge) #remove NAs
+midge.mean.temp<-sample(midgeTemp,length(y),replace=TRUE)
+  hist(midge.mean.temp)
+
+  temps<-midge.mean.temp-mean(midge.mean.temp)  #start with centered data
+  hist (temps)
+
+data <- list(y=log(y),temp=temps, n=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
+
+```
+
+
+```{r}
+Mod1 = "
+model{
+  
+  #### Data Model
+  for(i in 1:n){
+    y[i] ~ dnorm(x[i],100) #start with a fixed observation error (sd=0.01)
+  }
+  
+  #### Process Model
+  for(i in 2:n){
+   mean.x[i] <- x[i-1] + beta0 + beta.temp * temp[i] ##
+    x[i]~dnorm(mean.x[i],tau_add)
+
+  }
+  
+  #### Priors
+  x[1] ~ dnorm(x_ic,tau_ic)
+  tau_add ~ dgamma(a_add,r_add)
+  beta.temp~ dnorm(0,0.001)
+  beta0~ dnorm(0,0.001)
+}
+"
+```
+
+Now set up inits and run the model...
+```{r}
+nchain = 3
+init <- list()
+for(i in 1:nchain){
+  y.samp = sample(y,length(y),replace=TRUE)
+  init[[i]] <- list(tau_add=1/var(diff(log(y.samp))))
+}
+
+j.model   <- jags.model (file = textConnection(Mod1),
+                             data = data,
+                             inits = init,
+                             n.chains = 3)
+
+jags.out   <- coda.samples (model = j.model,
+                            variable.names = c("tau_add","beta0","beta.temp"),
+                                n.iter = 1000)
+plot(jags.out)
+```
+
+Next Steps:
+-----------
+
+
+1. Incorporate real covariates to improve the process model. [How would you know if it is improved?]
+
+2. Add additional site data.
+
+Remove data from the last 2 months or 10 observations (convert to NA) and refit the model to make a forecast for this period. Do this with both the random walk (null) model and with a bigger process model.
+
+3. How does the systematic error introduced by making all observed y >0 influence the inference? How could you model the zeroes?
