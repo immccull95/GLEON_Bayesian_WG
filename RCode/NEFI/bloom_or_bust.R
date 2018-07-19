@@ -1,8 +1,9 @@
 #Cleaned up Shannon Code for Eco-Forecasting Workshop July 2018
-#BLOOM OR BUST
-#IAN's FAULT
+#BLOOM OR BUST: modeling Gloeotrichia in Lake Sunapee, NH
 
-setwd("~/Documents/GLEON_Bayesian_WG/Datasets/Sunapee/R Work/Level 1")
+# change to your own!
+setwd("C:/Users/immcc/Documents/GLEON_Bayesian_WG/Datasets/Sunapee/R Work/Level 1")#Ian
+#setwd("~/Documents/GLEON_Bayesian_WG/Datasets/Sunapee/R Work/Level 1")#Jennie
 
 #Load library
 library(rjags)
@@ -10,8 +11,8 @@ library(coda)
 library(tidyverse)
 
 #Load data
-gloeo = read.csv("Datasets/Sunapee/R Work/Level 1/All_Sites_Gloeo.csv")
-wtr_temp = read.csv("Datasets/Sunapee/R Work/Level 1/watertemp_week.csv")
+gloeo = read.csv("All_Sites_Gloeo.csv")
+wtr_temp = read.csv("watertemp_week.csv")
 
 #Reformat water temp data
 wtr_temp_long <- wtr_temp %>%
@@ -21,13 +22,13 @@ wtr_temp_long <- wtr_temp %>%
   arrange(year,site) %>% 
   rename(wtr_temp_max = max, wtr_temp_mean = mean, wtr_temp_median = median, wtr_temp_min = min)
 
-write.csv(wtr_temp_long, "wtr_temp_long_weekly_summary.csv")
+#write.csv(wtr_temp_long, "wtr_temp_long_weekly_summary.csv")
 
 
 ##look at response variable - what data distributions are appropriate?
 
-hist(data$totalperL) 
-hist(data$totalperL_diff)  # can be negative
+hist(gloeo$totalperL) #looks like zero inflated poisson
+hist(gloeo$totalperL_diff)  # can be negative; looks more normal
 n=length(y.)
 range(y.)
 
