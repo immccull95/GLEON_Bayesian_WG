@@ -53,4 +53,27 @@ b[i] ~ dnorm(b[i-1],tau_add)
 }
 "
 
+RandomWalk_forecast = "
+model{
+
+#### Priors
+b[1] ~ dnorm(x_ic,tau_ic) #b on log scale
+#mu[1] <- x_ic
+tau_add ~ dnorm(log(tau_med), tau_sd)
+
+#### Data Model
+for(i in 1:n){
+mu[i] <- exp(b[i]) #mu on linear scale
+y[i] ~ dpois(mu[i]) # variance = mean
+}
+
+#### Process Model
+for(i in 2:n){
+b[i] ~ dnorm(b[i-1],tau_add) 
+}
+
+}
+"
+
+
 
