@@ -148,15 +148,17 @@ ci <- apply(cur[,x.cols],2,quantile,c(0.025,0.5,0.975))
 
 med = ci[2,]
 med = med[!is.infinite(med)]
-ylim = range(med)
+ylim = range(data$y)
+
+# ylim = c(0,10)
+# xlim = c(0,10)
 
 time.rng = c(1,ncol(ci)) ## adjust to zoom in and out
 time = seq(time.rng[1], time.rng[2])
 
-plot(time,ci[2,],ylim=ylim,ylab="",xlim=time[time.rng])
-ecoforecastR::ciEnvelope(time,ci[1,],ci[3,],col=t_col('blue', percent = 80))
-points(time,data$y,pch="+",cex=0.5, col= 'red')
-points(time,ci[2,])
+plot(time,ci[2,],ylim=ylim,ylab="",xlim=time[time.rng], type='l', col = t_col('black', percent = 90))
+ecoforecastR::ciEnvelope(time,ci[1,],ci[3,],col=t_col('blue', percent = 99))
+lines(time,ci[2,], col = t_col('black', percent = 90))
 
 for(q in 2:length(forecast_times)){
   cur <- eval(parse(text = paste0('jags.out',q)))
@@ -172,9 +174,9 @@ for(q in 2:length(forecast_times)){
   time.rng = c(1,ncol(ci)) ## adjust to zoom in and out
   time = seq(time.rng[1], time.rng[2])
   
-  ecoforecastR::ciEnvelope(time,ci[1,],ci[3,],col=t_col('blue', percent = 80))
-  points(time,data$y,pch="+",cex=0.5, col= 'red')
-  points(time,ci[2,])
+  ecoforecastR::ciEnvelope(time,ci[1,],ci[3,],col=t_col('blue', percent = 99))
+  lines(time,ci[2,], col = t_col('black', percent = 80))
 }
 
+lines(time,data$y,pch="+",cex=0.5, col= 'red')
 
