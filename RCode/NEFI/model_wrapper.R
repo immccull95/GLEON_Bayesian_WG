@@ -8,34 +8,33 @@ library(R2jags)
 cal_time_start <- '1990-01-01' 
 cal_time_end <- '2013-01-01' 
 forecast_time_end <- '2016-01-01' 
-sites <- c('coffin') 
+sites <- c('midge') 
 
-data <- get_data(cal_time_start, cal_time_end, forecast_time_end, sites) # get the data
+cal_data <- get_data(cal_time_start, cal_time_end, forecast_time_end, sites)$cal # get the data
+forecast_data <- get_data(cal_time_start, cal_time_end, forecast_time_end, sites)$forecast 
+all_data <- rbind(cal_data, forecast_data) %>%
+  mutate(data_type = c(rep('cal_data', nrow(cal_data)), rep('forecast_data', nrow(forecast_data)))) %>%
+  mutate(coloniesperL = case_when(data_type == 'cal_data' ~ coloniesperL,
+                                  data_type == 'forecast_data' ~ NA_real_)) 
 
 #setup JAGS data object.----
 #N.pred = 2. one predictor is the intercept, the second is x ("temperature").
-jags.data <- list(y = data$coloniesperL, x = data$wtr_temp_mean, N = 1000, N.pred = 2)
+jags_data_cal <- list(y = cal_data$coloniesperL, x = cal_data$wtr_temp_mean, n = 1000)
+jags_data_forecast <- list(y = all_data$coloniesperL, x = all_data$wtr_temp_mean, n = 1000)
 
-#fit the jags object using runjags.----
-jags.out <- run.jags(model = zip_model,
-                         data = jags.data,
-                         adapt =  100,
-                         burnin =  500,
-                         sample = 1000,
-                         n.chains = 3,
-                         monitor = c('beta.pois','beta.bern'))
-
-#summaryize output.
-jags.sum <- summary(jags.out)
-
-
-
-j.model <- jags.model (file = textConnection(model),
-                       data = data,
+# calibration 
+cal <- jags.model (file = textConnection(model),
+                       data = cal_data,
                        inits = init,
                        n.chains = 3)
-# call the model 
 
+forecast <- jags.model (file = textConnection(model),
+                   data = all_data,
+                   inits = init,
+                   n.chains = 3)
+
+
+# 
 
 
 
