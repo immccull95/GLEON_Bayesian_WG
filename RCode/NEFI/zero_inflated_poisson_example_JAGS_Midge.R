@@ -21,7 +21,7 @@ model{
     y[i] ~ dpois(m[i])
 
         #This blends the poisson and zero inflation models
-    m[i] <- mu[i]*b[i] + 1E-10 #adding the tiny value is important (i forget why...)
+    m[i] <- mu[i]*b[i] + 1E-3 #adding the tiny value is important (i forget why...)
     
     #this is the bernoulli outcome of the zero inflation
     b[i] ~ dbern(theta[i])
@@ -49,8 +49,6 @@ jags.data <- list(y = y, x = x, N = 230, N.pred = 2)
 
 nchain=3
 
-inits[[i]] <- list(beta = rnorm(2,0,5), prec = runif(1,1/100,1/20))
-
 
 #init <- list()
 #for(i in 1:nchain){
@@ -58,9 +56,14 @@ inits[[i]] <- list(beta = rnorm(2,0,5), prec = runif(1,1/100,1/20))
 #                  beta.pois[2]= rnorm(1, 0.5, 1))
 #}
 
+#init <- list()
+#for(i in 1:nchain){
+#init[[i]] <- list(beta.bern= c(rnorm(1,0.5,0.1), rnorm(1, 0.005,0.01)), beta.pois= c(rnorm(1, -3, 1), rnorm(1, 0.5, 0.25)))
+#}
+
 init <- list()
 for(i in 1:nchain){
-init[[i]] <- list(beta.bern= rnorm(2, 0, 10), beta.pois= rnorm(2, 0, 10))
+  init[[i]] <- list(beta.bern= c(.05, 0.0005), beta.pois= c(-.3, 0.05))
 }
 
 
