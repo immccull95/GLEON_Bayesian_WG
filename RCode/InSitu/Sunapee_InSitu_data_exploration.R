@@ -222,6 +222,8 @@ write_csv(midge_all_temp, "Datasets/Sunapee/R Work/Level 1/midge_all_temp.csv")
 
 #### Read in light dataset ####
 
+DF[!is.na(DF$y),]
+
 light_allsites <- read_csv("Datasets/Sunapee/R Work/Level 1/templight_0916_L1_4sites_30Oct2017-JBedits.csv", col_types = cols(
   temp_Coffin = col_double(),
   temp_Fichter = col_double(),

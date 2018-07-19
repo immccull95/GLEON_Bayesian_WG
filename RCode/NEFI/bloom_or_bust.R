@@ -28,11 +28,9 @@ write.csv(wtr_temp_long, "wtr_temp_long_weekly_summary.csv")
 
 hist(data$totalperL) 
 hist(data$totalperL_diff)  # can be negative
-n=length(y.)
-range(y.)
+
 
 # Model - change data model to poisson
-
 
 RandomWalk = "
 model{
