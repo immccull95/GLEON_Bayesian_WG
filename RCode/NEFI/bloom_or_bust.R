@@ -27,21 +27,11 @@ wtr_temp_long <- wtr_temp %>%
 
 ##look at response variable - what data distributions are appropriate?
 
-<<<<<<< HEAD
-hist(data$totalperL) 
-hist(data$totalperL_diff)  # can be negative
-||||||| merged common ancestors
-hist(data$totalperL) 
-hist(data$totalperL_diff)  # can be negative
-n=length(y.)
-range(y.)
-=======
+
 hist(gloeo$totalperL) #looks like zero inflated poisson
 hist(gloeo$totalperL_diff)  # can be negative; looks more normal
 n=length(y.)
 range(y.)
->>>>>>> f31e7f00385d0cf3c397d948ed8fd620ef6e6d87
-
 
 # Model - change data model to poisson
 
