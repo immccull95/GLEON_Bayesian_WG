@@ -2,7 +2,7 @@
 #clear environment, load packages.----
 library(rjags)
 
-data=All_Sites_Gloeo
+Sites=All_Sites_Gloeo
 midge=subset(All_Sites_Gloeo, site=="Midge")
 
 y=midge$coloniesperL
@@ -46,11 +46,29 @@ model{
 #N.pred = 2. one predictor is the intercept, the second is x (month of year).
 
 jags.data <- list(y = y, x = x, N = 230, N.pred = 2)
+
 nchain=3
+
+inits[[i]] <- list(beta = rnorm(2,0,5), prec = runif(1,1/100,1/20))
+
+
+#init <- list()
+#for(i in 1:nchain){
+#init[[i]] <- list(beta.bern[1]= rnorm(1,0.5,2), beta.bern[2]= rnorm(1, 0.005, 1), beta.pois[1]= rnorm(1, -3, 2), 
+#                  beta.pois[2]= rnorm(1, 0.5, 1))
+#}
+
+init <- list()
+for(i in 1:nchain){
+init[[i]] <- list(beta.bern= rnorm(2, 0, 10), beta.pois= rnorm(2, 0, 10))
+}
+
 
 j.model   <- jags.model(file = textConnection(jags.model),
                         data = jags.data,
+                        inits=init,
                         n.chains = nchain)
+
 
 var.out   <- coda.samples (model = j.model,
                            variable.names = c("beta.pois", "beta.bern"),
