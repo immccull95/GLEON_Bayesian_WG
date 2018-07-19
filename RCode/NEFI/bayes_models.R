@@ -1,5 +1,6 @@
 # collection of jags models 
 require(rjags) 
+require(runjags)
 
 zip_model <- "
 model{

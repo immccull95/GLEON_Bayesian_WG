@@ -14,10 +14,10 @@ data <- get_data(cal_time_start, cal_time_end, forecast_time_end, sites) # get t
 
 #setup JAGS data object.----
 #N.pred = 2. one predictor is the intercept, the second is x ("temperature").
-jags.data <- list(y = y.obs, x = x, N = N, N.pred = 2)
+jags.data <- list(y = data$coloniesperL, x = data$wtr_temp_mean, N = 1000, N.pred = 2)
 
 #fit the jags object using runjags.----
-jags.out <- run.jags(    model = jags.model,
+jags.out <- run.jags(model = zip_model,
                          data = jags.data,
                          adapt =  100,
                          burnin =  500,
