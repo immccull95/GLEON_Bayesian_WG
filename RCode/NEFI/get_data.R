@@ -27,5 +27,5 @@ get_data <- function(cal_time_start, cal_time_end, forecast_time_end, sites){
   forecast <- data %>%
     dplyr::filter(date > as.Date(cal_time_end), date < as.Date(forecast_time_end)) 
   
-  return(list(cal, forecast)) 
+  return(list(cal = cal, forecast = forecast)) 
 }
