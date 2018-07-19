@@ -8,7 +8,7 @@ library(R2jags)
 cal_time_start <- '1990-01-01' 
 cal_time_end <- '2013-01-01' 
 forecast_time_end <- '2016-01-01' 
-sites <- c('coffin') 
+sites <- c('midge') 
 
 data <- get_data(cal_time_start, cal_time_end, forecast_time_end, sites) # get the data
 
