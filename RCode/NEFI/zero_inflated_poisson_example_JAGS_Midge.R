@@ -1,13 +1,13 @@
 #building zero inflated data, fitting it with a zero inflated model.
 #clear environment, load packages.----
-rm(list=ls())
-library(runjags)
+library(rjags)
 
 data=All_Sites_Gloeo
 midge=subset(All_Sites_Gloeo, site=="Midge")
 
 y=midge$coloniesperL
 x=midge$month
+as.numeric(x)
 
 #simulate data.----
 N <- 230
