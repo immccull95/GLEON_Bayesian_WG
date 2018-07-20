@@ -21,6 +21,11 @@ get_data <- function(cal_time_start, cal_time_end, forecast_time_end, sites){
   
   data <- left_join(gleo, wtr, by = c('week', 'year', 'site')) 
   
+  #filling in rows to make it daily time step 
+  all_dates <- data_frame(date = seq(min(data$date), max(data$date), by= 'day'))
+  
+  data <- left_join(all_dates, data, by = 'date') 
+  
   cal <- data %>%
     dplyr::filter(date > as.Date(cal_time_start), date < as.Date(cal_time_end)) 
   
