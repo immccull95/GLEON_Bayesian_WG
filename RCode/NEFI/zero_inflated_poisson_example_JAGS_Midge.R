@@ -1,18 +1,24 @@
-#building zero inflated data, fitting it with a zero inflated model.
-#clear environment, load packages.----
+##Zero Inflated Mixture Model: Bernoulli determines 0, 1 (Gloeo Absence, Presence)
+##If the data is treated as a 1, then the Poisson distribution is used to model the data
+##This code also includes a linear covariate ("x"), which is currently designated as month of year 
+
+##clear environment, load packages.----
 library(rjags)
+library(readr)
 
-Sites=All_Sites_Gloeo
-midge=subset(All_Sites_Gloeo, site=="Midge")
+##Read in data and subset to include only Midge
+All_Sites_Gloeo <- read_csv("Datasets/Sunapee/R Work/Level 1/All_Sites_Gloeo.csv")
+View(All_Sites_Gloeo)
+Data=subset(All_Sites_Gloeo, site=="Midge")
 
-y=midge$coloniesperL
-x=midge$month
-as.numeric(x)
+##Identify response variable and predictor(s)
+y = round(Data$totalperL*141.3707)  #Estimated conversion to count data; will need to correct this later
+x=  Data$month #Covariate
+as.numeric(x) 
+N=length(y)
+x.new=seq(2,10,0.05)
 
-#simulate data.----
-N <- 230
-
-#Lets build a JAGS model that can recover those true parameters.----
+#JAGS model
 
 jags.model <- "
 model{
@@ -20,7 +26,7 @@ model{
     #this fits the blended model to your observed data. 
     y[i] ~ dpois(m[i])
 
-        #This blends the poisson and zero inflation models
+    #This blends the poisson and zero inflation models
     m[i] <- mu[i]*b[i] + 1E-3 #adding the tiny value is important (i forget why...)
     
     #this is the bernoulli outcome of the zero inflation
@@ -33,55 +39,79 @@ model{
     logit(theta[i]) <- beta.bern[1] + beta.bern[2]*x[i]
   }
   
-  #setup your priors. These are flat, uninformative priors.
+  #set up your priors. These are flat, uninformative priors.
   for(i in 1:N.pred){
     beta.pois[i] ~ dnorm(0, 1E-3)
     beta.bern[i] ~ dnorm(0, 1E-3)
   }
 
+
+  #Create model PREDICTIONS so we can calculate credible intervals later 
+  #There may be an easier way to do this, but I'm using the same model as above, just calculating y.pred based on process model
+
+  for (j in 1:length(x.new)){
+   #this fits the blended model to your observed data. 
+    y.pred[j] ~ dpois(m.new[j])
+
+    #This blends the poisson and zero inflation models
+    m.new[j] <- mu.new[j]*b.new[j] + 1E-3 #adding the tiny value is important (i forget why...)
+
+    #this is the bernoulli outcome of the zero inflation
+    b.new[j] ~ dbern(theta.new[j])
+
+    #mu[j] is the linear combination of predictors and parameters for the poisson component of the model.
+    log(mu.new[j]) <- beta.pois[1] + beta.pois[2]*x.new[j]
+
+    #theta[j] is the linear combination of predictors and paramters for the bernoulli component of the model.
+    logit(theta.new[j]) <- beta.bern[1] + beta.bern[2]*x.new[j]
+  }
+
+
 } #close model loop.
 "
 
-#setup JAGS data object.----
-#N.pred = 2. one predictor is the intercept, the second is x (month of year).
+#Set up JAGS data object
+#N.pred = 2 because one predictor is the intercept, the second is x (month of year).
 
-jags.data <- list(y = y, x = x, N = 230, N.pred = 2)
-
+jags.data <- list(y = y, x = x, x.new=x.new, N = N, N.pred = 2)
 nchain=3
 
-
-#init <- list()
-#for(i in 1:nchain){
-#init[[i]] <- list(beta.bern[1]= rnorm(1,0.5,2), beta.bern[2]= rnorm(1, 0.005, 1), beta.pois[1]= rnorm(1, -3, 2), 
-#                  beta.pois[2]= rnorm(1, 0.5, 1))
-#}
-
-#init <- list()
-#for(i in 1:nchain){
-#init[[i]] <- list(beta.bern= c(rnorm(1,0.5,0.1), rnorm(1, 0.005,0.01)), beta.pois= c(rnorm(1, -3, 1), rnorm(1, 0.5, 0.25)))
-#}
-
-init <- list()
-for(i in 1:nchain){
-  init[[i]] <- list(beta.bern= c(.05, 0.0005), beta.pois= c(-.3, 0.05))
-}
-
-
+#JAGS Model 
 j.model   <- jags.model(file = textConnection(jags.model),
                         data = jags.data,
-                        inits=init,
+                        #inits=init,
                         n.chains = nchain)
 
 
 var.out   <- coda.samples (model = j.model,
-                           variable.names = c("beta.pois", "beta.bern"),
-                           n.iter = 3000)
+                           variable.names = c("beta.pois", "beta.bern", "y.pred"),
+                           n.iter = 10000)
 
-#summaryize output.
-jags.sum <- summary(var.out)
 
-#compare fitted parameter values to true parameter values.----
-#bernoulli parameters more likely to be the center of the distribution, as wel observe N binary outcomes.
-#poisson parameters will be less likely to be at the center of the distribution as few observations are non-zero.
-true <- c(beta.pois, beta.bern)
-cbind(jags.sum[,1:3],true)
+#Removing burn-in period for model run
+burnin=1000
+params <- window(var.out, start=burnin) 
+
+#Convergence of parameters-- can skip over running these if you want
+#par(mar=c(1,1,1,1)) #changing margins to fit plots in window
+#plot(params) #I am just looking at the beta parameters here
+              #I think the Poisson has has two distinct chains to account for the Bernoulli 0 vs. 1 mixture component? 
+#gelman.plot(params) #suggests we might need a longer burn-in period
+
+#Summary statistics
+summary(params)
+cor(as.matrix(params)) #The intercepts and slopes for each distribution are highly correlated, which I think we can account
+                       #for in the model using a covariance matrix
+
+#Plotting Credible Intervals
+zj = jags.samples(j.model, variable.names = c("beta.pois", "beta.bern", "y.pred"), n.iter= 10000, n.thin = 1)
+b <- summary(zj$y.pred, quantile, c(.025, .5, .975))$stat
+
+par(mar=c(5.1, 4.1, 4.1, 2.1)) #changing margins back to default values
+plot(x.new, b[2,],type = "l", xlab="Month", ylab="Predicted Gloeo Colony Counts")
+lines(x.new, b[1,], lty = "dashed")
+lines(x.new, b[3,], lty = "dashed")
+
+#The plot above looks strange (why the widening CI?) until you see the plot of the original data
+plot(Data$month, y, xlab="Month", ylab="Observed Gloeo Colony Counts") 
+
