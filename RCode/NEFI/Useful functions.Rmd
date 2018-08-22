@@ -1,0 +1,239 @@
+---
+title: 'Useful equations for ecosystem modeling'
+author: | 
+  | R.Q. Thomas
+  | Virginia Tech
+date: "Fall 2017"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Proportional increase (or decrease)**
+
+- Not constrained between 0 and 1
+
+```{r}
+f <- function(x,b){
+  y = x*b
+}
+b = 0.5
+curve(f(x,b=b),from=0, to=3,ylab='rate',xlab = 'driver/environmental condition')
+```
+
+**Monod or Michaelis-Menten**
+
+- constrained between 0 and 1
+- Very common
+- Multiply by a maximum rate constant
+
+```{r}
+f <- function(x,ks){
+  y = x/(ks + x)
+}
+ks = 2
+curve(f(x,ks),from=0, to=20,ylab='rate adjustment',xlab = 'driver/environmental condition')
+```
+
+
+**Arrhenius Function (temperature sensitivity)**
+
+- Anchored to a respiration rate at a base temperature
+- Less common than Q10
+
+```{r}
+f <- function(x,Ea,R,base_rate){
+  t = x
+  y = base_rate*exp(-Ea/(R*t))
+}
+Ea = 50 #J mol-1  Activiation Energy often reported as kJ mol-1 units
+R = 0.008314 #kJ mol-1 K-1 Universal Gas Constant 
+base_rate = 1.92e10
+curve(f(x,Ea=Ea,R = R,base_rate=base_rate),from=273, to=303,ylab='rate',xlab = 'temperature')
+```
+
+**Q10 Function  (temperature sensitivity)**
+
+- Anchored to a respiration rate at a base temperature
+- Very common
+
+```{r}
+f <- function(x,q10,base_temp,base_rate){
+  y = base_rate*q10^((x-base_temp)/10)
+}
+q10 = 2
+base_temp = 20
+base_rate = 4
+curve(f(x,q10=q10,base_temp = base_temp,base_rate = base_rate),from=0, to=40,ylab='rate',xlab = 'temperature')
+
+
+```
+
+**Exponential increase**
+
+- not constrained between 0 and 1
+
+```{r}
+f <- function(x,k){
+  y = exp(k*x)
+}
+k = 1.1
+curve(f(x,k),from=0, to=4,ylab='rate adjustment',xlab = 'driver/environmental condition')
+
+```
+
+**Exponential decrease**
+
+- constrained between 0 and 1
+
+```{r}
+f <- function(x,k){
+  y = exp(k*x)
+}
+k = -2
+curve(f(x,k),from=0, to=4,ylab='rate adjustment',xlab = 'driver/environmental condition')
+
+```
+
+**Optimal function without symetry**
+
+- constrained between 0 and 1
+- common for modeling photosynthesis - temperature relationships
+
+```{r}
+f <- function(x,Tmin,Topt,Tmax){
+  y = ((x - Tmin) / (Topt - Tmin)) *((Tmax - x) / (Tmax - Topt)) ^((Tmax - Topt) / (Topt - Tmin))
+}
+
+Tmin = 0
+Topt = 10
+Tmax = 17
+curve(f(x,Tmin=Tmin,Topt=Topt,Tmax=Tmax),from=0, to=20,ylab='rate adjustment',xlab = 'driver/environmental condition')
+```
+
+**Optimal function with symetry**
+
+- Can have negative inputs
+- Bounded between 0 and 1
+
+```{r}
+f <- function(x,a,b){
+  y = exp(-(1/(2*b))*(x-a)^2)
+}
+
+curve(f(x,a = 1, b = 2),from=-6, to=6,ylab='rate limitation',xlab = 'driver/environmental condition')
+```
+
+
+**Non-linear decrease**
+
+- constrained between 0 and 1
+- Useful for simulating senstivity to soil water avialablity
+
+```{r}
+f <- function(x,a,b){
+  y = (1/(1 + (x/a)^b))
+}
+
+a = 10
+b = 5
+curve(f(x,a=a,b=b),from=0, to=20,ylab='rate adjustment',xlab = 'driver/environmental condition')
+a = 15
+b = 5
+curve(f(x,a=a,b=b),from=0, to=20,ylab='rate adjustment',xlab = 'driver/environmental condition',add=TRUE,lty='dashed')
+```
+
+**Non-linear decrease V2**
+
+- constrained between 0 and 1
+- Useful for simulating senstivity to soil water avialablity
+
+```{r}
+f <- function(x,a,b){
+  y = 1 / (1 + exp(a*(x - b)))
+}
+
+a = 0.3
+b = 5
+curve(f(x,a=a,b=b),from=0, to=20,ylab='rate adjustment',xlab = 'driver/environmental condition')
+segments(b,0,b,0.5,lty='dashed')
+segments(0,0.5,b,0.5,lty='dashed')
+```
+
+**Non-linear increase** 
+
+- requires relative environmental conditions (i.e., proportion of max soil water)
+- Constrained between 0 and 1
+
+```{r}
+f <- function(x,a,b){
+  y = (1/(1 + ((1-x)/a)^b))
+}
+
+a = 0.5
+b = 5
+curve(f(x,a=a,b=b),from=0, to=1,ylab='rate adjustment',xlab = 'driver/environmental condition')
+a = 0.75
+b = 5
+curve(f(x,a=a,b=b),from=0, to=1,ylab='rate adjustment',xlab = 'relative environmental condition',add=TRUE,lty='dashed')
+```
+
+**Light extinction (variation of the exponential decay)**
+
+- Represents at cumulative total
+- Bounded between 0 and 1
+- Beer's Law
+
+```{r}
+f <- function(x,k){
+  y = (1.0 - (exp(-k * x)))
+}
+
+k = 0.5
+curve(f(x,k = 0.5),from=0, to=10,ylab='proportion of light avaialable absorbed by layer',xlab = 'depth of lake or leaf area')
+
+```
+
+**Beta function**
+
+- Not bounded between 0 and 1
+- A value of 1 at a base value for the driver/environmental condition
+- Example is for infuence of atmospheric CO2 on photosynthesis
+
+```{r}
+f <- function(x,beta,base){
+  (1 + beta*log(x/base) )
+}
+base = 350
+beta = 1.4
+curve(f(x,beta = beta, base = base),from=200, to=700,ylab='rate limitation',xlab = 'driver/environmental condition')
+segments(base,0,base,1.0,lty='dashed')
+segments(200,1.0,base,1.0,lty='dashed')
+```
+
+**Lognormal function**
+
+- Bounded between 0 and 1
+- Requires input values greater than 0
+
+```{r}
+f <- function(x,a,b){
+  y = exp(-(1/2*b)*(log(x)-a)^2)
+}
+curve(f(x,a = 1, b = 2),from=0, to=10,ylab='rate limitation',xlab = 'driver/environmental condition')
+```
+
+**Power law**
+
+- Not bounded between 0 and 1
+
+```{r}
+f <- function(x,a,k){
+  y = a*x^k
+}
+curve(f(x,a = 1, k = 0.5),from=0, to=10,ylab='rate limitation',xlab = 'driver/environmental condition')
+```
