@@ -1,4 +1,0 @@
-# function for calling model 
-
-
-

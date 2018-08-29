@@ -100,3 +100,27 @@ b[i] ~ dnorm(b[i-1],tau_add)
 
 }
 "
+
+
+
+RandomWalk_logistic = "
+model{
+
+#### Priors
+b[1] ~ dnorm(x_ic,tau_ic) #b on log scale
+tau_add ~ dgamma(a_add,r_add)
+
+#### Data Model
+for(i in 1:n){
+mu[i] <- exp(b[i])  #mu on linear scale
+y[i] ~ dpois(mu[i]) # variance = mean
+}
+
+#### Process Model
+for(i in 2:n){
+meanb[i] <- b[i-1]
+b[i] ~ dnorm(meanb[i],tau_add) 
+}
+
+}
+"

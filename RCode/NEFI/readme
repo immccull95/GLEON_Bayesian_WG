@@ -10,15 +10,14 @@ bayes_models.R: collection of different models written with JAGs code
 
 get_data.R: function that pulls in gloeo data and water temp data and puts in correct date time format
 
-model_wrapper.R: 
-
-call_model.R:
+model_wrapper.R: script where you specify the calibration start /end dates, forecast end date, and sites at which you want to predict gloeo. The script calls the 
+  driver data and runs the model you choose for your calibration time period. It will then iteratively forecast as each new observation comes on line. 
 
 create_gif.R: creates a gif to plot gloeo forecast through time as an animation
 
-plot_frames.R:
+plot_frames.R: plot individual frames at each forecasted time point for gif creation 
 
-Plots.R:
+Plots.R: 
 
 zero_inflate_poission_example_JAGS.r: Example script written by Colin Averill July 2018 to provide an example of a blended zero inflated poission model with the JAGs code
 
