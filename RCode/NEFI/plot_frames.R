@@ -49,15 +49,16 @@ for(q in 1:length(forecast_times)){
   cex.axis = 1.5 
   lwd = 3
   
-  png(filename = paste0('Figs/NEFI/tmp/time_',q, '.png'), width = 12, height = 7, units = 'in', res= 300)
-  
-  plot(date,ci[2,],ylim=ylim,ylab="Gloeo Colonies", xlab = '', type='l', lwd= lwd, col = t_col('black', percent = 0),cex.lab = cex.lab,
-       cex.axis=cex.axis)
+  png(filename = paste0('Figs/NEFI/tmp/time_',q, '.png'), width = 12, height = 7, units = 'in', res= 100)
+  ylim=ylim
+  plot(date,ci[2,],ylab="Gloeo Colonies", xlab = '', type='l', lwd= lwd, col = t_col('black', percent = 0),cex.lab = cex.lab,
+       cex.axis=cex.axis, log = 'y')
   ecoforecastR::ciEnvelope(date,ci[1,],ci[3,],col=t_col('blue', percent = 60))
   lines(date,ci[2,], lwd =lwd, col = t_col('black', percent = 0))
   points(date,data$y,pch=16,cex=2, col= t_col('red', percent = 60))
   # lines(date,data$y[i]+c(-1,1)*LAIr.sd[i])
   # add bar to forecast time 
+  legend('topleft', legend = c('Obs', 'Predict'), col = c('red','black'), lwd = c(NA, 3), pch = c(16, NA), lty = c(NA, 1),bg = 'white')
   mtext('Forecast =>', side=1, line=2.5, cex = cex.lab, adj = 0, col = 'blue', at=forecast_times[q])
   
   dev.off() 

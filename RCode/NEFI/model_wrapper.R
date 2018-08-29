@@ -40,6 +40,10 @@ j.model   <- jags.model (file = textConnection(RandomWalk),
                          inits = init,
                          n.chains = nchain)
 
+# j.model   <- jags.model (file = textConnection(RandomWalk_logistic),
+#                          data = data,
+#                          inits = init,
+#                          n.chains = nchain)
 
 jags.out   <- coda.samples (model = j.model,
                             variable.names = c('mu' ,'tau_add'),
