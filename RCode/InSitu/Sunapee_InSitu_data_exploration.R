@@ -220,9 +220,8 @@ write_csv(midge_all_temp, "Datasets/Sunapee/R Work/Level 1/midge_all_temp.csv")
 
 
 
-#### Read in light dataset ####
 
-DF[!is.na(DF$y),]
+#### Read in light dataset ####
 
 light_allsites <- read_csv("Datasets/Sunapee/R Work/Level 1/templight_0916_L1_4sites_30Oct2017-JBedits.csv", col_types = cols(
   temp_Coffin = col_double(),
@@ -234,6 +233,18 @@ light_allsites <- read_csv("Datasets/Sunapee/R Work/Level 1/templight_0916_L1_4s
 
 str(light_allsites)
 
+light_allsites <- light_allsites %>% 
+  mutate(week = week(datetime)) %>%
+  mutate(week_day = wday(datetime)) %>% 
+  mutate(day = day(datetime))
+
+# Code to consolidate 10 min light and temp data to same 10 min reading
+
+# try to remove NA values first
+
+light_allsites_noNA <- light_allsites[!is.na(light_allsites$temp_Coffin),]
+
+
 #Count number of observations for each column
 
 light_allsites_count <- light_allsites %>% 
@@ -242,18 +253,13 @@ light_allsites_count <- light_allsites %>%
   group_by(year,week) %>% 
   summarize(count = n())
 
-light_allsites <- light_allsites %>% 
-  mutate(week = week(datetime)) %>%
-  mutate(week_day = wday(datetime)) %>% 
-  mutate(day = day(datetime))
-
-
 #Separate out 10 min readings at 0 min vs. 7 min 2 min 9 min 8 1 min 3 4min
 light_10min <- light_allsites %>%
   mutate(minute = minute(time)) %>%
   filter(minute %in% c(0,10,20,30,40,50))
 
 write_csv(light_10min,"Datasets/Sunapee/R Work/Level 1/light_10min.csv")
+
 light_10min <- read_csv("Datasets/Sunapee/R Work/Level 1/light_10min.csv", col_types = cols(
   temp_Coffin = col_double(),
   temp_Fichter = col_double(),
@@ -295,6 +301,13 @@ light_3min <- light_allsites %>%
 light_2min <- light_allsites %>%
   mutate(minute = minute(time)) %>%
   filter(minute %in% c(2,12,22,32,42,52))
+
+light_1min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(1,11,21,31,41,51))
+
+write_csv(light_1min,"Datasets/Sunapee/R Work/Level 1/light_1min.csv")
+
 
 # Convert time to 10 min data so all collected at the same time interval
 
@@ -338,6 +351,7 @@ View(ficht)
 
 write_csv(light_newtime5,"Datasets/Sunapee/R Work/Level 1/light_newtime_joinall.csv")
 
+
 #Calculate weekly median, mean, max for light & HOBO temp data at all sites
 
 light_summary_10min <- light_10min %>% 
@@ -347,7 +361,6 @@ light_summary_10min <- light_10min %>%
   summarize_at(vars(temp_Coffin:light_OldNewbury),funs(mean, median, max (.,na.rm=T)))
   
 write_csv(light_summary_10min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_10min_take2.csv")
-
 
 
 # Read in summarize dataset with -Inf changed to NA
@@ -364,6 +377,40 @@ write_csv(light_temp_long,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_sum
 #Filter for just Midge light data for now
 midge_light <- light_temp_long %>% 
   filter(site=="Midge",measure=="light")
+
+# Finalize light and temp 10 min data ####
+
+# Read in close to final dataset
+light_temp <- read_csv("Datasets/Sunapee/Level1/HOBO_Light_temp_10min_2009-2016_Allsites.csv", col_types = cols(
+  temp_Coffin = col_double(),
+  temp_Fichter = col_double(),
+  temp_OldNewbury = col_double(),
+  light_Coffin = col_double(),
+  light_Fichter = col_double(),
+  light_OldNewbury = col_double()))
+
+write.csv(light_temp, "Datasets/Sunapee/Level1/HOBO_Light_temp_10min_2009-2016_Allsites_newdt.csv", row.names = F)
+
+str(light_temp)
+
+#Read in 1 min readings for 17-25 June
+light_temp_1min <- read_csv("Datasets/Sunapee/Level1/light_temp_1min_Readings.csv", col_types = cols(
+  temp_Coffin = col_double(),
+  temp_Fichter = col_double(),
+  temp_OldNewbury = col_double(),
+  light_Coffin = col_double(),
+  light_Fichter = col_double(),
+  light_OldNewbury = col_double()))
+
+str(light_temp_1min)
+
+#Filter out midge light & temp already at 10 min
+
+light_temp_1min <- light_temp_1min %>% 
+  mutate(minute = minute(datetime)) %>% 
+  filter(minute %in% c(0,10,20,30,40,50))
+
+write_csv(light_temp_1min,"light_temp_1min_filtered.csv")
 
 
 # #### Monthly Summary ####
