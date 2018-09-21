@@ -13,6 +13,7 @@ pacman::p_load(tidyverse, lubridate)
 #loading in data and data wrangling
 #dropping flags for simplicity's sake
 #gathering sites to make plotting easier
+##SWITCH OVER TO USING ONSET DATA IN SUMMARIZED DATA FOLDER ON GITHUB
 hobo <- read_csv("./Datasets/Sunapee/Level1/temp_2006-2016_L1_20Oct2017.csv") %>%
   select(-c(coffin_flag:midge_flag)) %>%
   gather(coffin:midge, key = "site", value = "temp_C") %>%
