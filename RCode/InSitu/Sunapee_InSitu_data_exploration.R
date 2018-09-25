@@ -63,6 +63,13 @@ watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_2
   newbury = col_double()))
 str(watertemp_hourly)
 
+watertemp_hourly = read_csv("Datasets/Sunapee/SummarizedData/Onset_wtrtemp_60min_2006-2016_Allsites.csv", col_types = cols(
+  coffin = col_double(),
+  fichter = col_double(),
+  newbury = col_double(),
+  midge = col_double()))
+str(watertemp_hourly)
+
 # 2009 data - readings every 30 min so filtered out to only include hourly readings
 watertemp_hourly_true <- watertemp_hourly %>% 
   mutate(minute = minute(datetime)) %>% 
@@ -73,16 +80,34 @@ watertemp_hourly_true <- watertemp_hourly %>%
 temp_L1 <- watertemp_hourly_true[,1:9] %>%
   mutate(year = year(date)) %>% 
   mutate(month = month(date)) %>% 
-  mutate(week = week(date)) #this way we are considering week numbers as the the number of complete seven day periods that have occurred between the date and January 1st, plus one.
+  mutate(week = week(date)) %>%  #this way we are considering week numbers as the the number of complete seven day periods that have occurred between the date and January 1st, plus one.
+  mutate(day = day(date))
 
 #Aggregate by week number, month, year and sampling period
 sumfun <- function(x, ...){
   c(mean=mean(x, na.rm=TRUE, ...), min=min(x, na.rm=TRUE, ...), max=max(x, na.rm=TRUE, ...), 
     median=median(x, na.rm=TRUE, ...), obs=sum(!is.na(x)))}
 temp_L1 <- as.data.frame(temp_L1)
+str(temp_L1)
+
+watertemp_day <- summaryBy(coffin + fichter + newbury + midge ~ date, data=temp_L1, FUN=sumfun)
 
 watertemp_week <- summaryBy(coffin + fichter + newbury + midge ~ year + week, data=temp_L1, FUN=sumfun)
 watertemp_month <- summaryBy(coffin + fichter + newbury + midge ~ year + month, data=temp_L1, FUN=sumfun)
+
+#drop days with less than 18 obs (75% of the data) -----
+ix=which(watertemp_day$coffin.obs <18)
+for (i in c('coffin.min', 'coffin.max', 'coffin.mean', 'coffin.median')) {watertemp_day[ix,i]=NA}
+
+ix=which(watertemp_day$fichter.obs <18)
+for (i in c('fichter.min', 'fichter.max', 'fichter.mean', 'fichter.median')) {watertemp_day[ix,i]=NA}
+
+ix=which(watertemp_day$newbury.obs <18)
+for (i in c('newbury.min', 'newbury.max', 'newbury.mean', 'newbury.median')) {watertemp_day[ix,i]=NA}
+
+ix=which(watertemp_day$midge.obs <18)
+for (i in c('midge.min', 'midge.max', 'midge.mean', 'midge.median')) {watertemp_day[ix,i]=NA}
+
 
 #drop weeks with less than 126 obs (75% of the data) -----
 ix=which(watertemp_week$coffin.obs <126)
@@ -178,6 +203,7 @@ watertemp_sampling <- summaryBy(coffin + fichter + newbury + midge ~ year, data=
 
 
 ##Save data into .csv files ----
+write.csv(watertemp_day,"Datasets/Sunapee/SummarizedData/watertemp_day.csv", row.names = F)
 write_csv(watertemp_week,"Datasets/Sunapee/R Work/Level 1/watertemp_week.csv")
 write_csv(watertemp_month,"Datasets/Sunapee/R Work/Level 1/watertemp_month.csv")
 write_csv(watertemp_year,"Datasets/Sunapee/R Work/Level 1/watertemp_year.csv")
@@ -198,27 +224,6 @@ write_csv(watertemp_sampling,"Datasets/Sunapee/R Work/Level 1/watertemp_sampling
 #   arrange(year,site)
 # 
 # write_csv(watertemp_all_long,"watertemp_all_long.csv")  
-
-
-#### Read in final Midge weekly data and water temp to combine ####
-#Combine Midge weekly data with water temp
-midge_weekly = read_csv("Datasets/Sunapee/R Work/Level 1/midge_in-situ_weekly.csv")
-watertemp = read_csv("Datasets/Sunapee/R Work/Level 1/Sunapee_watertemp.csv") #update with new weekly water temp data
-
-watertemp_midge <- watertemp %>%
-  select(week,year,midge.mean:midge.median) %>%
-  filter(!is.na(midge.mean)) %>%
-  gather(key=site, value = watertemp_c, midge.mean:midge.median) %>%
-  separate(col=site,into = c("site","method")) %>%
-  spread(key=method,value=watertemp_c) %>% 
-  arrange(year)
-
-midge_all_temp <- left_join(midge_weekly,watertemp_midge,by = c("year", "week")) %>%
-  select(-site.y)
-
-write_csv(midge_all_temp, "Datasets/Sunapee/R Work/Level 1/midge_all_temp.csv")
-
-
 
 
 #### Read in light dataset ####
