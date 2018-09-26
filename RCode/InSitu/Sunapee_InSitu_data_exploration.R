@@ -63,6 +63,13 @@ watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_2
   newbury = col_double()))
 str(watertemp_hourly)
 
+watertemp_hourly = read_csv("Datasets/Sunapee/SummarizedData/Onset_wtrtemp_60min_2006-2016_Allsites.csv", col_types = cols(
+  coffin = col_double(),
+  fichter = col_double(),
+  newbury = col_double(),
+  midge = col_double()))
+str(watertemp_hourly)
+
 # 2009 data - readings every 30 min so filtered out to only include hourly readings
 watertemp_hourly_true <- watertemp_hourly %>% 
   mutate(minute = minute(datetime)) %>% 
@@ -73,16 +80,34 @@ watertemp_hourly_true <- watertemp_hourly %>%
 temp_L1 <- watertemp_hourly_true[,1:9] %>%
   mutate(year = year(date)) %>% 
   mutate(month = month(date)) %>% 
-  mutate(week = week(date)) #this way we are considering week numbers as the the number of complete seven day periods that have occurred between the date and January 1st, plus one.
+  mutate(week = week(date)) %>%  #this way we are considering week numbers as the the number of complete seven day periods that have occurred between the date and January 1st, plus one.
+  mutate(day = day(date))
 
 #Aggregate by week number, month, year and sampling period
 sumfun <- function(x, ...){
   c(mean=mean(x, na.rm=TRUE, ...), min=min(x, na.rm=TRUE, ...), max=max(x, na.rm=TRUE, ...), 
     median=median(x, na.rm=TRUE, ...), obs=sum(!is.na(x)))}
 temp_L1 <- as.data.frame(temp_L1)
+str(temp_L1)
+
+watertemp_day <- summaryBy(coffin + fichter + newbury + midge ~ date, data=temp_L1, FUN=sumfun)
 
 watertemp_week <- summaryBy(coffin + fichter + newbury + midge ~ year + week, data=temp_L1, FUN=sumfun)
 watertemp_month <- summaryBy(coffin + fichter + newbury + midge ~ year + month, data=temp_L1, FUN=sumfun)
+
+#drop days with less than 18 obs (75% of the data) -----
+ix=which(watertemp_day$coffin.obs <18)
+for (i in c('coffin.min', 'coffin.max', 'coffin.mean', 'coffin.median')) {watertemp_day[ix,i]=NA}
+
+ix=which(watertemp_day$fichter.obs <18)
+for (i in c('fichter.min', 'fichter.max', 'fichter.mean', 'fichter.median')) {watertemp_day[ix,i]=NA}
+
+ix=which(watertemp_day$newbury.obs <18)
+for (i in c('newbury.min', 'newbury.max', 'newbury.mean', 'newbury.median')) {watertemp_day[ix,i]=NA}
+
+ix=which(watertemp_day$midge.obs <18)
+for (i in c('midge.min', 'midge.max', 'midge.mean', 'midge.median')) {watertemp_day[ix,i]=NA}
+
 
 #drop weeks with less than 126 obs (75% of the data) -----
 ix=which(watertemp_week$coffin.obs <126)
@@ -178,6 +203,7 @@ watertemp_sampling <- summaryBy(coffin + fichter + newbury + midge ~ year, data=
 
 
 ##Save data into .csv files ----
+write.csv(watertemp_day,"Datasets/Sunapee/SummarizedData/watertemp_day.csv", row.names = F)
 write_csv(watertemp_week,"Datasets/Sunapee/R Work/Level 1/watertemp_week.csv")
 write_csv(watertemp_month,"Datasets/Sunapee/R Work/Level 1/watertemp_month.csv")
 write_csv(watertemp_year,"Datasets/Sunapee/R Work/Level 1/watertemp_year.csv")
@@ -200,29 +226,7 @@ write_csv(watertemp_sampling,"Datasets/Sunapee/R Work/Level 1/watertemp_sampling
 # write_csv(watertemp_all_long,"watertemp_all_long.csv")  
 
 
-#### Read in final Midge weekly data and water temp to combine ####
-#Combine Midge weekly data with water temp
-midge_weekly = read_csv("Datasets/Sunapee/R Work/Level 1/midge_in-situ_weekly.csv")
-watertemp = read_csv("Datasets/Sunapee/R Work/Level 1/Sunapee_watertemp.csv") #update with new weekly water temp data
-
-watertemp_midge <- watertemp %>%
-  select(week,year,midge.mean:midge.median) %>%
-  filter(!is.na(midge.mean)) %>%
-  gather(key=site, value = watertemp_c, midge.mean:midge.median) %>%
-  separate(col=site,into = c("site","method")) %>%
-  spread(key=method,value=watertemp_c) %>% 
-  arrange(year)
-
-midge_all_temp <- left_join(midge_weekly,watertemp_midge,by = c("year", "week")) %>%
-  select(-site.y)
-
-write_csv(midge_all_temp, "Datasets/Sunapee/R Work/Level 1/midge_all_temp.csv")
-
-
-
 #### Read in light dataset ####
-
-DF[!is.na(DF$y),]
 
 light_allsites <- read_csv("Datasets/Sunapee/R Work/Level 1/templight_0916_L1_4sites_30Oct2017-JBedits.csv", col_types = cols(
   temp_Coffin = col_double(),
@@ -234,6 +238,18 @@ light_allsites <- read_csv("Datasets/Sunapee/R Work/Level 1/templight_0916_L1_4s
 
 str(light_allsites)
 
+light_allsites <- light_allsites %>% 
+  mutate(week = week(datetime)) %>%
+  mutate(week_day = wday(datetime)) %>% 
+  mutate(day = day(datetime))
+
+# Code to consolidate 10 min light and temp data to same 10 min reading
+
+# try to remove NA values first
+
+light_allsites_noNA <- light_allsites[!is.na(light_allsites$temp_Coffin),]
+
+
 #Count number of observations for each column
 
 light_allsites_count <- light_allsites %>% 
@@ -242,18 +258,13 @@ light_allsites_count <- light_allsites %>%
   group_by(year,week) %>% 
   summarize(count = n())
 
-light_allsites <- light_allsites %>% 
-  mutate(week = week(datetime)) %>%
-  mutate(week_day = wday(datetime)) %>% 
-  mutate(day = day(datetime))
-
-
 #Separate out 10 min readings at 0 min vs. 7 min 2 min 9 min 8 1 min 3 4min
 light_10min <- light_allsites %>%
   mutate(minute = minute(time)) %>%
   filter(minute %in% c(0,10,20,30,40,50))
 
 write_csv(light_10min,"Datasets/Sunapee/R Work/Level 1/light_10min.csv")
+
 light_10min <- read_csv("Datasets/Sunapee/R Work/Level 1/light_10min.csv", col_types = cols(
   temp_Coffin = col_double(),
   temp_Fichter = col_double(),
@@ -295,6 +306,13 @@ light_3min <- light_allsites %>%
 light_2min <- light_allsites %>%
   mutate(minute = minute(time)) %>%
   filter(minute %in% c(2,12,22,32,42,52))
+
+light_1min <- light_allsites %>%
+  mutate(minute = minute(time)) %>%
+  filter(minute %in% c(1,11,21,31,41,51))
+
+write_csv(light_1min,"Datasets/Sunapee/R Work/Level 1/light_1min.csv")
+
 
 # Convert time to 10 min data so all collected at the same time interval
 
@@ -338,6 +356,7 @@ View(ficht)
 
 write_csv(light_newtime5,"Datasets/Sunapee/R Work/Level 1/light_newtime_joinall.csv")
 
+
 #Calculate weekly median, mean, max for light & HOBO temp data at all sites
 
 light_summary_10min <- light_10min %>% 
@@ -347,7 +366,6 @@ light_summary_10min <- light_10min %>%
   summarize_at(vars(temp_Coffin:light_OldNewbury),funs(mean, median, max (.,na.rm=T)))
   
 write_csv(light_summary_10min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_10min_take2.csv")
-
 
 
 # Read in summarize dataset with -Inf changed to NA
@@ -365,50 +383,190 @@ write_csv(light_temp_long,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_sum
 midge_light <- light_temp_long %>% 
   filter(site=="Midge",measure=="light")
 
+# Finalize light and temp 10 min data ####
 
-# #### Monthly Summary ####
-#Comented by LSB 14-May-2018, monthly and year aggregation foloow steps on Water Temp section code above
-# # Calculate monthly 
-# midge_weekly = read_csv("Datasets/Sunapee/R Work/Level 1/midge_in-situ_weekly.csv")
-# 
-# 
-# # Read in hourly temp data and calculate monthly summary
-# watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
-#   coffin = col_double(),
-#   fichter = col_double(),
-#   newbury = col_double()))
-# 
-# str(watertemp_hourly)
-# 
-# # 2009 data - readings every 30 min so filtered out to only include hourly readings
-# watertemp_hourly_true <- watertemp_hourly %>% 
-#   mutate(minute = minute(datetime)) %>% 
-#   filter(minute == 0)
-# 
-# #count to check number of values per month before averaging - 30 days = 720 readings, 31 days = 744
-# watertemp_count_coffin <- watertemp_hourly_true %>% 
-#   mutate(month = month(datetime)) %>% 
-#   select(year,month,coffin) %>% 
-#   group_by(year,month) %>% 
-#   summarize(site_count = n())
-# 
-# watertemp_count_fichter <- watertemp_hourly_true %>% 
-#   mutate(month = month(datetime)) %>% 
-#   filter(!is.na(fichter)) %>% 
-#   select(year,month,fichter) %>% 
-#   group_by(year,month) %>% 
-#   summarize(site_count = n())
-# 
-# # Monthly summary
-# watertemp_monthly <- watertemp_hourly_true %>% 
-#   mutate(month = month(datetime)) %>% 
-#   group_by(year,month) %>% 
-#   summarize_at(vars(coffin:midge),funs(mean, median, min, max (.,na.rm=T)))
-# 
-# #Replace -Inf values with NA for all data
-# watertemp_monthly2 <- replace(watertemp_monthly, x == -Inf, NA)
+# Read in close to final dataset
+light_temp <- read_csv("Datasets/Sunapee/Level1/HOBO_Light_temp_10min_2009-2016_Allsites.csv", col_types = cols(
+  temp_Coffin = col_double(),
+  temp_Fichter = col_double(),
+  temp_OldNewbury = col_double(),
+  light_Coffin = col_double(),
+  light_Fichter = col_double(),
+  light_OldNewbury = col_double()))
 
-  
+write.csv(light_temp, "Datasets/Sunapee/Level1/HOBO_Light_temp_10min_2009-2016_Allsites_newdt.csv", row.names = F)
+
+str(light_temp)
+
+#Read in 1 min readings for 17-25 June
+light_temp_1min <- read_csv("Datasets/Sunapee/Level1/light_temp_1min_Readings.csv", col_types = cols(
+  temp_Coffin = col_double(),
+  temp_Fichter = col_double(),
+  temp_OldNewbury = col_double(),
+  light_Coffin = col_double(),
+  light_Fichter = col_double(),
+  light_OldNewbury = col_double()))
+
+str(light_temp_1min)
+
+#Filter out midge light & temp already at 10 min
+
+light_temp_1min <- light_temp_1min %>% 
+  mutate(minute = minute(datetime)) %>% 
+  filter(minute %in% c(0,10,20,30,40,50))
+
+write_csv(light_temp_1min,"light_temp_1min_filtered.csv")
+
+
+#### calculate weekly, monthly and  annual summaries ####
+# read in final HOBO light dataset
+
+temp_light_L1 <- read_csv("Datasets/Sunapee/SummarizedData/HOBO_light_wtrtemp_10min_2009-2016_Allsites.csv", col_types = cols(
+  temp_Coffin = col_double(),
+  temp_Fichter = col_double(),
+  temp_Midge = col_double(),
+  temp_OldNewbury = col_double(),
+  light_Coffin = col_double(),
+  light_Fichter = col_double(),
+  light_Midge = col_double(),
+  light_OldNewbury = col_double()))
+
+
+#Select only light data and add in week, month and year
+light_L1 <- temp_light_L1 %>%
+  select(datetime, date, starts_with("light")) %>% 
+  mutate(year = year(date)) %>% 
+  mutate(month = month(date)) %>% 
+  mutate(week = week(date)) #this way we are considering week numbers as the the number of complete seven day periods that have occurred between the date and January 1st, plus one.
+
+#Aggregate by week number, month, year and sampling period - SUM for light data instead of mean and no min
+sumfun <- function(x, ...){
+  c(sum=sum(x, na.rm=TRUE, ...),max=max(x, na.rm=TRUE, ...), 
+    median=median(x, na.rm=TRUE, ...), obs=sum(!is.na(x)))}
+light_L1 <- as.data.frame(light_L1)
+str(light_L1)
+
+light_day <- summaryBy(light_Coffin + light_Fichter + light_OldNewbury + light_Midge ~ date, data=light_L1, FUN=sumfun)
+
+light_week <- summaryBy(light_Coffin + light_Fichter + light_OldNewbury + light_Midge ~ year + week, data=light_L1, FUN=sumfun)
+
+light_month <- summaryBy(light_Coffin + light_Fichter + light_OldNewbury + light_Midge ~ year + month, data=light_L1, FUN=sumfun)
+
+#drop days with less than 75% of the data = 144 obs/day * 0.75 = 108 -----
+ix=which(light_day$light_Coffin.obs <108)
+for (i in c('light_Coffin.max', 'light_Coffin.sum', 'light_Coffin.median')) {light_day[ix,i]=NA}
+
+ix=which(light_day$light_Fichter.obs <108)
+for (i in c('light_Fichter.max', 'light_Fichter.sum', 'light_Fichter.median')) {light_day[ix,i]=NA}
+
+ix=which(light_day$light_OldNewbury.obs <108)
+for (i in c('light_OldNewbury.max', 'light_OldNewbury.sum', 'light_OldNewbury.median')) {light_day[ix,i]=NA}
+
+ix=which(light_day$light_Midge.obs <108)
+for (i in c('light_Midge.max', 'light_Midge.sum', 'light_Midge.median')) {light_day[ix,i]=NA}
+
+####
+
+#drop weeks with less than 75% of the data = 1008 obs/week * 0.75 = 756 -----
+ix=which(light_week$light_Coffin.obs <756)
+for (i in c('light_Coffin.max', 'light_Coffin.sum', 'light_Coffin.median')) {light_week[ix,i]=NA}
+
+ix=which(light_week$light_Fichter.obs <756)
+for (i in c('light_Fichter.max', 'light_Fichter.sum', 'light_Fichter.median')) {light_week[ix,i]=NA}
+
+ix=which(light_week$light_OldNewbury.obs <756)
+for (i in c('light_OldNewbury.max', 'light_OldNewbury.sum', 'light_OldNewbury.median')) {light_week[ix,i]=NA}
+
+ix=which(light_week$light_Midge.obs <756)
+for (i in c('light_Midge.max', 'light_Midge.sum', 'light_Midge.median')) {light_week[ix,i]=NA}
+
+
+#drop months with less than 75% of the observations -----
+dats<-as.Date(paste0(light_month$year,'-',light_month$month,'-10'),'%Y-%m-%d')
+light_month$totalobs<-days_in_month(dats)*144 *0.75
+
+ix=which(light_month$light_Coffin.obs  < light_month$totalobs)
+for (i in c('light_Coffin.max', 'light_Coffin.sum', 'light_Coffin.median')) {light_month[ix,i]=NA}
+
+ix=which(light_month$light_Fichter.obs < light_month$totalobs)
+for (i in c('light_Fichter.max', 'light_Fichter.sum', 'light_Fichter.median')) {light_month[ix,i]=NA}
+
+ix=which(light_month$light_OldNewbury.obs  < light_month$totalobs)
+for (i in c('light_OldNewbury.max', 'light_OldNewbury.sum', 'light_OldNewbury.median')) {light_month[ix,i]=NA}
+
+ix=which(light_month$light_Midge.obs  < light_month$totalobs)
+for (i in c('light_Midge.max', 'light_Midge.sum', 'light_Midge.median')) {light_month[ix,i]=NA}
+
+##aggregate years using only months from June to August -----
+filtered<-subset(temp_L1,temp_L1$month>5 & temp_L1$month<9)
+summary(filtered)
+watertemp_year <- summaryBy(coffin + fichter + newbury + midge ~ year, data=filtered, FUN=sumfun)
+
+#drop years with less than 75% of observations
+ix=which(watertemp_year$coffin.obs < (0.75*92*24)) #92 number of days from May to September
+for (i in c('coffin.min', 'coffin.max', 'coffin.mean', 'coffin.median')) {watertemp_year[ix,i]=NA}
+
+ix=which(watertemp_year$fichter.obs < (0.75*92*24))
+for (i in c('fichter.min', 'fichter.max', 'fichter.mean', 'fichter.median')) {watertemp_year[ix,i]=NA}
+
+ix=which(watertemp_year$newbury.obs < (0.75*92*24))
+for (i in c('newbury.min', 'newbury.max', 'newbury.mean', 'newbury.median')) {watertemp_year[ix,i]=NA}
+
+ix=which(watertemp_year$midge.obs < (0.75*92*24))
+for (i in c('midge.min', 'midge.max', 'midge.mean', 'midge.median')) {watertemp_year[ix,i]=NA}
+
+##aggregate by sampling period ----
+#calculate average values for the period that we have Gloeo data
+#stipulating the begining and the end of sampling seasons for each site in each year
+samplingfun <- function(x, ...){
+  c(min=min(x, na.rm=TRUE, ...), max=max(x, na.rm=TRUE, ...))}
+all_sites_gloeo <- as.data.frame(all_sites_gloeo)
+gloeo_samplingperiod <- summaryBy(dayofyr ~ site + year, data=all_sites_gloeo, FUN=samplingfun)
+
+#filtering data
+filt_gloeo<-temp_L1
+for (i in 2005:2016) {
+  ix=which(gloeo_samplingperiod$site == 'Midge' & gloeo_samplingperiod$year == i)
+  start<-gloeo_samplingperiod$dayofyr.min[ix]
+  end<-gloeo_samplingperiod$dayofyr.max[ix]
+  ex=which(filt_gloeo$year == i & filt_gloeo$dayofyr < start & filt_gloeo$dayofyr > end)
+  filt_gloeo$midge[ex]=NA
+}
+
+for (i in 2005:2016) {
+  ix=which(gloeo_samplingperiod$site == 'Coffin' & gloeo_samplingperiod$year == i)
+  start<-gloeo_samplingperiod$dayofyr.min[ix]
+  end<-gloeo_samplingperiod$dayofyr.max[ix]
+  ex=which(filt_gloeo$year == i & filt_gloeo$dayofyr < start & filt_gloeo$dayofyr > end)
+  filt_gloeo$coffin[ex]=NA
+}
+
+for (i in 2005:2016) {
+  ix=which(gloeo_samplingperiod$site == 'Fichter' & gloeo_samplingperiod$year == i)
+  start<-gloeo_samplingperiod$dayofyr.min[ix]
+  end<-gloeo_samplingperiod$dayofyr.max[ix]
+  ex=which(filt_gloeo$year == i & filt_gloeo$dayofyr < start & filt_gloeo$dayofyr > end)
+  filt_gloeo$fichter[ex]=NA
+}
+
+for (i in 2005:2016) {
+  ix=which(gloeo_samplingperiod$site == 'Newbury' & gloeo_samplingperiod$year == i)
+  start<-gloeo_samplingperiod$dayofyr.min[ix]
+  end<-gloeo_samplingperiod$dayofyr.max[ix]
+  ex=which(filt_gloeo$year == i & filt_gloeo$dayofyr < start & filt_gloeo$dayofyr > end)
+  filt_gloeo$newbury[ex]=NA
+}
+
+#sumarising
+watertemp_sampling <- summaryBy(coffin + fichter + newbury + midge ~ year, data=filt_gloeo, FUN=sumfun)
+
+
+##Save data into .csv files ----
+write.csv(light_day,"Datasets/Sunapee/SummarizedData/light_day_HOBO_aggregation.csv", row.names = F)
+write.csv(light_week,"Datasets/Sunapee/SummarizedData/light_week_HOBO_aggregation.csv", row.names = F)
+write.csv(light_month,"Datasets/Sunapee/SummarizedData/light_month_HOBO_aggregation.csv", row.names = F)
+
+
 ############### FIGURES ###############
 
 #### Figures for gloeo all sites - facet wrap by year ####

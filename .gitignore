@@ -1,6 +1,8 @@
 .Rproj.user
 .Rhistory
-.RData
+*.RData
 .Ruserdata
 *.DS_Store
 .DS_Store
+*/tmp/*
+*.png
