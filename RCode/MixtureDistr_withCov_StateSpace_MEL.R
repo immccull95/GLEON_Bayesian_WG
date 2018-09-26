@@ -39,7 +39,7 @@ m[i] <- mu[i]*b[i] + 1E-3 #adding the tiny value is important (i forget why...)
 b[i] ~ dbern(one.minus.theta[i])
 
 #mu[i] is the linear combination of predictors and parameters for the poisson component of the model.
-log(mu[i]) <- beta0.pois + beta1.pois*x[i] + beta2.pois*m[i-1]
+log(mu[i]) <- beta0.pois + beta1.pois*x[i] + beta2.bern*m[i-1]
 
 one.minus.theta[i] <- 1-theta[i]
 
@@ -54,7 +54,7 @@ beta0.bern ~ dnorm(0, 1E-03)
 beta1.bern ~ dnorm(0, 1E-03)
 beta2.pois ~ dnorm(0, 1E-03)
 beta2.bern ~ dnorm(0, 1E-03)
-m[1]=0.001 #first observation of algae
+m[1]=11 #first observation of algae
 
 # #Create model PREDICTIONS so we can calculate credible intervals later 
 # #There may be an easier way to do this, but I'm using the same model as above, just calculating y.pred based on process model
@@ -86,6 +86,20 @@ m[1]=0.001 #first observation of algae
 
 jags.data <- list(y = y, x = x, N = N, b=ifelse(y==0,0,1))
 nchain=3
+#Unsuccessful attempt to set initial conditions :)
+# init <- list()
+# for(i in 1:nchain){
+#   yt1.samp = sample(y,length(y),replace=TRUE)
+#   x.samp = sample(x, length(x), replace=TRUE)
+#   yt0.samp = sample(y,length(y),replace=TRUE)
+#   model <- lm(yt1.samp ~ x.samp + yt0.samp)
+#   init[[i]] <- list(beta0.bern= unname(model$coefficients[1]),
+#                     beta1.bern= unname(model$coefficients[2]),
+#                     beta2.bern= unname(model$coefficients[3]),
+#                     beta0.pois= unname(model$coefficients[1]),
+#                     beta1.pois= unname(model$coefficients[2]),
+#                     beta2.pois= unname(model$coefficients[3]))
+# }
 
 #JAGS Model 
 j.model   <- jags.model(file = textConnection(jags.model),
