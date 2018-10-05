@@ -19,10 +19,10 @@ setwd("~/GitHub/GLEON_Bayesian_WG") #may need to change according to the user's 
 #JAB updated Shannon weekly summary to include only 1 observation per week
 #Sheet tells R what to pull from on the excel document which is handy insted of
 #loading multiple csv's
-coffin_gloeo = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='coffin_weeklygloeo')
-fichter_gloeo = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='fichter_weeklygloeo')
-midge_gloeo = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='midge_weeklygloeo')
-newbury_gloeo = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='newbury_weeklygloeo')
+coffin_gloeo = read_excel("Datasets/Sunapee/Level1/Sunapee_weeklysummary_JBedits.xlsx", sheet='coffin_weeklygloeo')
+fichter_gloeo = read_excel("Datasets/Sunapee/Level1/Sunapee_weeklysummary_JBedits.xlsx", sheet='fichter_weeklygloeo')
+midge_gloeo = read_excel("Datasets/Sunapee/Level1/Sunapee_weeklysummary_JBedits.xlsx", sheet='midge_weeklygloeo')
+newbury_gloeo = read_excel("Datasets/Sunapee/Level1/Sunapee_weeklysummary_JBedits.xlsx", sheet='newbury_weeklygloeo')
 
 #check the data structure
 str(midge_gloeo)
@@ -33,8 +33,8 @@ write_csv(all_sites_gloeo, "All_Sites_Gloeo.csv")
 summary(all_sites_gloeo)
 
 #Merge in-situ data from newbury and midge with gloeo data
-midge_insitu = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='midge_insitu_data')
-newbury_insitu = read_excel("Datasets/Sunapee/R Work/Level 1/Sunapee_weeklysummary_JBedits.xlsx", sheet='newbury_insitu_data')
+midge_insitu = read_excel("Datasets/Sunapee/Level1/Sunapee_weeklysummary_JBedits.xlsx", sheet='midge_insitu_data')
+newbury_insitu = read_excel("Datasets/Sunapee/Level1/Sunapee_weeklysummary_JBedits.xlsx", sheet='newbury_insitu_data')
 
 #Add in week 
 midge_insitu_week <- midge_insitu %>%
@@ -57,7 +57,7 @@ write_csv(newbury_all,"newbury_all.csv")
 #Updated by LSB 26-June-2018
 
 #### Read in water temp data ####
-watertemp_hourly = read_csv("Datasets/Sunapee/R Work/Level 1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
+watertemp_hourly = read_csv("Datasets/Sunapee//Level1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
   coffin = col_double(),
   fichter = col_double(),
   newbury = col_double()))
@@ -204,10 +204,10 @@ watertemp_sampling <- summaryBy(coffin + fichter + newbury + midge ~ year, data=
 
 ##Save data into .csv files ----
 write.csv(watertemp_day,"Datasets/Sunapee/SummarizedData/watertemp_day.csv", row.names = F)
-write_csv(watertemp_week,"Datasets/Sunapee/R Work/Level 1/watertemp_week.csv")
-write_csv(watertemp_month,"Datasets/Sunapee/R Work/Level 1/watertemp_month.csv")
-write_csv(watertemp_year,"Datasets/Sunapee/R Work/Level 1/watertemp_year.csv")
-write_csv(watertemp_sampling,"Datasets/Sunapee/R Work/Level 1/watertemp_sampling.csv")
+write_csv(watertemp_week,"Datasets/Sunapee/Level1/watertemp_week.csv")
+write_csv(watertemp_month,"Datasets/Sunapee/Level1/watertemp_month.csv")
+write_csv(watertemp_year,"Datasets/Sunapee/Level1/watertemp_year.csv")
+write_csv(watertemp_sampling,"Datasets/Sunapee/Level1/watertemp_sampling.csv")
 
 #Comented by LSB 14-May-2015
 # # this step was for merging the sites together
@@ -228,13 +228,13 @@ write_csv(watertemp_sampling,"Datasets/Sunapee/R Work/Level 1/watertemp_sampling
 
 #### Read in light dataset ####
 
-light_allsites <- read_csv("Datasets/Sunapee/R Work/Level 1/templight_0916_L1_4sites_30Oct2017-JBedits.csv", col_types = cols(
-  temp_Coffin = col_double(),
-  temp_Fichter = col_double(),
-  temp_OldNewbury = col_double(),
-  light_Coffin = col_double(),
-  light_Fichter = col_double(),
-  light_OldNewbury = col_double()))
+light_allsites <- read_excel("Datasets/Sunapee/Level1/templight_0916_L1_4sites_30Oct2017-JBedits.xlsx", sheet = "templight_0916_L1_4sites_30Oct2")#(
+  #temp_Coffin = col_double(),
+  #temp_Fichter = col_double(),
+  #temp_OldNewbury = col_double(),
+  #light_Coffin = col_double(),
+  #light_Fichter = col_double(),
+  #light_OldNewbury = col_double()))
 
 str(light_allsites)
 
@@ -263,9 +263,9 @@ light_10min <- light_allsites %>%
   mutate(minute = minute(time)) %>%
   filter(minute %in% c(0,10,20,30,40,50))
 
-write_csv(light_10min,"Datasets/Sunapee/R Work/Level 1/light_10min.csv")
+write_csv(light_10min,"Datasets/Sunapee/Level1/light_10min.csv")
 
-light_10min <- read_csv("Datasets/Sunapee/R Work/Level 1/light_10min.csv", col_types = cols(
+light_10min <- read_csv("Datasets/Sunapee/Level1/light_10min.csv", col_types = cols(
   temp_Coffin = col_double(),
   temp_Fichter = col_double(),
   temp_OldNewbury = col_double(),
@@ -311,7 +311,7 @@ light_1min <- light_allsites %>%
   mutate(minute = minute(time)) %>%
   filter(minute %in% c(1,11,21,31,41,51))
 
-write_csv(light_1min,"Datasets/Sunapee/R Work/Level 1/light_1min.csv")
+write_csv(light_1min,"Datasets/Sunapee/Level1/light_1min.csv")
 
 
 # Convert time to 10 min data so all collected at the same time interval
@@ -354,7 +354,7 @@ ficht2 <- sum(!is.na(light_newtime6$light_OldNewbury))
 
 View(ficht)
 
-write_csv(light_newtime5,"Datasets/Sunapee/R Work/Level 1/light_newtime_joinall.csv")
+write_csv(light_newtime5,"Datasets/Sunapee/Level1/light_newtime_joinall.csv")
 
 
 #Calculate weekly median, mean, max for light & HOBO temp data at all sites
@@ -365,11 +365,16 @@ light_summary_10min <- light_10min %>%
   group_by(year,week) %>% 
   summarize_at(vars(temp_Coffin:light_OldNewbury),funs(mean, median, max (.,na.rm=T)))
   
-write_csv(light_summary_10min,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary_10min_take2.csv")
+write_csv(light_summary_10min,"Datasets/Sunapee/Level1/light_temp_weekly_summary_10min_take2.csv")
 
 
 # Read in summarize dataset with -Inf changed to NA
-light_summary <- read_csv("Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary.csv")
+
+# does not exist:
+light_summary <- read_csv("Datasets/Sunapee/Level1/light_temp_weekly_summary.csv")
+
+# correct file?
+light_summary <- read_csv("Datasets/Sunapee/Level1/light_temp_weekly_summary_10min_take2.csv")
 
 light_temp_long <- light_summary %>%
   gather(key=site, value = light, temp_Coffin_mean:light_OldNewbury_max) %>%
@@ -377,7 +382,7 @@ light_temp_long <- light_summary %>%
   spread(key=method,value=light) %>%
   arrange(year,site)
 
-write_csv(light_temp_long,"Datasets/Sunapee/R Work/Level 1/light_temp_weekly_summary-long.csv")
+write_csv(light_temp_long,"Datasets/Sunapee/Level1/light_temp_weekly_summary-long.csv")
 
 #Filter for just Midge light data for now
 midge_light <- light_temp_long %>% 
@@ -399,6 +404,7 @@ write.csv(light_temp, "Datasets/Sunapee/Level1/HOBO_Light_temp_10min_2009-2016_A
 str(light_temp)
 
 #Read in 1 min readings for 17-25 June
+# file does not exist:
 light_temp_1min <- read_csv("Datasets/Sunapee/Level1/light_temp_1min_Readings.csv", col_types = cols(
   temp_Coffin = col_double(),
   temp_Fichter = col_double(),
@@ -596,7 +602,7 @@ ggplot(all_sites_gloeo, aes(x=dayofyr,y=totalperL,color=site))+
         strip.background = element_rect(fill="darkslategray2"))
 
 #Saves figure as a pdf with set dimensions in the working directory folder
-ggsave("All_Sites_gloeo-byyear_2005-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/All_Sites_gloeo-byyear_2005-2016.pdf",width=15, height=8.5)
 
 #### All sites - facet wrap by site ####
 #This makes each site its own panel and has the different years on the x-axis
@@ -619,7 +625,7 @@ ggplot(all_sites_gloeo, aes(x=date,y=totalperL))+
         panel.grid.minor = element_blank(),
         strip.background = element_rect(fill="darkslategray2"))        
 
-ggsave("All_Sites_gloeo_2005-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/All_Sites_gloeo_2005-2016.pdf",width=15, height=8.5)
 
 
 #### Individual site and single year figures ####
@@ -648,6 +654,7 @@ ggplot(midge_gloeo_2013, aes(x=date,y=totalperL))+
 
 #### Water Temp Figure ####
 #Read in data combined and numeric
+#THIS PATH/FILE SHOULD BE UPDATED:
 watertemp = read.csv("Sunapee_watertemp.csv")
 str(watertemp)
 summary(watertemp)
@@ -678,7 +685,7 @@ ggplot(watertemp_2007, aes(x=week,y=coffin.min))+
         panel.grid.minor = element_blank(),
         strip.background = element_rect(fill="darkslategray2"))        
 
-ggsave("All_Sites_minwatertemp-byyear_2007-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/All_Sites_minwatertemp-byyear_2007-2016.pdf",width=15, height=8.5)
 
 
 #### Correlation Analysis ####
@@ -686,16 +693,16 @@ ggsave("All_Sites_minwatertemp-byyear_2007-2016.pdf",width=15, height=8.5)
 #cor() pearson used by default but can call spearman or kendall
 
 # Data Exploration for hourly water temp & light ####
-setwd("~/Documents/GLEON_Bayesian_WG/Datasets/Sunapee/SummarizedData")
+#setwd("~/Documents/GLEON_Bayesian_WG/Datasets/Sunapee/SummarizedData")
 
 # Read in gloeo & light data
-gloeo <- read_csv("All_Sites_Gloeo.csv")
+gloeo <- read_csv("Datasets/Sunapee/SummarizedData/All_Sites_Gloeo.csv")
 str(gloeo)
 
 gloeo$date <- as_date(gloeo$date,"%Y-%m-%d")
 str(gloeo)
 
-light_day <- read_csv("light_day_HOBO_aggregation.csv", 
+light_day <- read_csv("Datasets/Sunapee/SummarizedData/light_day_HOBO_aggregation.csv", 
                       col_types = cols(date = col_date()))
 
 str(light_day)
@@ -727,10 +734,10 @@ ggplot(light_day_long_site, aes(x=date,y=light_sum, color = site))+
   facet_wrap(~year,scales ="free_x")+
   labs(title = "Old Newbury")
 
-ggsave("Coffin-DailyLight_2009-2016.pdf",width=15, height=8.5)
-ggsave("Fichter-DailyLight_2009-2016.pdf",width=15, height=8.5)
-ggsave("Midge-DailyLight_2009-2016.pdf",width=15, height=8.5)
-ggsave("OldNewbury-DailyLight_2009-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Coffin-DailyLight_2009-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Fichter-DailyLight_2009-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Midge-DailyLight_2009-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/OldNewbury-DailyLight_2009-2016.pdf",width=15, height=8.5)
 
 #Light data - switch site to Newbury instead of OldNewbury
 light_day_long_newb <- light_day_long %>% 
@@ -754,10 +761,10 @@ ggplot(gloeo_light_site, aes(x=date,y=totalperL, color = light_sum))+
   facet_wrap(~year,scales ="free")+
   labs(title = "Newbury")
 
-ggsave("Coffin-Gloeo_Light-gradient-2007_2016.pdf",width=15, height=8.5)
-ggsave("Fichter-Gloeo_Light-gradient-2007_2016.pdf",width=15, height=8.5)
-ggsave("Midge-Gloeo_Light-gradient-2005_2016.pdf",width=15, height=8.5)
-ggsave("Newbury-Gloeo_Light-gradient-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Coffin-Gloeo_Light-gradient-2007_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Fichter-Gloeo_Light-gradient-2007_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Midge-Gloeo_Light-gradient-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Newbury-Gloeo_Light-gradient-2005_2016.pdf",width=15, height=8.5)
 
 # Figure for gloeo vs. light by each year
 gloeo_light_site <- gloeo_light %>% 
@@ -771,10 +778,10 @@ ggplot(gloeo_light_site, aes(x=light_sum,y=totalperL))+
   facet_wrap(~year,scales ="free")+
   labs(title = "Newbury")
 
-ggsave("Coffin-Gloeo_v_Light-2009_2016.pdf",width=15, height=8.5)
-ggsave("Fichter-Gloeo_v_Light-2009_2016.pdf",width=15, height=8.5)
-ggsave("Midge-Gloeo_v_Light-2005_2016.pdf",width=15, height=8.5)
-ggsave("Newbury-Gloeo_v_Light-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Coffin-Gloeo_v_Light-2009_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Fichter-Gloeo_v_Light-2009_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Midge-Gloeo_v_Light-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Newbury-Gloeo_v_Light-2005_2016.pdf",width=15, height=8.5)
 
 # Water temp data ####
 watertemp_day <- read_csv("watertemp_day_OnsetData_aggregation.csv", 
