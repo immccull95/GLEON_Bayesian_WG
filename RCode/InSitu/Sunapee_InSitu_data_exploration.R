@@ -1,6 +1,6 @@
 ############################ Lake Sunapee IN situ data exploration #############################
 # Date: 1-1-18
-# updated:06-26-18 by LSB
+# updated:10-5-18 by IMM
 # Authors: JAB, MEL
 ################################################################################################
 ### Gloeo exploratory analysis
@@ -892,4 +892,13 @@ ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Coffin-Gloeo_v_wtrtemp-m
 ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Fichter-Gloeo_v_wtrtemp-min-2009_2016.pdf",width=15, height=8.5)
 ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Midge-Gloeo_v_wtrtemp-min-2005_2016.pdf",width=15, height=8.5)
 ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Newbury-Gloeo_v_wtrtemp-min-2005_2016.pdf",width=15, height=8.5)
+
+# logistic relationship between watertemp and gloeo? (IMM)
+# with help from: http://rstudio-pubs-static.s3.amazonaws.com/752_54c50d2916a34e87be430b97c6b5abbe.html
+logt <- nls(totalperL ~ SSlogis(watertemp_mean, phi1, phi2, phi3), data = gloeo_light_wtr_site)
+summary(logt)
+alpha <- coef(logt)  #extracting coefficients
+plot(totalperL ~ watertemp_mean, data = gloeo_light_wtr_site, main = "Logistic Model", las=1,
+     xlab = "watertemp_mean", ylab = "totalperL", xlim = c(0, 26), ylim = c(0, 20))  # Census data
+curve(alpha[1]/(1 + exp(-(x - alpha[2])/alpha[3])), add = T, col = "dodgerblue", lwd=2)  # Fitted model
 
