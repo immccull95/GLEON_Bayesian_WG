@@ -9,7 +9,7 @@ cal_time_start <- '2010-05-01'
 cal_time_end <- '2010-10-01' 
 forecast_time_end <- '2016-01-01' 
 sites <- c('midge') 
-model_timestep <- 1 # number of days between model estimates 
+model_timestep <- 3 # number of days between model estimates 
 
 # have to figure out if we want regular time steps; if so, some model timesteps will get rid of data (e.g. 3 day timestep will not use a lot of weekly data)
 
