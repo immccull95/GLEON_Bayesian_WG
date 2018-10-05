@@ -5,13 +5,18 @@ source('RCode/NEFI/bayes_models.R')
 
 # library(R2jags)
 
-cal_time_start <- '1990-01-01' 
-cal_time_end <- '2010-01-01' 
+cal_time_start <- '2010-05-01' 
+cal_time_end <- '2010-10-01' 
 forecast_time_end <- '2016-01-01' 
 sites <- c('midge') 
+model_timestep <- 1 # number of days between model estimates 
 
-cal_data <- get_data(cal_time_start, cal_time_end, forecast_time_end, sites)$cal # get the data
-forecast_data <- get_data(cal_time_start, cal_time_end, forecast_time_end, sites)$forecast 
+# have to figure out if we want regular time steps; if so, some model timesteps will get rid of data (e.g. 3 day timestep will not use a lot of weekly data)
+
+data <- get_data(cal_time_start, cal_time_end, forecast_time_end, model_timestep, sites) # get the data
+cal_data <- data$cal 
+forecast_data <- data$forecast 
+
 all_data <- rbind(cal_data, forecast_data) %>%
   mutate(data_type = c(rep('cal_data', nrow(cal_data)), rep('forecast_data', nrow(forecast_data)))) %>%
   mutate(totalperL = case_when(data_type == 'cal_data' ~ totalperL,

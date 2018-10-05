@@ -1,8 +1,9 @@
 # function for pulling data and getting it into a usable format 
 
 require(dplyr)
+require(rlang)
 
-get_data <- function(cal_time_start, cal_time_end, forecast_time_end, sites){
+get_data <- function(cal_time_start, cal_time_end, forecast_time_end, model_timestep = 1, sites){
   
   gleo <- read.csv('Datasets/Sunapee/R Work/Level 1/All_Sites_Gloeo.csv', stringsAsFactors = F) %>%
     as_data_frame() %>% 
@@ -21,10 +22,21 @@ get_data <- function(cal_time_start, cal_time_end, forecast_time_end, sites){
   
   data <- left_join(gleo, wtr, by = c('week', 'year', 'site')) 
   
-  #filling in rows to make it daily time step 
-  all_dates <- data_frame(date = seq(min(data$date), max(data$date), by= 'day'))
+  add_cols = colnames(select(data, -date))
   
-  data <- left_join(all_dates, data, by = 'date') 
+  #filling in rows to make it daily time step ; or specified model timestep 
+  all_dates <- data_frame(date = seq(min(data$date), max(data$date), by= paste(model_timestep, 'day')))
+  
+  other_cols = lapply(add_cols, function(col){
+        mutate(all_dates, !!col := NA)
+    }) %>% bind_cols() %>% select(-contains('date'))
+  
+  all_dates <- bind_cols(all_dates, other_cols) %>%
+    select(colnames(data))
+  
+  data <- bind_rows(data, all_dates) %>%
+    dplyr::filter(!duplicated(date)) %>%
+    arrange(date)
   
   cal <- data %>%
     dplyr::filter(date > as.Date(cal_time_start), date < as.Date(cal_time_end)) 
