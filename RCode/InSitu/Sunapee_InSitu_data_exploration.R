@@ -750,7 +750,7 @@ gloeo_light <- left_join(gloeo,light_day_long_newb, by = c("date", "site", "year
 gloeo_light <- left_join(gloeo,light_day_long, by = c("date", "site", "year"))
 
 gloeo_light_site <- gloeo_light %>% 
-  filter(site=="Coffin")
+  #filter(site=="Coffin")
   #filter(site=="Fichter")
   #filter(site=="Midge")
   filter(site=="Newbury")
@@ -784,7 +784,7 @@ ggsave("Datasets/Sunapee/Data Visualizations/Light/Midge-Gloeo_v_Light-2005_2016
 ggsave("Datasets/Sunapee/Data Visualizations/Light/Newbury-Gloeo_v_Light-2005_2016.pdf",width=15, height=8.5)
 
 # Water temp data ####
-watertemp_day <- read_csv("watertemp_day_OnsetData_aggregation.csv", 
+watertemp_day <- read_csv("Datasets/Sunapee/SummarizedData/watertemp_day_OnsetData_aggregation.csv", 
                       col_types = cols(date = col_date()))
 
 #convert water temp day to true long format
@@ -803,17 +803,18 @@ watertemp_day_long <- watertemp_day %>%
   rename(watertemp_max = max, watertemp_mean = mean, watertemp_median = median, watertemp_min = min) %>% 
   mutate(year = year(date)) 
 
-# Filter by site
+# Filter by site NOTE: metric field not there anymore, so commented out (IMM)
 watertemp_day_long_site <- watertemp_day_long %>% 
-  filter(metric != "obs") %>% 
-  filter(watertemp != "NA") %>% 
+  #filter(metric != "obs") %>% 
+  #filter(watertemp != "NA") %>% #this field also not there anymore-IMM
+  filter(watertemp_mean != 'NA')%>%
   #filter(site=="Coffin")
   #filter(site=="Fichter")
   #filter(site=="Midge")
   filter(site=="Newbury")
 
 # Figure for avg water temp data with site colored and year faceted
-ggplot(watertemp_day_long_site, aes(x=date,y=watertemp, color = metric))+
+ggplot(watertemp_day_long_site, aes(x=date,y=watertemp_mean, color = metric))+
   geom_line(size=1)+
   scale_color_manual(values = c("red","blue","green", "navy"))+
   #geom_line(aes(x=date,y=watertemp_min), size=1.5, color = "navy")+
@@ -821,10 +822,10 @@ ggplot(watertemp_day_long_site, aes(x=date,y=watertemp, color = metric))+
   facet_wrap(~year,scales ="free_x")+
   labs(title = "Newbury")
 
-ggsave("Coffin-DailyWatertemp_2007-2016.pdf",width=15, height=8.5)
-ggsave("Fichter-DailyWatertemp_2007-2016.pdf",width=15, height=8.5)
-ggsave("Midge-DailyWatertemp_2006-2016.pdf",width=15, height=8.5)
-ggsave("Newbury-DailyWatertemp_2007-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Coffin-DailyWatertemp_2007-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Fichter-DailyWatertemp_2007-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Midge-DailyWatertemp_2006-2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Newbury-DailyWatertemp_2007-2016.pdf",width=15, height=8.5)
 
 
 #join gloeo, light, & watertemp
@@ -834,7 +835,7 @@ gloeo_light_wtr <- left_join(gloeo_light,watertemp_day_long, by = c("date", "sit
 gloeo_light_wtr_clean <- gloeo_light_wtr %>% 
   select(-obs.x,-obs.y,-light_max, -light_median)
 
-write.csv(gloeo_light_wtr_clean, "All_Sites_Gloeo_light_wtrtemp.csv", row.names = F)
+write.csv(gloeo_light_wtr_clean, "Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp.csv", row.names = F)
 
 # Figure for gloeo vs. date with color gradient for water temp 
 gloeo_light_wtr_site <- gloeo_light_wtr %>% 
@@ -849,29 +850,29 @@ ggplot(gloeo_light_wtr_site, aes(x=date,y=totalperL, color = watertemp_mean))+
   labs(title = "Newbury")
 
 #mean water temp
-ggsave("Coffin-Gloeo_wtrtemp_mean-gradient-2007_2016.pdf",width=15, height=8.5)
-ggsave("Fichter-Gloeo_wtrtemp_mean-gradient-2007_2016.pdf",width=15, height=8.5)
-ggsave("Midge-Gloeo_wtrtemp_mean-gradient-2005_2016.pdf",width=15, height=8.5)
-ggsave("Newbury-Gloeo_wtrtemp_mean-gradient-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Coffin-Gloeo_wtrtemp_mean-gradient-2007_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Fichter-Gloeo_wtrtemp_mean-gradient-2007_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Midge-Gloeo_wtrtemp_mean-gradient-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Newbury-Gloeo_wtrtemp_mean-gradient-2005_2016.pdf",width=15, height=8.5)
 
 #min water temp
-ggsave("Coffin-Gloeo_wtrtemp_min-gradient-2007_2016.pdf",width=15, height=8.5)
-ggsave("Fichter-Gloeo_wtrtemp_min-gradient-2007_2016.pdf",width=15, height=8.5)
-ggsave("Midge-Gloeo_wtrtemp_min-gradient-2005_2016.pdf",width=15, height=8.5)
-ggsave("Newbury-Gloeo_wtrtemp_min-gradient-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Coffin-Gloeo_wtrtemp_min-gradient-2007_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Fichter-Gloeo_wtrtemp_min-gradient-2007_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Midge-Gloeo_wtrtemp_min-gradient-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Newbury-Gloeo_wtrtemp_min-gradient-2005_2016.pdf",width=15, height=8.5)
 
 #max water temp
-ggsave("Coffin-Gloeo_wtrtemp_max-gradient-2007_2016.pdf",width=15, height=8.5)
-ggsave("Fichter-Gloeo_wtrtemp_max-gradient-2007_2016.pdf",width=15, height=8.5)
-ggsave("Midge-Gloeo_wtrtemp_max-gradient-2005_2016.pdf",width=15, height=8.5)
-ggsave("Newbury-Gloeo_wtrtemp_max-gradient-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Coffin-Gloeo_wtrtemp_max-gradient-2007_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Fichter-Gloeo_wtrtemp_max-gradient-2007_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Midge-Gloeo_wtrtemp_max-gradient-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Newbury-Gloeo_wtrtemp_max-gradient-2005_2016.pdf",width=15, height=8.5)
 
 # Figure for gloeo vs. water temp by each year
 gloeo_light_wtr_site <- gloeo_light_wtr %>% 
   #filter(site=="Coffin")
   #filter(site=="Fichter")
   filter(site=="Midge")
-  filter(site=="Newbury")
+  #filter(site=="Newbury")
 
 ggplot(gloeo_light_wtr_site, aes(x=watertemp_min,y=totalperL))+
   geom_point(size=2)+
@@ -882,13 +883,13 @@ ggplot(gloeo_light_wtr_site, aes(x=watertemp_min,y=totalperL, color = factor(yea
   geom_point(size=2) +
   scale_y_continuous(limits = c(0,20))
 
-ggsave("Coffin-Gloeo_v_wtrtemp-mean-2009_2016.pdf",width=15, height=8.5)
-ggsave("Fichter-Gloeo_v_wtrtemp-mean-2009_2016.pdf",width=15, height=8.5)
-ggsave("Midge-Gloeo_v_wtrtemp-mean-2005_2016.pdf",width=15, height=8.5)
-ggsave("Newbury-Gloeo_v_wtrtemp-mean-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Coffin-Gloeo_v_wtrtemp-mean-2009_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Fichter-Gloeo_v_wtrtemp-mean-2009_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Midge-Gloeo_v_wtrtemp-mean-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Newbury-Gloeo_v_wtrtemp-mean-2005_2016.pdf",width=15, height=8.5)
 
-ggsave("Coffin-Gloeo_v_wtrtemp-min-2009_2016.pdf",width=15, height=8.5)
-ggsave("Fichter-Gloeo_v_wtrtemp-min-2009_2016.pdf",width=15, height=8.5)
-ggsave("Midge-Gloeo_v_wtrtemp-min-2005_2016.pdf",width=15, height=8.5)
-ggsave("Newbury-Gloeo_v_wtrtemp-min-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Coffin-Gloeo_v_wtrtemp-min-2009_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Fichter-Gloeo_v_wtrtemp-min-2009_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Midge-Gloeo_v_wtrtemp-min-2005_2016.pdf",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/Newbury-Gloeo_v_wtrtemp-min-2005_2016.pdf",width=15, height=8.5)
 
