@@ -12,13 +12,14 @@ N <- 1200
 x1 <- runif(N, -10, 30) #simulated air temperature
 x2 <- runif(N, 4, 25) #simulated water temperature
 
-plot(seq(1,1200,1),jags.data$x1, col = "red", type = "l", main = "Simulated Air Temp.")
-plot(seq(1,1200,1),jags.data$x2, col = "blue", type = "l", main = "simulated Water Temp.")
+plot(seq(1,1200,1),x1, col = "red", type = "l", main = "Simulated Air Temp.")
+plot(seq(1,1200,1),x2, col = "blue", type = "l", main = "simulated Water Temp.")
 
 #Lets specify a poisson distribution where the abundance depends on temeperature and an intercept.
 #we're going to exponentiate because we use a log link in the model.
 beta.pois <- c(1,0.1)
 y.pois <- exp(beta.pois[1] + x2*beta.pois[2])
+hist(y.pois)
 
 #Time to zero inflate. Zero inflation will also depend on temperature and an intercept.
 #I am simulate the probabilty as a continuous value.
@@ -30,6 +31,7 @@ y.prob <- boot::inv.logit(y.prob)
 
 #send through the binomial data model to get zero-one outcomes.
 y.bern <- rbinom(N, 1, y.prob)
+hist(y.bern)
 
 #multiply the bernoulli observation (did we see algae or not?) by the poisson observation (if we saw algae, how much algae?)
 #This is what y'all actually observe in the lake.
@@ -37,6 +39,7 @@ y.bern <- rbinom(N, 1, y.prob)
 y.obs <- y.bern*y.pois
 y.obs <- rpois(N, lambda = y.bern*y.pois)
 plot(seq(1,1200,1),y.obs, type = "p", main = "Simulated Gloeo data")
+hist(y.obs, main = "Histogram of simulated Gloeo data")
 
 #set values in "winter" to NA
 y.obs[c(121:360, 481:720, 841:1080)] <- NA
@@ -76,12 +79,15 @@ model{
     
     #theta[i] is the linear combination of predictors and paramters for the bernoulli component of the model.
     #air temp is included as a covariate for the bernoulli
-    logit(theta[i]) <- beta.bern[1] + beta.bern[2]*x1[i] + beta.bern[3]*y[i-1]
+    logit(theta[i]) <- beta.bern[1] + beta.bern[2]*x1[i]
   }
   
   #setup your priors. These are flat, uninformative priors.
-  for(i in 1:N.pred){
+  for(i in 1:N.pred.pois){
     beta.pois[i] ~ dnorm(0, 1E-3)
+  }
+
+  for (i in 1:N.pred.bern){
     beta.bern[i] ~ dnorm(0, 1E-3)
   }
 
@@ -90,7 +96,7 @@ model{
 
 #setup JAGS data object.----
 #N.pred = 2. one predictor is the intercept, the second is x ("temperature").
-jags.data <- list(y = y.obs, x1 = x1, x2 = x2, N = N, N.pred = 3)
+jags.data <- list(y = y.obs, x1 = x1, x2 = x2, N = N, N.pred.pois = 3, N.pred.bern = 2)
 
 #set up initial conditions - haven't done this yet
 
@@ -98,9 +104,9 @@ jags.data <- list(y = y.obs, x1 = x1, x2 = x2, N = N, N.pred = 3)
 #fit the jags object using runjags.----
 jags.out <- run.jags(    model = jags.model,
                           data = jags.data,
-                         adapt =  500,
-                        burnin =  1000,
-                        sample = 10000,
+                         adapt =  100,
+                        burnin =  500,
+                        sample = 1000,
                       n.chains = 3,
                        monitor = c('beta.pois','beta.bern'))
 
