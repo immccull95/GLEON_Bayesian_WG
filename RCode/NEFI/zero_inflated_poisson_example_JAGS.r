@@ -3,6 +3,7 @@
 rm(list=ls())
 library(runjags)
 
+
 #simulate data.----
 N <- 1000
 

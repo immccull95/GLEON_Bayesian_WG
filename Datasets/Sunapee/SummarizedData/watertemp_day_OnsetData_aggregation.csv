@@ -1,4 +1,4 @@
-date,coffin.mean,coffin.min,coffin.max,coffin.median,coffin.obs,fichter.mean,fichter.min,fichter.max,fichter.median,fichter.obs,newbury.mean,newbury.min,newbury.max,newbury.median,newbury.obs,midge.mean,midge.min,midge.max,midge.median,midge.obs
+date,Coffin.mean,Coffin.min,Coffin.max,Coffin.median,Coffin.obs,Fichter.mean,Fichter.min,Fichter.max,Fichter.median,Fichter.obs,Newbury.mean,Newbury.min,Newbury.max,Newbury.median,Newbury.obs,Midge.mean,Midge.min,Midge.max,Midge.median,Midge.obs
 2006-07-14,NA,NA,NA,NA,0,NA,NA,NA,NA,0,NA,NA,NA,NA,0,24.29708333,23.55,25.45,23.975,24
 2006-07-15,NA,NA,NA,NA,0,NA,NA,NA,NA,0,NA,NA,NA,NA,0,24.54041667,23.89,25.45,24.24,24
 2006-07-16,NA,NA,NA,NA,0,NA,NA,NA,NA,0,NA,NA,NA,NA,0,25.26416667,24.06,26.32,25.195,24

@@ -1,0 +1,568 @@
+##Comparison of HOBO temperature data across sites and years
+##Author: Sarah Burnet (shburnet at gmail dot com)
+##Date: 19OCT2018
+##Aim: comparing the temperature differences between the six sites with HOBO
+##temperature data by years. Greatest peaks in figures indicates large
+##temperature differences between sites, possible internal loading, metalimnetic
+##entrainment, etc. 
+##Probably faster code to do this, but I'm still in early stages of learning R,
+##so suggestion to improving code is appreciated
+##Figures saved in GLEON_Bayesian_WG/Datasets/Sunapee/Data Visualizations/Water Temp/
+
+#added columns to the orginal GLEON_Bayesian_WG/Datasets/Sunapee/RawData/temp sensors 2006-2016/temp_2006-2016_L1_20Oct2017.csv
+#cf = abs(coffin - fichter temperatures)
+#cn = abs(coffin - newbury temperatures)
+#cm = abs(coffin - midge temperatures)
+#fn = abs(fichter - newbury temperatures)
+#fm = abs(fichter - midge temperatures)
+#nm = abs(newbury - midge temperatures)
+
+
+setwd('~/R Working Directory/data')
+
+#https://data-lessons.github.io/R-nhcdata-lesson/04-visualization-ggplot2.html
+
+#borrowed code from Mary Lofton (thanks!)
+#https://github.com/immccull95/GLEON_Bayesian_WG/blob/master/RCode/InSitu/HOBO_vs_buoy_thermal_stability.R
+
+#install.packages(pacman)
+pacman::p_load(tidyverse, lubridate)
+
+#loading in data and data wrangling
+#dropping flags for simplicity's sake
+#gathering sites to make plotting easier
+##SWITCH OVER TO USING ONSET DATA IN SUMMARIZED DATA FOLDER ON GITHUB
+#convert column to a real date/time format
+
+#start date 7/13/2006
+#end date 9/28/2016
+
+
+
+sun<-read.csv('tempsitecomp.csv') %>%
+  gather(cf:nm, key = "site", value = "temp_C") %>%
+  mutate(temp_C = as.double(temp_C))
+
+head(sun)
+
+sun$datetime = as.POSIXct(sun$datetime)
+
+#initial visualization to see when we have a time series of all sites 
+
+plot1 = ggplot(sun, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot1
+
+# subset data by year
+sun2007 <- subset(sun, datetime >= as.POSIXct('2007-01-01 00:00')
+    & datetime <= as.POSIXct('2007-12-31 23:59'))
+
+plot2007 = ggplot(sun2007, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot2007
+
+#2008
+sun2008 <- subset(sun, datetime >= as.POSIXct('2008-01-01 00:00')
+                  & datetime <= as.POSIXct('2008-12-31 23:59'))
+
+plot2008 = ggplot(sun2008, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot2008
+
+#2009
+sun2009 <- subset(sun, datetime >= as.POSIXct('2009-01-01 00:00')
+                  & datetime <= as.POSIXct('2009-12-31 23:59'))
+
+plot2009 = ggplot(sun2009, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot2009
+
+#2010
+sun2010 <- subset(sun, datetime >= as.POSIXct('2010-01-01 00:00')
+                  & datetime <= as.POSIXct('2010-12-31 23:59'))
+
+plot2010 = ggplot(sun2010, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot2010
+
+#2011
+sun2011 <- subset(sun, datetime >= as.POSIXct('2011-01-01 00:00')
+                  & datetime <= as.POSIXct('2011-12-31 23:59'))
+
+plot2011 = ggplot(sun2011, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot2011
+
+#2012
+sun2012 <- subset(sun, datetime >= as.POSIXct('2012-01-01 00:00')
+                  & datetime <= as.POSIXct('2012-12-31 23:59'))
+
+plot2012 = ggplot(sun2012, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot2012
+
+#2013
+sun2013 <- subset(sun, datetime >= as.POSIXct('2013-01-01 00:00')
+                  & datetime <= as.POSIXct('2013-12-31 23:59'))
+
+plot2013 = ggplot(sun2013, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot2013
+
+#2014
+sun2014 <- subset(sun, datetime >= as.POSIXct('2014-01-01 00:00')
+                  & datetime <= as.POSIXct('2014-12-31 23:59'))
+
+plot2014 = ggplot(sun2014, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot2014
+
+#2015
+sun2015 <- subset(sun, datetime >= as.POSIXct('2015-01-01 00:00')
+                  & datetime <= as.POSIXct('2015-12-31 23:59'))
+
+plot2015 = ggplot(sun2015, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot2015
+
+#2016
+sun2016 <- subset(sun, datetime >= as.POSIXct('2016-01-01 00:00')
+                  & datetime <= as.POSIXct('2016-12-31 23:59'))
+
+plot2016 = ggplot(sun2016, aes(x = datetime, y = temp_C, group = site, colour = site))+
+  geom_line(size = 1)+
+  theme_bw()+
+  scale_x_datetime(date_breaks = "1 month")
+plot2016
+
+
+###
+#individual sites by year
+
+sun<-read.csv('tempsitecomp.csv')
+summary(sun)
+head(sun)
+
+str(sun)
+library(tidyr) 
+separate(sun, datetime, into = c('month', 'day', 'year'))
+
+
+#cf (coffin - fichter temperature data)
+
+ggplot(sun,aes(x=dayofyr,y=cf))+geom_point()
+
+sun<-sun[sun$cf>0,]
+ggplot(sun,aes(x=dayofyr,y=cf))+geom_point()
+
+#SUBSET 
+
+sun2007 <- subset(sun, abs(year) == '2007') 
+ggplot(sun2007,aes(x=dayofyr,y=cf))+geom_point()
+
+sun2008 <- subset(sun, abs(year) == '2008') 
+ggplot(sun2008,aes(x=dayofyr,y=cf))+geom_point()
+
+sun2009 <- subset(sun, abs(year) == '2009') 
+ggplot(sun2009,aes(x=dayofyr,y=cf))+geom_point()
+
+sun2010 <- subset(sun, abs(year) == '2010') 
+ggplot(sun2010,aes(x=dayofyr,y=cf))+geom_point()
+
+sun2011 <- subset(sun, abs(year) == '2011') 
+ggplot(sun2011,aes(x=dayofyr,y=cf))+geom_point()
+
+sun2012 <- subset(sun, abs(year) == '2012') 
+ggplot(sun2012,aes(x=dayofyr,y=cf))+geom_point()
+
+sun2013 <- subset(sun, abs(year) == '2013') 
+ggplot(sun2013,aes(x=dayofyr,y=cf))+geom_point()
+
+sun2014 <- subset(sun, abs(year) == '2014') 
+ggplot(sun2014,aes(x=dayofyr,y=cf))+geom_point()
+
+sun2015 <- subset(sun, abs(year) == '2015') 
+ggplot(sun2015,aes(x=dayofyr,y=cf))+geom_point()
+
+sun2016 <- subset(sun, abs(year) == '2016') 
+ggplot(sun2016,aes(x=dayofyr,y=cf))+geom_point()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=cf))+geom_point()+
+  facet_wrap(~year,scales='free')
+
+#faceting by year with lines
+ggplot(sun,aes(x=dayofyr,y=cf, group = year))+geom_line()+
+  facet_wrap(~year,scales='free')
+
+#by year with lines
+ggplot(sun,aes(x=dayofyr,y=cf, color = year))+geom_line()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=cf))+geom_point()+
+  facet_wrap(~year,scales='free') +
+  facet_grid(year ~ .)
+
+#
+#cn (coffin - newbury temperature data)
+
+ggplot(sun,aes(x=dayofyr,y=cn))+geom_point()
+
+sun<-sun[sun$cn>0,]
+ggplot(sun,aes(x=dayofyr,y=cn))+geom_point()
+
+#SUBSET 
+
+sun2007 <- subset(sun, abs(year) == '2007') 
+ggplot(sun2007,aes(x=dayofyr,y=cn))+geom_point()
+
+sun2008 <- subset(sun, abs(year) == '2008') 
+ggplot(sun2008,aes(x=dayofyr,y=cn))+geom_point()
+
+sun2009 <- subset(sun, abs(year) == '2009') 
+ggplot(sun2009,aes(x=dayofyr,y=cn))+geom_point()
+
+sun2010 <- subset(sun, abs(year) == '2010') 
+ggplot(sun2010,aes(x=dayofyr,y=cn))+geom_point()
+
+sun2011 <- subset(sun, abs(year) == '2011') 
+ggplot(sun2011,aes(x=dayofyr,y=cn))+geom_point()
+
+sun2012 <- subset(sun, abs(year) == '2012') 
+ggplot(sun2012,aes(x=dayofyr,y=cn))+geom_point()
+
+sun2013 <- subset(sun, abs(year) == '2013') 
+ggplot(sun2013,aes(x=dayofyr,y=cn))+geom_point()
+
+sun2014 <- subset(sun, abs(year) == '2014') 
+ggplot(sun2014,aes(x=dayofyr,y=cn))+geom_point()
+
+sun2015 <- subset(sun, abs(year) == '2015') 
+ggplot(sun2015,aes(x=dayofyr,y=cn))+geom_point()
+
+sun2016 <- subset(sun, abs(year) == '2016') 
+ggplot(sun2016,aes(x=dayofyr,y=cn))+geom_point()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=cn))+geom_point()+
+  facet_wrap(~year,scales='free')
+
+#faceting by year with lines
+ggplot(sun,aes(x=dayofyr,y=cn, group = year))+geom_line()+
+  facet_wrap(~year,scales='free')
+
+#by year with lines
+ggplot(sun,aes(x=dayofyr,y=cn, color = year))+geom_line()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=cn))+geom_point()+
+  facet_wrap(~year,scales='free') +
+  facet_grid(year ~ .)
+
+#
+#cm (coffin - newbury temperature data)
+
+ggplot(sun,aes(x=dayofyr,y=cm))+geom_point()
+
+sun<-sun[sun$cm>0,]
+ggplot(sun,aes(x=dayofyr,y=cm))+geom_point()
+
+#SUBSET 
+
+sun2007 <- subset(sun, abs(year) == '2007') 
+ggplot(sun2007,aes(x=dayofyr,y=cm))+geom_point()
+
+sun2008 <- subset(sun, abs(year) == '2008') 
+ggplot(sun2008,aes(x=dayofyr,y=cm))+geom_point()
+
+sun2009 <- subset(sun, abs(year) == '2009') 
+ggplot(sun2009,aes(x=dayofyr,y=cm))+geom_point()
+
+sun2010 <- subset(sun, abs(year) == '2010') 
+ggplot(sun2010,aes(x=dayofyr,y=cm))+geom_point()
+
+sun2011 <- subset(sun, abs(year) == '2011') 
+ggplot(sun2011,aes(x=dayofyr,y=cm))+geom_point()
+
+sun2012 <- subset(sun, abs(year) == '2012') 
+ggplot(sun2012,aes(x=dayofyr,y=cm))+geom_point()
+
+sun2013 <- subset(sun, abs(year) == '2013') 
+ggplot(sun2013,aes(x=dayofyr,y=cm))+geom_point()
+
+sun2014 <- subset(sun, abs(year) == '2014') 
+ggplot(sun2014,aes(x=dayofyr,y=cm))+geom_point()
+
+sun2015 <- subset(sun, abs(year) == '2015') 
+ggplot(sun2015,aes(x=dayofyr,y=cm))+geom_point()
+
+sun2016 <- subset(sun, abs(year) == '2016') 
+ggplot(sun2016,aes(x=dayofyr,y=cm))+geom_point()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=cm))+geom_point()+
+  facet_wrap(~year,scales='free')
+
+#faceting by year with lines
+ggplot(sun,aes(x=dayofyr,y=cm, group = year))+geom_line()+
+  facet_wrap(~year,scales='free')
+
+#by year with lines
+ggplot(sun,aes(x=dayofyr,y=cm, color = year))+geom_line()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=cm))+geom_point()+
+  facet_wrap(~year,scales='free') +
+  facet_grid(year ~ .)
+
+##
+#fn (fichter - newbury temperature data)
+
+ggplot(sun,aes(x=dayofyr,y=fn))+geom_point()
+
+sun<-sun[sun$fn>0,]
+ggplot(sun,aes(x=dayofyr,y=fn))+geom_point()
+
+#SUBSET 
+
+sun2007 <- subset(sun, abs(year) == '2007') 
+ggplot(sun2007,aes(x=dayofyr,y=fn))+geom_point()
+
+sun2008 <- subset(sun, abs(year) == '2008') 
+ggplot(sun2008,aes(x=dayofyr,y=fn))+geom_point()
+
+sun2009 <- subset(sun, abs(year) == '2009') 
+ggplot(sun2009,aes(x=dayofyr,y=fn))+geom_point()
+
+sun2010 <- subset(sun, abs(year) == '2010') 
+ggplot(sun2010,aes(x=dayofyr,y=fn))+geom_point()
+
+sun2011 <- subset(sun, abs(year) == '2011') 
+ggplot(sun2011,aes(x=dayofyr,y=fn))+geom_point()
+
+sun2012 <- subset(sun, abs(year) == '2012') 
+ggplot(sun2012,aes(x=dayofyr,y=fn))+geom_point()
+
+sun2013 <- subset(sun, abs(year) == '2013') 
+ggplot(sun2013,aes(x=dayofyr,y=fn))+geom_point()
+
+sun2014 <- subset(sun, abs(year) == '2014') 
+ggplot(sun2014,aes(x=dayofyr,y=fn))+geom_point()
+
+sun2015 <- subset(sun, abs(year) == '2015') 
+ggplot(sun2015,aes(x=dayofyr,y=fn))+geom_point()
+
+sun2016 <- subset(sun, abs(year) == '2016') 
+ggplot(sun2016,aes(x=dayofyr,y=fn))+geom_point()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=fn))+geom_point()+
+  facet_wrap(~year,scales='free')
+
+#faceting by year with lines
+ggplot(sun,aes(x=dayofyr,y=fn, group = year))+geom_line()+
+  facet_wrap(~year,scales='free')
+
+#by year with lines
+ggplot(sun,aes(x=dayofyr,y=fn, color = year))+geom_line()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=fn))+geom_point()+
+  facet_wrap(~year,scales='free') +
+  facet_grid(year ~ .)
+
+##
+#fm (fichter - midge temperature data)
+
+ggplot(sun,aes(x=dayofyr,y=fm))+geom_point()
+
+sun<-sun[sun$fm>0,]
+ggplot(sun,aes(x=dayofyr,y=fm))+geom_point()
+
+#SUBSET 
+
+sun2007 <- subset(sun, abs(year) == '2007') 
+ggplot(sun2007,aes(x=dayofyr,y=fm))+geom_point()
+
+sun2008 <- subset(sun, abs(year) == '2008') 
+ggplot(sun2008,aes(x=dayofyr,y=fm))+geom_point()
+
+sun2009 <- subset(sun, abs(year) == '2009') 
+ggplot(sun2009,aes(x=dayofyr,y=fm))+geom_point()
+
+sun2010 <- subset(sun, abs(year) == '2010') 
+ggplot(sun2010,aes(x=dayofyr,y=fm))+geom_point()
+
+sun2011 <- subset(sun, abs(year) == '2011') 
+ggplot(sun2011,aes(x=dayofyr,y=fm))+geom_point()
+
+sun2012 <- subset(sun, abs(year) == '2012') 
+ggplot(sun2012,aes(x=dayofyr,y=fm))+geom_point()
+
+sun2013 <- subset(sun, abs(year) == '2013') 
+ggplot(sun2013,aes(x=dayofyr,y=fm))+geom_point()
+
+sun2014 <- subset(sun, abs(year) == '2014') 
+ggplot(sun2014,aes(x=dayofyr,y=fm))+geom_point()
+
+sun2015 <- subset(sun, abs(year) == '2015') 
+ggplot(sun2015,aes(x=dayofyr,y=fm))+geom_point()
+
+sun2016 <- subset(sun, abs(year) == '2016') 
+ggplot(sun2016,aes(x=dayofyr,y=fm))+geom_point()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=fm))+geom_point()+
+  facet_wrap(~year,scales='free')
+
+#faceting by year with lines
+ggplot(sun,aes(x=dayofyr,y=fm, group = year))+geom_line()+
+  facet_wrap(~year,scales='free')
+
+#by year with lines
+ggplot(sun,aes(x=dayofyr,y=fm, color = year))+geom_line()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=fm))+geom_point()+
+  facet_wrap(~year,scales='free') +
+  facet_grid(year ~ .)
+
+
+##
+#nm (newbury - midge temperature data)
+
+ggplot(sun,aes(x=dayofyr,y=nm))+geom_point()
+
+sun<-sun[sun$nm>0,]
+ggplot(sun,aes(x=dayofyr,y=nm))+geom_point()
+
+#SUBSET 
+
+sun2007 <- subset(sun, abs(year) == '2007') 
+ggplot(sun2007,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2008 <- subset(sun, abs(year) == '2008') 
+ggplot(sun2008,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2009 <- subset(sun, abs(year) == '2009') 
+ggplot(sun2009,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2010 <- subset(sun, abs(year) == '2010') 
+ggplot(sun2010,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2011 <- subset(sun, abs(year) == '2011') 
+ggplot(sun2011,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2012 <- subset(sun, abs(year) == '2012') 
+ggplot(sun2012,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2013 <- subset(sun, abs(year) == '2013') 
+ggplot(sun2013,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2014 <- subset(sun, abs(year) == '2014') 
+ggplot(sun2014,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2015 <- subset(sun, abs(year) == '2015') 
+ggplot(sun2015,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2016 <- subset(sun, abs(year) == '2016') 
+ggplot(sun2016,aes(x=dayofyr,y=nm))+geom_point()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=nm))+geom_point()+
+  facet_wrap(~year,scales='free')
+
+#faceting by year with lines
+ggplot(sun,aes(x=dayofyr,y=nm, group = year))+geom_line()+
+  facet_wrap(~year,scales='free')
+
+#by year with lines
+ggplot(sun,aes(x=dayofyr,y=nm, color = year))+geom_line()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=nm))+geom_point()+
+  facet_wrap(~year,scales='free') +
+  facet_grid(year ~ .)
+
+#
+#
+#nm (newbury - midge temperature data)
+
+ggplot(sun,aes(x=dayofyr,y=nm))+geom_point()
+
+#clean data with dplier (?) or index it
+
+sun<-sun[sun$nm>0,]
+ggplot(sun,aes(x=dayofyr,y=nm))+geom_point()
+
+
+
+#SUBSET 
+
+sun2007 <- subset(sun, abs(year) == '2007') 
+ggplot(sun2007,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2008 <- subset(sun, abs(year) == '2008') 
+ggplot(sun2008,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2009 <- subset(sun, abs(year) == '2009') 
+ggplot(sun2009,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2010 <- subset(sun, abs(year) == '2010') 
+ggplot(sun2010,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2011 <- subset(sun, abs(year) == '2011') 
+ggplot(sun2011,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2012 <- subset(sun, abs(year) == '2012') 
+ggplot(sun2012,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2013 <- subset(sun, abs(year) == '2013') 
+ggplot(sun2013,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2014 <- subset(sun, abs(year) == '2014') 
+ggplot(sun2014,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2015 <- subset(sun, abs(year) == '2015') 
+ggplot(sun2015,aes(x=dayofyr,y=nm))+geom_point()
+
+sun2016 <- subset(sun, abs(year) == '2016') 
+ggplot(sun2016,aes(x=dayofyr,y=nm))+geom_point()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=nm))+geom_point()+
+  facet_wrap(~year,scales='free')
+
+#faceting by year with lines
+ggplot(sun,aes(x=dayofyr,y=nm, group = year))+geom_line()+
+  facet_wrap(~year,scales='free')
+
+#by year with lines
+ggplot(sun,aes(x=dayofyr,y=nm, color = year))+geom_line()
+
+#faceting by year
+ggplot(sun,aes(x=dayofyr,y=nm))+geom_point()+
+  facet_wrap(~year,scales='free') +
+  facet_grid(year ~ .)
+
+
