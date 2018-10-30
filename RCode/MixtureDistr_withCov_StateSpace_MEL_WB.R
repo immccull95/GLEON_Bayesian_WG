@@ -40,12 +40,10 @@ for(i in 2:N){
 m[i] <- mu[i]*b[i] + 1E-3 
 
 #this is the bernoulli outcome of the zero inflation
-b[i] ~ dbern(one.minus.theta[i])
+b[i] ~ dbern(theta[i])
 
 #mu[i] is the linear combination of predictors and parameters for the poisson component of the model.
 log(mu[i]) <- Pbeta[1] + Pbeta[2]*x[i] + Pbeta[3]*m[i-1]
-
-one.minus.theta[i] <- 1-theta[i]
 
 #theta[i] is the linear combination of predictors and paramters for the bernoulli component of the model.
 logit(theta[i]) <- Bbeta[1] + Bbeta[2]*x[i] + Bbeta[3]*m[i-1]
@@ -54,7 +52,7 @@ logit(theta[i]) <- Bbeta[1] + Bbeta[2]*x[i] + Bbeta[3]*m[i-1]
 #set up your priors. These are flat, uninformative priors.
 Bbeta ~ dmnorm(Bbetam,Bbetav)
 Pbeta ~ dmnorm(Pbetam,Pbetav)
-m[1]=1 #first observation of algae
+m[1]=0.001 #first observation of algae
 
 # #Create model PREDICTIONS so we can calculate credible intervals later 
 # #There may be an easier way to do this, but I'm using the same model as above, just calculating y.pred based on process model
@@ -89,7 +87,7 @@ nchain=3
 
 init <- list()
 for(i in 1:nchain){
-init[[i]] <- list(Pbeta= c(0,0,0), Bbeta=c(0,0,0))
+init[[i]] <- list(Pbeta= c(0.001,0.001,0.001), Bbeta=c(0.001,0.001,0.001))
 }
 
 #JAGS Model 
@@ -101,8 +99,8 @@ j.model   <- jags.model(file = textConnection(jags.model),
 
 var.out.betas   <- coda.samples (model = j.model,
                                  variable.names = c("Bbeta", "Pbeta"),
-                                 n.iter = 50000, n.thin=2)
-burnin=10000
+                                 n.iter = 20000, n.thin=2)
+burnin=1000
 params.betas <- window(var.out.betas, start=burnin)
 par(mar=c(2,2,2,2))
 plot(params.betas) 
