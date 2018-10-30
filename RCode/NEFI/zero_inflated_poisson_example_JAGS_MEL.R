@@ -3,6 +3,7 @@
 rm(list=ls())
 library(runjags)
 library(coda)
+library(rjags)
 
 
 #simulate data.----
@@ -63,9 +64,12 @@ plot(seq(1,1200,1),y.obs, type = "p", main = "Simulated Gloeo data with winter &
 
 jags.model <- "
 model{
-  for(i in 2:N){
+  for(i in 1:N){
     #this fits the blended model to your observed data. 
     y[i] ~ dpois(m[i])
+  }
+  
+  for(i in 2:N){
     
     #This blends the poisson and zero inflation models
     m[i] <- mu[i]*b[i] + 1E-10 #adding the tiny value is important (i forget why...)
@@ -75,7 +79,7 @@ model{
     
     #mu[i] is the linear combination of predictors and parameters for the poisson component of the model.
     #water temp is included as a covariate for the poisson
-    log(mu[i]) <- beta.pois[1] + beta.pois[2]*x2[i] + beta.pois[3]*y[i-1]
+    log(mu[i]) <- beta.pois[1] + beta.pois[2]*x2[i] + beta.pois[3]*m[i-1]
     
     #theta[i] is the linear combination of predictors and paramters for the bernoulli component of the model.
     #air temp is included as a covariate for the bernoulli
@@ -90,6 +94,8 @@ model{
   for (i in 1:N.pred.bern){
     beta.bern[i] ~ dnorm(0, 1E-3)
   }
+
+m[1]=0
 
 } #close model loop.
 "
@@ -116,6 +122,10 @@ plot(jags.out)
 jags.out.mcmc <- as.mcmc.list(jags.out)
 summary(jags.out.mcmc)
 gelman.plot(jags.out.mcmc)
+
+plot(jags.out, c('trace'),
+     vars=c("beta.pois", "beta.bern"),layout=c(2,2))
+
 
 #compare fitted parameter values to true parameter values.----
 #bernoulli parameters more likely to be the center of the distribution, as wel observe N binary outcomes.
