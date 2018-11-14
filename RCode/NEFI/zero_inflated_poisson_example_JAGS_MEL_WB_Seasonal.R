@@ -137,7 +137,8 @@ jags.data <- list(y = y.obs, x3=x3, x3.new=x3.new, x2=x2, x2.new=x2.new, N.new=N
                   beta.pois.m=beta.pois.m, beta.pois.v=beta.pois.v,
                   b=ifelse(y.obs==0,0,1), b.new=ifelse(y.obs==0,0,1)) #I am not exactly sure what this ifelse statement is doing
                                           #But I found it in a ZIP example online
-                                          #And when I remove it, the model takes hours to run 
+                                          #And when I remove it, the model takes hours to run
+                                          #MEL: I wonder if it is overriding our draw from the Bernoulli distribution?
 
 #set up initial conditions 
 #nchain=3
@@ -149,9 +150,9 @@ jags.data <- list(y = y.obs, x3=x3, x3.new=x3.new, x2=x2, x2.new=x2.new, N.new=N
 #fit the jags object using runjags.----
 jags.out <- run.jags(    model = jags.model,
                           data = jags.data,
-                         adapt =  10000,
+                         adapt =  500,
                         burnin =  500,
-                        sample = 20000,
+                        sample = 1000,
                       n.chains = 3,
                      # inits=init,
                        monitor = c('beta.bern', 'beta.pois', 'y.new'))
