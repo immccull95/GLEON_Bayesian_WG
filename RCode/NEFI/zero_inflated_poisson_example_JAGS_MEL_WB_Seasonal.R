@@ -62,8 +62,8 @@ hist(y.obs, main = "Histogram of simulated Gloeo data")
 #Multivariate normal matrices for beta priors
 beta.bern.m <- as.vector(c(0,0))
 beta.bern.v <- solve(diag(1E-03,2))
-beta.pois.m <- as.vector(c(0,0))
-beta.pois.v <- solve(diag(1E-03,2))
+beta.pois.m <- as.vector(c(0,0,0))
+beta.pois.v <- solve(diag(1E-03,3))
 
 #set values in "winter" to NA (Nov.-Feb.)
 #y.obs[c(1:60, 305:425, 670:790, 1035:1155, 1400:1460)] <- NA
@@ -101,7 +101,7 @@ model{
     b[i] ~ dbern(theta[i])
     
     #mu[i] is the linear combination of predictors and parameters for the poisson component of the model.
-    log(mu[i]) <- beta.pois[1]*m[i-1] + beta.pois[2]*x2[i]
+    log(mu[i]) <- beta.pois[1] + beta.pois[2]*m[i-1] + beta.pois[3]*x2[i]
 
     #theta[i] is the linear combination of predictors and paramters for the bernoulli component of the model.
     logit(theta[i]) <- beta.bern[1]+ beta.bern[2]*x3[i]
@@ -150,9 +150,9 @@ jags.data <- list(y = y.obs, x3=x3, x3.new=x3.new, x2=x2, x2.new=x2.new, N.new=N
 #fit the jags object using runjags.----
 jags.out <- run.jags(    model = jags.model,
                           data = jags.data,
-                         adapt =  500,
+                         adapt =  10000,
                         burnin =  500,
-                        sample = 1000,
+                        sample = 20000,
                       n.chains = 3,
                      # inits=init,
                        monitor = c('beta.bern', 'beta.pois', 'y.new'))
@@ -166,7 +166,7 @@ gelman.plot(jags.out.mcmc, vars=c("beta.bern", "beta.pois"))
 #Credible intervals
 
 out <- as.matrix(jags.out.mcmc)
-ci <- apply(exp(out[,5:ncol(out)]),2,quantile,c(0.025,0.5,0.975))
+ci <- apply(exp(out[,6:ncol(out)]),2,quantile,c(0.025,0.5,0.975))
 par(mfrow=c(1,1))
 par(mar=c(5,5,5,5)) 
 plot(Nvec, log(ci[2,]),type = "l", xlab="Time", ylab="Predicted Gloeo Colony Counts (Log scale)")
