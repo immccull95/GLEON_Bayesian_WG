@@ -100,8 +100,11 @@ model{
     #this is the bernoulli outcome of the zero inflation
     b[i] ~ dbern(theta[i])
     
+    #Adding process error to Poisson component
+    mu[i]~dnorm(lam[i], tau.proc)
+
     #mu[i] is the linear combination of predictors and parameters for the poisson component of the model.
-    log(mu[i]) <- beta.pois[1]*m[i-1] + beta.pois[2]*x2[i]
+    log(lam[i]) <- beta.pois[1] + beta.pois[2]*m[i-1] 
 
     #theta[i] is the linear combination of predictors and paramters for the bernoulli component of the model.
     logit(theta[i]) <- beta.bern[1]+ beta.bern[2]*x3[i]
@@ -110,32 +113,34 @@ model{
   #setup your priors. These are flat, uninformative priors.
   beta.bern ~ dmnorm(beta.bern.m,beta.bern.v)
   beta.pois ~ dmnorm(beta.pois.m,beta.pois.v)
+  tau.proc~dgamma(0.001,0.001)
   
   #Initial value
+  #mu[1]=1
   m[1]=1
 
 #Calculating predictions so we can plot prediction & credible intervals
-for(j in 1:N.new){
-  y.new[j] ~ dpois(m.new[j])
-  }
-for(j in 2:N.new){
-  m.new[j] <- mu.new[j]*b.new[j] + 1E-10 
-  b.new[j] ~ dbern(theta.new[j])
-    log(mu.new[j]) <- beta.pois[1]*m.new[j-1] + beta.pois[2]*x2.new[j]
-    logit(theta.new[j]) <- beta.bern[1]+ beta.bern[2]*x3.new[j]
-}
+#for(j in 1:N.new){
+# y.new[j] ~ dpois(m.new[j])
+#  }
+#for(j in 2:N.new){
+#  m.new[j] <- mu.new[j]*b.new[j] + 1E-10 
+#  b.new[j] ~ dbern(theta.new[j])
+#  mu.new[j]~dnorm(lam.new[j], tau.proc)
+#  log(lam.new[j]) <- beta.pois[1] + beta.pois[2]*m.new[j-1] 
+#   logit(theta.new[j]) <- beta.bern[1]+ beta.bern[2]*x3.new[j]
+#}
 
-m.new[1]=1
+#m.new[1]=1
 
 } #close model loop.
 "
 
 #setup JAGS data object.----
 #N.pred = 2. one predictor is the intercept, the second is x ("temperature").
-jags.data <- list(y = y.obs, x3=x3, x3.new=x3.new, x2=x2, x2.new=x2.new, N.new=N.new, N = N, 
+jags.data <- list(y = y.obs, x3=x3,  N = N, 
                   beta.bern.m=beta.bern.m, beta.bern.v=beta.bern.v,
-                  beta.pois.m=beta.pois.m, beta.pois.v=beta.pois.v,
-                  b=ifelse(y.obs==0,0,1), b.new=ifelse(y.obs==0,0,1)) #I am not exactly sure what this ifelse statement is doing
+                  beta.pois.m=beta.pois.m, beta.pois.v=beta.pois.v) #I am not exactly sure what this ifelse statement is doing
                                           #But I found it in a ZIP example online
                                           #And when I remove it, the model takes hours to run 
 
@@ -149,15 +154,15 @@ jags.data <- list(y = y.obs, x3=x3, x3.new=x3.new, x2=x2, x2.new=x2.new, N.new=N
 #fit the jags object using runjags.----
 jags.out <- run.jags(    model = jags.model,
                           data = jags.data,
-                         adapt =  10000,
+                         adapt =  30000,
                         burnin =  500,
                         sample = 20000,
                       n.chains = 3,
                      # inits=init,
-                       monitor = c('beta.bern', 'beta.pois', 'y.new'))
+                       monitor = c('tau.proc', 'beta.bern', 'beta.pois'))
 
 #summarize output.
-plot(jags.out, vars=c("beta.bern", "beta.pois"))
+plot(jags.out, vars=c("beta.bern", "beta.pois", "tau.proc"))
 jags.out.mcmc <- as.mcmc.list(jags.out)
 summary(jags.out, vars=c("beta.bern", "beta.pois"))
 gelman.plot(jags.out.mcmc, vars=c("beta.bern", "beta.pois"))
@@ -165,12 +170,26 @@ gelman.plot(jags.out.mcmc, vars=c("beta.bern", "beta.pois"))
 #Credible intervals
 
 out <- as.matrix(jags.out.mcmc)
-ci <- apply(exp(out[,5:ncol(out)]),2,quantile,c(0.025,0.5,0.975))
+ci <- apply((out[,5:ncol(out)]),2, quantile,c(0.025,0.5,0.975))
+ci_year1_summer=ci[,150:200]
 par(mfrow=c(1,1))
 par(mar=c(5,5,5,5)) 
-plot(Nvec, log(ci[2,]),type = "l", xlab="Time", ylab="Predicted Gloeo Colony Counts (Log scale)")
-hist(log(ci[2,]))
-#lines(Nvec, log(ci[1,]), lty = "dashed")
-#lines(Nvec, log(ci[3,]), lty = "dashed")
+plot(Nvec, (ci[2,]),type = "l", xlab="Time", ylab="Predicted Gloeo Colony Counts")
+lines(Nvec, (ci[1,]), lty = "dashed")
+lines(Nvec, (ci[3,]), lty = "dashed")
 
-plot(log(ci[2,]), y.obs, xlab="Log predicted values", ylab="Raw observed values")
+plot(seq(1,51,1), (ci_year1_summer[2,]),type = "l", xlab="Time", ylab="Predicted Gloeo Colony Counts (Log scale)")
+lines(seq(1,51,1), (ci_year1_summer[1,]), lty = "dashed")
+lines(seq(1,51,1), (ci_year1_summer[3,]), lty = "dashed")
+
+hist(log(ci[2,]))
+
+
+plot(Nvec,ci[2,],xlab="Time")
+#lines(Nvec, ci[1,])
+#lines(Nvec, ci[3,])
+points(Nvec,y.obs, col="red")
+
+
+Mod=lm(y.obs~ci[2,])
+summary(Mod)
