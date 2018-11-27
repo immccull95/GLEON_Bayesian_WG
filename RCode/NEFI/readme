@@ -19,6 +19,12 @@ plot_frames.R: plot individual frames at each forecasted time point for gif crea
 
 Plots.R: 
 
+bloom_or_bust.R: script written by JAB and IM July 2018 to play with models and start adding in water temp as covariate. may merge with other scripts
+
 zero_inflate_poission_example_JAGS.r: Example script written by Colin Averill July 2018 to provide an example of a blended zero inflated poission model with the JAGs code
 
-bloom_or_bust.R: script written by JAB and IM July 2018 to play with models and start adding in water temp as covariate. may merge with other scripts
+zero_inflate_poission_example_JAGS_MEL.r: Modifying Colin's script to include randomly simulated air and water temperature covariates. Model 
+results presented to GLEON group on Nov. 2, 2018. 
+
+zero_inflate_poission_example_JAGS_MEL_WB_Seasonal.r: Modifying Colin's script to include seasonally simulated air temperature, water temperature,
+and day length covariates. 
