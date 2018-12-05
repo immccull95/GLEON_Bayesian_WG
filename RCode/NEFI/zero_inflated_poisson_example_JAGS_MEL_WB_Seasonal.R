@@ -81,10 +81,6 @@ beta.pois.v <- solve(diag(1E-03,2))
 #plot(Nvec,y.obs, type = "p", main = "Simulated Gloeo data with winter & weekly obs.")
 
 
-#Cool. We now have zero inflate data where we know all of the true parameters!
-
-#Lets build a JAGS model that can recover those true parameters.----
-
 jags.model <- "
 model{
   for(i in 1:N){
@@ -101,7 +97,7 @@ model{
     b[i] ~ dbern(theta[i])
     
     #Adding process error to Poisson component
-    mu[i]~dnorm(lam[i], tau.proc)
+    mu[i]~dnorm(log(max(0.001, lam[i])), tau.proc)
 
     #mu[i] is the linear combination of predictors and parameters for the poisson component of the model.
     log(lam[i]) <- beta.pois[1] + beta.pois[2]*m[i-1] 
@@ -114,7 +110,7 @@ model{
   beta.bern ~ dmnorm(beta.bern.m,beta.bern.v)
   beta.pois ~ dmnorm(beta.pois.m,beta.pois.v)
   tau.proc~dgamma(0.001,0.001)
-  
+
   #Initial value
   #mu[1]=1
   m[1]=1
@@ -140,9 +136,7 @@ model{
 #N.pred = 2. one predictor is the intercept, the second is x ("temperature").
 jags.data <- list(y = y.obs, x3=x3,  N = N, 
                   beta.bern.m=beta.bern.m, beta.bern.v=beta.bern.v,
-                  beta.pois.m=beta.pois.m, beta.pois.v=beta.pois.v) #I am not exactly sure what this ifelse statement is doing
-                                          #But I found it in a ZIP example online
-                                          #And when I remove it, the model takes hours to run 
+                  beta.pois.m=beta.pois.m, beta.pois.v=beta.pois.v) 
 
 #set up initial conditions 
 #nchain=3
@@ -154,9 +148,9 @@ jags.data <- list(y = y.obs, x3=x3,  N = N,
 #fit the jags object using runjags.----
 jags.out <- run.jags(    model = jags.model,
                           data = jags.data,
-                         adapt =  30000,
+                         adapt =  25000,
                         burnin =  500,
-                        sample = 20000,
+                        sample = 25000,
                       n.chains = 3,
                      # inits=init,
                        monitor = c('tau.proc', 'beta.bern', 'beta.pois'))
