@@ -97,7 +97,7 @@ model{
     b[i] ~ dbern(theta[i])
     
     #Adding process error to Poisson component
-    mu[i]~dnorm(log(max(0.001, lam[i])), tau.proc)
+    mu[i]~ dnorm(log(max(lam[i], 0.001)), tau.proc)
 
     #mu[i] is the linear combination of predictors and parameters for the poisson component of the model.
     log(lam[i]) <- beta.pois[1] + beta.pois[2]*m[i-1] 
@@ -115,27 +115,12 @@ model{
   #mu[1]=1
   m[1]=1
 
-#Calculating predictions so we can plot prediction & credible intervals
-#for(j in 1:N.new){
-# y.new[j] ~ dpois(m.new[j])
-#  }
-#for(j in 2:N.new){
-#  m.new[j] <- mu.new[j]*b.new[j] + 1E-10 
-#  b.new[j] ~ dbern(theta.new[j])
-#  mu.new[j]~dnorm(lam.new[j], tau.proc)
-#  log(lam.new[j]) <- beta.pois[1] + beta.pois[2]*m.new[j-1] 
-#   logit(theta.new[j]) <- beta.bern[1]+ beta.bern[2]*x3.new[j]
-#}
-
-#m.new[1]=1
-
 } #close model loop.
 "
 
 #setup JAGS data object.----
 #N.pred = 2. one predictor is the intercept, the second is x ("temperature").
-jags.data <- list(y = y.obs, x3=x3,  N = N, 
-                  beta.bern.m=beta.bern.m, beta.bern.v=beta.bern.v,
+jags.data <- list(y=y.obs, x3=x3,  N = N, beta.bern.m=beta.bern.m, beta.bern.v=beta.bern.v,
                   beta.pois.m=beta.pois.m, beta.pois.v=beta.pois.v) 
 
 #set up initial conditions 
@@ -148,36 +133,30 @@ jags.data <- list(y = y.obs, x3=x3,  N = N,
 #fit the jags object using runjags.----
 jags.out <- run.jags(    model = jags.model,
                           data = jags.data,
-                         adapt =  25000,
+                         adapt =  20000,
                         burnin =  500,
-                        sample = 25000,
+                        sample = 20000,
                       n.chains = 3,
                      # inits=init,
-                       monitor = c('tau.proc', 'beta.bern', 'beta.pois'))
+                       monitor = c('tau.proc', 'beta.bern', 'beta.pois', 'm'))
 
 #summarize output.
 plot(jags.out, vars=c("beta.bern", "beta.pois", "tau.proc"))
 jags.out.mcmc <- as.mcmc.list(jags.out)
-summary(jags.out, vars=c("beta.bern", "beta.pois"))
-gelman.plot(jags.out.mcmc, vars=c("beta.bern", "beta.pois"))
+summary(jags.out)
+gelman.plot(jags.out.mcmc, vars=c("beta.bern", "beta.pois", "tau.proc"))
 
 #Credible intervals
 
 out <- as.matrix(jags.out.mcmc)
-ci <- apply((out[,5:ncol(out)]),2, quantile,c(0.025,0.5,0.975))
-ci_year1_summer=ci[,150:200]
+ci <- apply((out[,6:ncol(out)]),2, quantile,c(0.025,0.5,0.975))
 par(mfrow=c(1,1))
 par(mar=c(5,5,5,5)) 
-plot(Nvec, (ci[2,]),type = "l", xlab="Time", ylab="Predicted Gloeo Colony Counts")
+plot(Nvec, (ci[2,]),type = "l", xlab="Time", ylab="Gloeo Credible Intervals")
 lines(Nvec, (ci[1,]), lty = "dashed")
 lines(Nvec, (ci[3,]), lty = "dashed")
 
-plot(seq(1,51,1), (ci_year1_summer[2,]),type = "l", xlab="Time", ylab="Predicted Gloeo Colony Counts (Log scale)")
-lines(seq(1,51,1), (ci_year1_summer[1,]), lty = "dashed")
-lines(seq(1,51,1), (ci_year1_summer[3,]), lty = "dashed")
-
-hist(log(ci[2,]))
-
+hist(ci[2,])
 
 plot(Nvec,ci[2,],xlab="Time")
 #lines(Nvec, ci[1,])
@@ -187,3 +166,4 @@ points(Nvec,y.obs, col="red")
 
 Mod=lm(y.obs~ci[2,])
 summary(Mod)
+
