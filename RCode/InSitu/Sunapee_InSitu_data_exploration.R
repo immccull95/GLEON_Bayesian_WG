@@ -935,7 +935,6 @@ prism_all_long <- prism_all %>%
   spread(key = var, value = temp) %>% 
   arrange(site, date)
 
-
 # Subset for 2005-2016
 prism_midge_2005 <- prism_midge %>%
   mutate(year = year(Date)) %>% 
@@ -1158,3 +1157,51 @@ ggsave("Prism_MeanAirTemp_Newbury-Season.pdf",width=15, height=8.5)
 
 
 # Wind data ####
+
+buoy_wind <- read_csv("Datasets/Sunapee/RawData/Sunapee buoy data/met_data/2007-2017_wind_L1.csv", col_types = cols(
+  datetime = col_datetime(format = ""),
+  location = col_character(),
+  WindDir_deg = col_double(),
+  WindSp_ms = col_double(),
+  AveWindDir_deg = col_double(),
+  AveWindSp_ms = col_double(),
+  MaxWindSp_ms = col_double(),
+  MaxWindDir_deg = col_double()))
+
+str(buoy_wind)
+
+# Filter dataset for 2007 - 2016
+
+buoy_wind_2007_2016 <- buoy_wind %>% 
+  mutate(date = as_date(datetime)) %>% 
+  mutate(year = year(datetime)) %>% 
+  mutate(month = month(datetime)) %>% 
+  filter(year < 2017)
+
+wind_sp_summary <- buoy_wind_2007_2016 %>% 
+  select(date,WindSp_ms, AveWindSp_ms, MaxWindSp_ms) %>% 
+  group_by(date) %>% 
+  summarize_all(funs(mean, median, min, max, sd), na.rm=T)
+x <- wind_sp_summary
+wind_sp_summary <- replace(x,x == Inf|x == -Inf, NA)
+
+ggplot(wind_sp_summary, aes(x = date, y = WindSp_ms_mean)) +
+  geom_line(size = 1)+
+  labs(title = "Buoy Avg Daily Wind Speed Instaneous Readings (m/s)",y = "Mean Daily Wind Speed (m/s)") +
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=24),
+        axis.title.y = element_text(size=24),
+        legend.title = element_text(size=24),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=24,color="black"),
+        strip.text = element_text(size=24,color="black"))+
+  theme(panel.border=element_blank(),
+        axis.line = element_line(color="black"),
+        plot.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+
+ggsave("Buoy_Mean_Daily_WindSpeed.pdf",width=15, height=8.5)
+ggsave("Buoy_Mean_Daily_WindSpeed_Instant.pdf",width=15, height=8.5)
+
