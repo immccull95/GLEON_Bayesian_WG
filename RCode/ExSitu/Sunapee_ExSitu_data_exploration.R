@@ -135,8 +135,7 @@ weather_weekly_compiled <- data.frame(YearWeek=weekly_precip_snow$YearWeek, Prec
 ################ Seasonal weather summaries ##################
 # from early 2018 exploratory data analyses
 # precip
-seasonal_precip <- aggregate(weather_summary_data$daily_precip_mm, by=list(weather_summary_data$WaterYear,
-                                                                           weather_summary_data$Season), FUN=sum, na.rm=T)
+seasonal_precip <- aggregate(weather_summary_data$daily_precip_mm, by=list(weather_summary_data$WaterYear,weather_summary_data$Season), FUN=sum, na.rm=T)
 colnames(seasonal_precip) <- c('WaterYear','Season','Precip_mm')
 
 ggplot(seasonal_precip, aes(factor(WaterYear), Precip_mm, fill = Season)) + 
@@ -145,8 +144,7 @@ ggplot(seasonal_precip, aes(factor(WaterYear), Precip_mm, fill = Season)) +
   scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna'))
 
 # tmin
-seasonal_tmin <- aggregate(weather_summary_data$min_dailytemp_C, by=list(weather_summary_data$WaterYear,
-                                                                         weather_summary_data$Season), FUN=mean, na.rm=T)
+seasonal_tmin <- aggregate(weather_summary_data$min_dailytemp_C, by=list(weather_summary_data$WaterYear,weather_summary_data$Season), FUN=mean, na.rm=T)
 colnames(seasonal_tmin) <- c('WaterYear','Season','tmin_C')
 
 ggplot(seasonal_tmin, aes(factor(WaterYear), tmin_C, fill = Season)) + 
@@ -155,8 +153,7 @@ ggplot(seasonal_tmin, aes(factor(WaterYear), tmin_C, fill = Season)) +
   scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna'))
 
 # tmax
-seasonal_tmax <- aggregate(weather_summary_data$max_dailytemp_C, by=list(weather_summary_data$WaterYear,
-                                                                         weather_summary_data$Season), FUN=mean, na.rm=T)
+seasonal_tmax <- aggregate(weather_summary_data$max_dailytemp_C, by=list(weather_summary_data$WaterYear,weather_summary_data$Season), FUN=mean, na.rm=T)
 colnames(seasonal_tmax) <- c('WaterYear','Season','tmax_C')
 
 ggplot(seasonal_tmax, aes(factor(WaterYear), tmax_C, fill = Season)) + 

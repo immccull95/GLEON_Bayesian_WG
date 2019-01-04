@@ -902,3 +902,259 @@ plot(totalperL ~ watertemp_mean, data = gloeo_light_wtr_site, main = "Logistic M
      xlab = "watertemp_mean", ylab = "totalperL", xlim = c(0, 26), ylim = c(0, 20))  # Census data
 curve(alpha[1]/(1 + exp(-(x - alpha[2])/alpha[3])), add = T, col = "dodgerblue", lwd=2)  # Fitted model
 
+
+
+# PRISM Data ####
+
+# Read in PRISM data @ Midge
+prism_midge <- read_csv("Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/PRISM_met_1981_2017_midge.csv", skip = 10)
+
+prism_coffin <- read_csv("Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/PRISM_met_1981_2017_coffin.csv", skip = 10)
+
+prism_fichter <- read_csv("Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/PRISM_met_1981_2017_fichter.csv", skip = 10)
+
+prism_newbury <- read_csv("Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/PRISM_met_1981_2017_newbury.csv", skip = 10)
+
+prism_all <- full_join(prism_coffin, prism_fichter, by = "Date")
+
+prism_all2 <- full_join(prism_all, prism_midge, by = "Date")
+
+prism_all3 <- full_join(prism_all2, prism_newbury, by = "Date")
+
+write_csv(prism_all3, "Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/prism_all3.csv")
+
+#Read in combined data with new headers
+
+prism_all <- read_csv("Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/prism_all_combined.csv")
+
+#convert to long
+
+prism_all_long <- prism_all %>% 
+  gather(key = "site", value = "temp", -Date) %>% 
+  separate(site, into = c("site","var"), sep = "_") %>% 
+  spread(key = var, value = temp) %>% 
+  arrange(site, date)
+
+
+# Subset for 2005-2016
+prism_midge_2005 <- prism_midge %>%
+  mutate(year = year(Date)) %>% 
+  mutate(month = month(Date)) %>% 
+  filter (year > 2004 & year < 2017) 
+str(prism_midge_2005)
+
+# Seasons 
+install.packages("zoo")
+library(zoo)
+
+water_year_last_month <- 9
+date_format <- "%m/%d/%Y"
+
+# Create new columns
+prism_all_long <- prism_all_long %>% 
+  mutate(CalYear = year(Date)) %>% 
+  mutate(Month = month(Date)) 
+  
+prism_all_long$WaterYear <- NA #create new column for water year
+
+# use conditional statement to fill in water year column
+# calendar year is water year for months including and before water_year_last_month, otherwise use 1+calendar year
+prism_all_long$WaterYear <- ifelse(prism_all_long$Month <= water_year_last_month, 
+                                   prism_all_long$CalYear, prism_all_long$CalYear+1)
+
+# seasons (N Hemisphere): fall: sep-nov, winter: dec-feb, spring: mar-may, summer:jun-aug
+prism_all_long$Season <- NA #create new column for season
+yq <- as.yearqtr(as.yearmon(prism_all_long$Date, date_format) + 1/12)
+prism_all_long$Season <- factor(format(yq, "%q"), levels=1:4,
+                                      labels=c('winter','spring','summer','fall'))
+
+prism_2005 <- prism_all_long %>% 
+  filter(CalYear > 2004 & CalYear < 2017) %>% 
+  filter(site == "midge")
+
+prism_2005 <- prism_all_long %>% 
+  filter(CalYear > 2004 & CalYear < 2017) %>% 
+  filter(site == "newbury")
+
+
+# All sites 2005-2016
+ggplot(prism_2005, aes(x = Date, y = ppt, color = site)) +
+  geom_line(size = 1.5) +
+  labs(title = "Daily Precipitation from PRISM", color = "Site", y = "Precipitation (mm)") +
+  facet_wrap(~site) +
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=24),
+        axis.title.y = element_text(size=24),
+        legend.title = element_text(size=24),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=24,color="black"),
+        strip.text = element_text(size=24,color="black"))+
+  theme(panel.border=element_blank(),
+        axis.line = element_line(color="black"),
+        plot.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())
+
+ggsave("Prism_Precip_AllSites.pdf",width=15, height=8.5)
+
+################ Seasonal weather summaries ##################
+# from early 2018 exploratory data analyses
+# precip
+seasonal_precip <- aggregate(prism_2005$ppt, by=list(prism_2005$WaterYear,prism_2005$Season), FUN=sum, na.rm=T)
+colnames(seasonal_precip) <- c('WaterYear','Season','Precip_mm')
+
+seasonal_precip <- seasonal_precip %>% 
+  filter(WaterYear != 2017)
+
+ggplot(seasonal_precip, aes(factor(WaterYear), Precip_mm, fill = Season)) + 
+  geom_bar(stat="identity", position = "dodge") + 
+  labs(title='Precipitation PRISM Data @ Midge', x='water Year',y='Precipitation (mm)') +
+  scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna'))+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=24),
+        axis.title.y = element_text(size=24),
+        legend.title = element_text(size=24),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=24,color="black"),
+        strip.text = element_text(size=24,color="black"))
+
+ggsave("Prism_Precip_Midge-Season.pdf",width=15, height=8.5)
+
+#Newbury
+ggplot(seasonal_precip, aes(factor(WaterYear), Precip_mm, fill = Season)) + 
+  geom_bar(stat="identity", position = "dodge") + 
+  labs(title='Precipitation PRISM Data @ Newbury', x='water Year',y='Precipitation (mm)') +
+  scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna'))+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=24),
+        axis.title.y = element_text(size=24),
+        legend.title = element_text(size=24),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=24,color="black"),
+        strip.text = element_text(size=24,color="black"))
+
+ggsave("Prism_Precip_Newbury-Season.pdf",width=15, height=8.5)
+
+
+# tmin
+seasonal_tmin <- aggregate(prism_2005$tmin, by=list(prism_2005$WaterYear,prism_2005$Season), FUN=mean, na.rm=T)
+colnames(seasonal_tmin) <- c('WaterYear','Season','tmin_C')
+
+seasonal_tmin <- seasonal_tmin %>% 
+  filter(WaterYear != 2017)
+
+#Midge
+ggplot(seasonal_tmin, aes(factor(WaterYear), tmin_C, fill = Season)) + 
+  geom_bar(stat="identity", position = "dodge") + 
+  labs(title='Min Air Temp PRISM Data @ Midge', x='water Year',y='Min Air Temp (°C)') +
+  scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna')) +
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=24),
+        axis.title.y = element_text(size=24),
+        legend.title = element_text(size=24),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=24,color="black"),
+        strip.text = element_text(size=24,color="black"))
+
+ggsave("Prism_MinAirTemp_Midge-Season.pdf",width=15, height=8.5)
+
+#Newbury
+ggplot(seasonal_tmin, aes(factor(WaterYear), tmin_C, fill = Season)) + 
+  geom_bar(stat="identity", position = "dodge") + 
+  labs(title='Min Air Temp PRISM Data @ Newbury', x='water Year',y='Min Air Temp (°C)') +
+  scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna')) +
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=24),
+        axis.title.y = element_text(size=24),
+        legend.title = element_text(size=24),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=24,color="black"),
+        strip.text = element_text(size=24,color="black"))
+
+ggsave("Prism_MinAirTemp_Newbury-Season.pdf",width=15, height=8.5)
+
+
+# tmax
+seasonal_tmax <- aggregate(prism_2005$tmax, by=list(prism_2005$WaterYear,prism_2005$Season), FUN=mean, na.rm=T)
+colnames(seasonal_tmax) <- c('WaterYear','Season','tmax_C')
+seasonal_tmax <- seasonal_tmax %>% 
+  filter(WaterYear != 2017)
+
+#Midge
+ggplot(seasonal_tmax, aes(factor(WaterYear), tmax_C, fill = Season)) + 
+  geom_bar(stat="identity", position = "dodge") + 
+  labs(title='Max Air Temp PRISM Data @ Midge', x='water Year',y='Max Air Temp (°C)') +
+  scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna'))+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=24),
+        axis.title.y = element_text(size=24),
+        legend.title = element_text(size=24),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=24,color="black"),
+        strip.text = element_text(size=24,color="black"))
+
+ggsave("Prism_MaxAirTemp_Midge-Season.pdf",width=15, height=8.5)
+
+#Newbury
+ggplot(seasonal_tmax, aes(factor(WaterYear), tmax_C, fill = Season)) + 
+  geom_bar(stat="identity", position = "dodge") + 
+  labs(title='Max Air Temp PRISM Data @ Newbury', x='water Year',y='Max Air Temp (°C)') +
+  scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna'))+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=24),
+        axis.title.y = element_text(size=24),
+        legend.title = element_text(size=24),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=24,color="black"),
+        strip.text = element_text(size=24,color="black"))
+
+ggsave("Prism_MaxAirTemp_Newbury-Season.pdf",width=15, height=8.5)
+
+
+# tmean
+seasonal_tmean <- aggregate(prism_2005$tmean, by=list(prism_2005$WaterYear,prism_2005$Season), FUN=mean, na.rm=T)
+colnames(seasonal_tmean) <- c('WaterYear','Season','tmean_C')
+seasonal_tmean <- seasonal_tmean %>% 
+  filter(WaterYear != 2017)
+
+#Midge
+ggplot(seasonal_tmean, aes(factor(WaterYear), tmean_C, fill = Season)) + 
+  geom_bar(stat="identity", position = "dodge") + 
+  labs(title='Mean Air Temp PRISM Data @ Midge', x='water Year',y='Mean Air Temp (°C)') +
+  scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna'))+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=24),
+        axis.title.y = element_text(size=24),
+        legend.title = element_text(size=24),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=24,color="black"),
+        strip.text = element_text(size=24,color="black"))
+
+ggsave("Prism_MeanAirTemp_Midge-Season.pdf",width=15, height=8.5)
+
+#Newbury
+ggplot(seasonal_tmean, aes(factor(WaterYear), tmean_C, fill = Season)) + 
+  geom_bar(stat="identity", position = "dodge") + 
+  labs(title='Mean Air Temp PRISM Data @ Newbury', x='water Year',y='Mean Air Temp (°C)') +
+  scale_fill_manual('legend',values=c('winter'='steelblue','spring'='olivedrab','summer'='gold','fall'='sienna'))+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=24),
+        axis.title.y = element_text(size=24),
+        legend.title = element_text(size=24),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=24,color="black"),
+        strip.text = element_text(size=24,color="black"))
+
+ggsave("Prism_MeanAirTemp_Newbury-Season.pdf",width=15, height=8.5)
+
+
+# Wind data ####
