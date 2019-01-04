@@ -1185,6 +1185,8 @@ wind_sp_summary <- buoy_wind_2007_2016 %>%
 x <- wind_sp_summary
 wind_sp_summary <- replace(x,x == Inf|x == -Inf, NA)
 
+write_csv(wind_sp_summary, "Datasets/Sunapee/SummarizedData/wind_sp_summary.csv")
+
 ggplot(wind_sp_summary, aes(x = date, y = WindSp_ms_mean)) +
   geom_line(size = 1)+
   labs(title = "Buoy Avg Daily Wind Speed Instaneous Readings (m/s)",y = "Mean Daily Wind Speed (m/s)") +
