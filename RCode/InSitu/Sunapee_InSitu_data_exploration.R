@@ -12,6 +12,9 @@ library(readxl)
 library(lubridate)
 library(doBy) #included by LSB to aggregate water temp data following Bethel Steele code.
 
+install.packages("rWind")
+devtools::install_github("jabiologo/rWind")  
+library(rWind)
 ### Set working directory to be the "GLEON_Bayesian_WG" folder
 setwd("~/GitHub/GLEON_Bayesian_WG") #may need to change according to the user's folder path
 
@@ -51,7 +54,14 @@ newbury_all = full_join(newbury_gloeo,newbury_insitu_week,by = c("year", "week")
 write_csv(midge_all,"midge_all.csv")
 write_csv(newbury_all,"newbury_all.csv")
 
+# Read in final gloeo data ####
+gloeo = read_csv("Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp.csv")
 
+#Convert sites to factor
+sites <- c("Coffin", "Midge", "Fichter", "Newbury")
+gloeo$site <- parse_factor(gloeo$site, levels = sites)
+
+str(gloeo)
 
 ############################# WATER TEMP AGGREGATION #################################
 #Updated by LSB 26-June-2018
@@ -1182,6 +1192,7 @@ wind_sp_summary <- buoy_wind_2007_2016 %>%
   select(date,WindSp_ms, AveWindSp_ms, MaxWindSp_ms) %>% 
   group_by(date) %>% 
   summarize_all(funs(mean, median, min, max, sd), na.rm=T)
+
 x <- wind_sp_summary
 wind_sp_summary <- replace(x,x == Inf|x == -Inf, NA)
 
@@ -1206,4 +1217,61 @@ ggplot(wind_sp_summary, aes(x = date, y = WindSp_ms_mean)) +
 
 ggsave("Buoy_Mean_Daily_WindSpeed.pdf",width=15, height=8.5)
 ggsave("Buoy_Mean_Daily_WindSpeed_Instant.pdf",width=15, height=8.5)
+
+# Wind direction 
+install.packages("raster")
+library(raster)
+avg_wind_dir <- buoy_wind_2007_2016[100951:491622,5]
+rmax <- rasterFromXYZ(avg_wind_dir)  
+acol <- colorRampPalette(c("white", "blue", "darkblue"))  
+plot(rmax, col=acol(1000), main= "Maximum wind speed reported",  
+     xlab="Longitude", ylab="Lattitude")  
+
+library(rworldmap)  
+lines(getMap(resolution = "high"), lwd=2)  
+
+
+# Data exploration for light vs. total & daily diff gloeo ####
+gloeo_site <- gloeo %>%
+  filter(site=="Midge") %>% 
+  filter(year > 2008) %>% 
+  filter(totalperL > 0)
+
+str(gloeo_site)
+
+ggplot(gloeo_site, aes(x=light_sum,y=totalperL, color=factor(year)))+
+  geom_point(size=2)+
+  facet_wrap(~year,scales ="free")+
+  labs(title = "Midge", color = "Year")
+
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Midge_total_light.jpeg",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Midge_diff_light.jpeg",width=15, height=8.5)
+
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Newbury_total_light.jpeg",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Newbury_diff_light.jpeg",width=15, height=8.5)
+
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Coffin_total_light.jpeg",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Coffin_diff_light.jpeg",width=15, height=8.5)
+
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Fichter_total_light.jpeg",width=15, height=8.5)
+ggsave("Datasets/Sunapee/Data Visualizations/Light/Fichter_diff_light.jpeg",width=15, height=8.5)
+
+# Wind vs. gloeo
+
+gloeo_wind <- full_join(gloeo,wind_sp_summary, by = "date")
+
+gloeo_site <- gloeo %>%
+  filter(site=="Midge") %>% 
+  #filter(year > 2008) %>% 
+  filter(totalperL > 0)
+
+str(gloeo_site)
+
+ggplot(gloeo_site, aes(x=AveWindSp_ms_mean,y=totalperL, color=factor(year)))+
+  geom_point(size=2)+
+  facet_wrap(~year,scales ="free")+
+  labs(title = "Midge", color = "Year")
+
+hist(gloeo$totalperL)
+hist(gloeo_site$totalperL)
 
