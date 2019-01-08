@@ -140,6 +140,9 @@ jags.out <- run.jags(    model = jags.model,
                      #inits=init,
                        monitor = c('tau.proc', 'beta.bern', 'beta.pois', 'm'))
 
+write.jagsfile(jags.out, file="Datasets/Sunapee/Jags Models/RealWeeklyWinterNA", 
+              remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
+
 ##summarize output.
 plot(jags.out, vars=c("beta.bern", "beta.pois", "tau.proc"))
 jags.out.mcmc <- as.mcmc.list(jags.out)
@@ -152,19 +155,19 @@ out <- as.matrix(jags.out.mcmc)
 ci <- apply((out[,6:ncol(out)]),2, quantile,c(0.025,0.5,0.975), na.rm=TRUE)
 par(mfrow=c(1,1))
 par(mar=c(5,5,5,5)) 
-plot(Nvec, (ci[2,]),type = "l", xlab="Time", ylab="Log Gloeo Credible Intervals")
+plot(Nvec, (ci[2,]),type = "l", xlab="Time", ylab="Gloeo Credible Intervals", log="y")
 lines(Nvec, (ci[1,]), lty = "dashed")
 lines(Nvec, (ci[3,]), lty = "dashed")
 hist(ci[2,])
 
 ##m vs. y
 
-plot(Nvec,log(ci[2, ]+.01),xlab="Time")
+plot(Nvec,log(ci[2, ]+.01),xlab="Time", log="y")
 #lines(Nvec, ci[1,])
 #lines(Nvec, ci[3,])
 points(Nvec,log(y.obs+.01), col="red")
 
 Mod=lm(y.obs~ci[2,]) ##Linear model comparing m and y, but doesn't account for NA's
 summary(Mod)
-plot(log(y.obs+.01), log(ci[2,]+.01))
+plot(log(y.obs+.01), log(ci[2,]+.01), xlab="observed values", y="m 50% CI")
 

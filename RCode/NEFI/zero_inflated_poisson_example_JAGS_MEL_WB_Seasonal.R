@@ -140,8 +140,8 @@ jags.out <- run.jags(    model = jags.model,
                      # inits=init,
                        monitor = c('tau.proc', 'beta.bern', 'beta.pois', 'm'))
 
-write.jagsfile(jags.out, file="Datasets/Sunapee/Jags Models/SimWeeklyNA", 
-               remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
+#write.jagsfile(jags.out, file="Datasets/Sunapee/Jags Models/SimWeeklyNA", 
+#              remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
 #summarize output.
 plot(jags.out, vars=c("beta.bern", "beta.pois", "tau.proc"))
