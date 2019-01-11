@@ -20,22 +20,23 @@ Begin with data from one location:
 
 ```{r}
 
-data=read_csv("~/GitHub/GLEON_Bayesian_WG/Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp.csv")
+fielddata=read_csv("~/GitHub/GLEON_Bayesian_WG/Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp.csv") %>%
+  filter(year >= 2007 & year <= 2014)
 
-Midge=subset(data, site=="Midge")
-Coffin=subset(data, site=="Coffin")
-Fichter=subset(data, site=="Fichter")
-Newbury=subset(data, site=="Newbury")
+Midge=subset(fielddata, site=="Midge")
+Coffin=subset(fielddata, site=="Coffin")
+Fichter=subset(fielddata, site=="Fichter")
+Newbury=subset(fielddata, site=="Newbury")
 
 #Choose correct site
 
-dat=Midge
+#dat=Midge
 #dat=Coffin
 #dat=Fichter
-#dat=Newbury
+dat=Newbury
 
 str(dat)
-
+times <- dat$date
 
 ##look at response variable - what data distributions are appropriate?
 y<-round(dat$totalperL*141.3707) #converting colonies per Liter to count data: volume of 2, ~1 m net tows
@@ -79,7 +80,7 @@ RandomWalk = "
   tau_add ~ dgamma(a_add,r_add)
   }
 
-
+"
 ```
 
 Next we need to define the data and priors as a list. For this analysis we'll work with the log of y since the zero-bound on the index and the magnitudes of the changes appear much closer to a log-normal distribution than to a normal. [This only works for y>0]. The priors on error terms are standard, non-informative and the initial condition (x_ic) is parameterized to be within the range of known measurements.
@@ -127,6 +128,9 @@ Now that the model has converged we'll want to take a much larger sample from th
 jags.out   <- coda.samples (model = j.model,
                             variable.names = c("tau_add", "mu"),
                                 n.iter = 5000)
+save(jags.out, file = "C:/Users/Mary Lofton/Documents/GLEON/Bayesian/RandomWalk_Newbury.RData")
+
+summary(jags.out)
 
 DIC=dic.samples(j.model, n.iter=1000) #improved with lognormal- NOTE! 
 DIC
@@ -247,6 +251,11 @@ obs_quantile_mean
 #Mean quantile of obs in distribution of pred including observation error
 obs_quantile_mean_dm = mean(obs_quantile_dm, na.rm = TRUE)
 obs_quantile_mean_dm
+```
+
+#Plots
+
+```{r}
 
 #hist of quantiles
 hist(obs_quantile) #no observation error
@@ -265,10 +274,10 @@ abline(0,1)
 date=as.character(dat$date)
 dates<-as.Date(date)
 par(mar = c(5,3,4,3))
-plot(dates, obs_quantile_dm, xlim = c(dates[166],dates[204]),main = "dots = obs. quantiles, triangles = gloeo counts",ylab = "")
+plot(dates, obs_quantile_dm,main = "dots = obs. quantiles, triangles = gloeo counts",ylab = "")
 mtext("obs. quantile", side=2, line=1.7)
 par(new = TRUE)
-plot(dates, y, axes = FALSE, xlim = c(dates[166],dates[204]), bty = "n", xlab = "", ylab = "",pch = 17, col = "red", cex = 0.8)
+plot(dates, y, axes = FALSE, bty = "n", xlab = "", ylab = "",pch = 17, col = "red", cex = 0.8)
 axis(side=4, at = pretty(range(y)))
 mtext("gloeo counts", side=4, line=1.6)
 
