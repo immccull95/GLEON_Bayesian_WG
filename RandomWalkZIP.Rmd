@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 State-space model - revised by S. LaDeau (11/2017) from the EcoForecast Activity by Michael Dietze, with reference "Ecological Forecasting", chapter 8
 ========================================================
 
@@ -19,23 +18,23 @@ library(geosphere)
 Begin with data from one location:
 
 ```{r}
+fielddata=read_csv("~/GitHub/GLEON_Bayesian_WG/Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp.csv") %>%
+  filter(year >= 2007 & year <= 2014)
 
-data=read_csv("~/GitHub/GLEON_Bayesian_WG/Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp.csv")
-
-Midge=subset(data, site=="Midge")
-Coffin=subset(data, site=="Coffin")
-Fichter=subset(data, site=="Fichter")
-Newbury=subset(data, site=="Newbury")
+Midge=subset(fielddata, site=="Midge")
+Coffin=subset(fielddata, site=="Coffin")
+Fichter=subset(fielddata, site=="Fichter")
+Newbury=subset(fielddata, site=="Newbury")
 
 #Choose correct site
 
-dat=Midge
+#dat=Midge
 #dat=Coffin
 #dat=Fichter
-#dat=Newbury
+dat=Newbury
 
 str(dat)
-
+times <- dat$date
 
 ##look at response variable - what data distributions are appropriate?
 y<-round(dat$totalperL*141.3707) #converting colonies per Liter to count data: volume of 2, ~1 m net tows
@@ -57,18 +56,19 @@ plot(times,y,type='l',ylab="gloeo colonies",lwd=2)
 Next define the JAGS code. The code itself has three components, the data model, the process model, and the priors. The data model relates the observed data, y, at any time point to the latent variable, x. For this example we'll assume that the observation model just consists of Gaussian observation error. The process model relates the state of the system at one point in time to the state one time step ahead. In this case we'll start with the simplest possible process model, a random walk, which just consists of Gaussian process error centered around the current value of the system. Finally, we need to define priors for all stochastic variables, including the initial value of x, the process error, and the observation error.
 
 ```{r}
-RandomWalk = "
-
+RandomWalkZIP = "
   #### Data Model
   model{
   for(i in 1:N){
     #this fits the blended model to your observed data. 
     y[i] ~ dpois(m[i])
     
-    #exponentiate to get appropriate input to poisson
-    m[i] <- exp(mu[i]) 
+    #This blends the poisson and zero inflation models
+    m[i] <- exp(mu[i])*b[i] + 1E-10 #only when comparing them to the data, we need to exponentiate
+    
+    #this is the bernoulli outcome of the zero inflation
+    b[i] ~ dbern(theta)
   }
-
    #### Process Model
   for(i in 2:N){
     mu[i]~dnorm(mu[i-1],tau_add) #mu's here are on log scale
@@ -77,15 +77,15 @@ RandomWalk = "
   #### Priors
   mu[1] ~ dnorm(x_ic,tau_ic) 
   tau_add ~ dgamma(a_add,r_add)
-  }
-
-
+  theta~ dbeta(alpha, beta)
+}
+"
 ```
 
 Next we need to define the data and priors as a list. For this analysis we'll work with the log of y since the zero-bound on the index and the magnitudes of the changes appear much closer to a log-normal distribution than to a normal. [This only works for y>0]. The priors on error terms are standard, non-informative and the initial condition (x_ic) is parameterized to be within the range of known measurements.
 
 ```{r}
-data <- list(y=y,N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
+data <- list(y=y,N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001, alpha=1, beta=1)
 ```
 
 Next we need to define the initial state of the model's parameters for each chain in the MCMC. The overall initialization is stored as a list the same length as the number of chains, where each chain is passed a list of the initial values for each parameter. Unlike the definition of the priors, which had to be done independent of the data, the inidialization of the MCMC is allowed (and even encouraged) to use the data. However, each chain should be started from different initial conditions. We handle this below by basing the initial conditions for each chain off of a different random sample of the original data. 
@@ -95,14 +95,15 @@ nchain = 3
 init <- list()
 for(i in 1:nchain){
   y.samp = sample(y,length(y),replace=TRUE)
-  init[[i]] <- list(tau_add=1/var(diff(y.samp)))
+  init[[i]] <- list(tau_add=1/var(diff(y.samp)),
+                    theta = sum(y.samp == 0)/length(y.samp))
 }
 ```
 
 Now that we've defined the model, the data, and the initialization, we need to send all this info to JAGS, which will return the JAGS model object.
 
 ```{r}
-j.model   <- jags.model (file = textConnection(RandomWalk),
+j.model   <- jags.model (file = textConnection(RandomWalkZIP),
                              data = data,
                              inits = init,
                              n.chains = 3)
@@ -113,7 +114,7 @@ Next, given the defined JAGS model, we'll want to take a few samples from the MC
 ```{r}
 ## burn-in
 jags.out   <- coda.samples (model = j.model,
-                            variable.names = c("tau_add"),
+                            variable.names = c("tau_add", "theta"),
                                 n.iter = 1000)
 plot(jags.out)
 ```
@@ -125,12 +126,15 @@ Now that the model has converged we'll want to take a much larger sample from th
 
 ```{r}
 jags.out   <- coda.samples (model = j.model,
-                            variable.names = c("tau_add", "mu"),
+                            variable.names = c("tau_add", "mu","theta"),
                                 n.iter = 5000)
+
+save(jags.out, file = "C:/Users/Mary Lofton/Documents/GLEON/Bayesian/RandomWalkZIP_Newbury.RData")
+
+summary(jags.out)
 
 DIC=dic.samples(j.model, n.iter=1000) #improved with lognormal- NOTE! 
 DIC
-
 ```
 
 Given the full joint posterior samples, we're next going to visualize the output by just looking at the 95% credible interval of the timeseries of X's and compare that to the observed Y's. To do so we'll convert the coda output into a matrix and then calculate the quantiles. Looking at colnames(out) will show you that the first two columns are `tau_add` and `tau_obs`, so we calculate the CI starting from the 3rd column. We also transform the samples back from the log domain to the linear domain.
@@ -171,6 +175,7 @@ times=c(1:length(mus))
 
 ## sample parameters - ADD IN THE PARAMETERS FROM YOUR MODEL HERE
 tau = out[samp,grep("tau",colnames(out))]
+theta = out[samp,grep("theta",colnames(out))]
 
 pred <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
@@ -180,14 +185,16 @@ for (t in 2:ncol(mu)){
 #Sample to get predictive interval for latent states based on process model
 pred[,t] = rnorm(nsamp,mu[,t-1],tau) #exponentiate these before comparing to data, because mu on log scale
 
-#exponentiate to get appropriate input for poisson
-m <- exp(pred[,t])
+#random draw from bernoulli for zero-inflation
+b <- rbernoulli(nsamp,theta)
 
-#this fits the blended model to your observed data.
+#blend distributions and exponentiate to get appropriate input for poisson
+m <- exp(pred[,t]) * b + 1E-10
+
+#predictive interval for y (including data model)
 pred_obs[,t] = rpois(nsamp, m)
 
 }
-
 
 ```
 
@@ -247,6 +254,10 @@ obs_quantile_mean
 #Mean quantile of obs in distribution of pred including observation error
 obs_quantile_mean_dm = mean(obs_quantile_dm, na.rm = TRUE)
 obs_quantile_mean_dm
+```
+
+#Plots
+```{r}
 
 #hist of quantiles
 hist(obs_quantile) #no observation error
@@ -265,10 +276,10 @@ abline(0,1)
 date=as.character(dat$date)
 dates<-as.Date(date)
 par(mar = c(5,3,4,3))
-plot(dates, obs_quantile_dm, xlim = c(dates[166],dates[204]),main = "dots = obs. quantiles, triangles = gloeo counts",ylab = "")
+plot(dates, obs_quantile_dm,main = "dots = obs. quantiles, triangles = gloeo counts",ylab = "")
 mtext("obs. quantile", side=2, line=1.7)
 par(new = TRUE)
-plot(dates, y, axes = FALSE, xlim = c(dates[166],dates[204]), bty = "n", xlab = "", ylab = "",pch = 17, col = "red", cex = 0.8)
+plot(dates, y, axes = FALSE, bty = "n", xlab = "", ylab = "",pch = 17, col = "red", cex = 0.8)
 axis(side=4, at = pretty(range(y)))
 mtext("gloeo counts", side=4, line=1.6)
 
@@ -280,4 +291,3 @@ dat$daylength <- daylength(43.3802, dates)
 
 plot(dat$daylength, obs_quantile_dm)
 ```
-
