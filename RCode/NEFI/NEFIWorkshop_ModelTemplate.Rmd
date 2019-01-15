@@ -3,9 +3,6 @@ State-space model - revised by S. LaDeau (11/2017) from the EcoForecast Activity
 
 The data used for this example are from summer weekly(ish) Gloetrichia echinulata (Gloeo.) sampling at 4 locations in Lake Sunapee, NH. The data are provided by Kathryn Cottingham, and should not be used without permission outside this workshop.
 
-This activity will explore the state-space framework for modeling time-series and spatial data sets. It is based on separating the process model, which describes how the system evolves in time or space, from the observation (data) model. The state-space model gets its name because the model estimates that true value of the underlying **latent** state variables.
-
-
 
 ```{r}
 library(tidyverse)
@@ -16,7 +13,7 @@ library(moments)
 library(geosphere)
 ```
 
-#1) Reading in and visualize data
+#1) Reading in and visualize data (Edit site of interest)
 
 ```{r}
 
@@ -62,6 +59,8 @@ beta.v <- solve(diag(1E-03,3)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
 ```{r}
 
 #JAGS Plug-ins: Add each separate model here 
+#variable.names are variables you would like to plot for model diagnostics (e.g., excludes mu)
+#variable.names.out are all variables you would like to monitor in the jags run 
 
 data.RandomWalk <- list(y=y, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
 variable.names.RandomWalk<- c("tau_add")
@@ -103,7 +102,7 @@ for(i in 1:nchain){
 }
 ```
 
-#Edit These Before Running a Model 
+#Edit model input names before running model
 
 ```{r}
 
@@ -122,6 +121,7 @@ Next, given the defined JAGS model, we'll want to take a few samples from the MC
 
 Since rjags returns the samples as a CODA object, we can use any of the diagnositics in the R *coda* library to test for convergence, summarize the output, or visualize the chains.
 
+#Model should run as-is without name changes; can alter # of iterations as necessary for convergence
 ```{r}
 
 j.model   <- jags.model (file = model,
@@ -151,6 +151,8 @@ DIC
 ```
 
 Given the full joint posterior samples, we're next going to visualize the output by just looking at the 95% credible interval of the timeseries of X's and compare that to the observed Y's. To do so we'll convert the coda output into a matrix and then calculate the quantiles. Looking at colnames(out) will show you that the first two columns are `tau_add` and `tau_obs`, so we calculate the CI starting from the 3rd column. We also transform the samples back from the log domain to the linear domain.
+
+#Obs. vs. Latent Variable CI Plots: Probably will not need to edit
 
 ```{r}
 times <- as.Date(as.character(dat$date))
@@ -209,7 +211,7 @@ pred_obs[,t] = rpois(nsamp, m)
 
 ```
 
-#Diagnostic Visualization
+#Diagnostic Visualization: Probably will not need to edit
 ```{r}
 
 #Visualization
@@ -234,7 +236,7 @@ points(times,y,pch="+",cex=0.5)
 
 ```
 
-#Further Diagnostic Checks and Visualization
+#Further Diagnostic Checks and Visualization: Probably will not need to edit
 
 ```{r}
 
@@ -267,7 +269,7 @@ obs_quantile_mean_dm = mean(obs_quantile_dm, na.rm = TRUE)
 obs_quantile_mean_dm
 ```
 
-#Plots
+#Plots: Probably will not need to edit
 
 ```{r}
 
