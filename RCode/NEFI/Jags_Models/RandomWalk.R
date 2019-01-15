@@ -1,4 +1,4 @@
-"
+
 
   #### Data Model
   model{
@@ -21,4 +21,3 @@
   tau_add ~ dgamma(a_add,r_add)
   theta~ dbeta(alpha, epsilon)
 }
-"
