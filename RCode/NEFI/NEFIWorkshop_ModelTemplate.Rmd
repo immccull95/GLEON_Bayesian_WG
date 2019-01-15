@@ -124,6 +124,11 @@ Since rjags returns the samples as a CODA object, we can use any of the diagnosi
 
 ```{r}
 
+j.model   <- jags.model (file = model,
+                             data = data.model,
+                             inits = init,
+                             n.chains = 3)
+
 jags.out <- run.jags(model = model,
                        data = data.model,
                        adapt =  1000,
@@ -137,6 +142,9 @@ write.jagsfile(jags.out, file=paste0("~/GitHub/GLEON_Bayesian_WG/RCode/NEFI/Jags
 
 plot(jags.out, vars=variable.names.model)
 
+jags.out.mcmc <- as.mcmc.list(jags.out)
+
+
 DIC=dic.samples(j.model, n.iter=5000)
 DIC
 
@@ -145,30 +153,33 @@ DIC
 Given the full joint posterior samples, we're next going to visualize the output by just looking at the 95% credible interval of the timeseries of X's and compare that to the observed Y's. To do so we'll convert the coda output into a matrix and then calculate the quantiles. Looking at colnames(out) will show you that the first two columns are `tau_add` and `tau_obs`, so we calculate the CI starting from the 3rd column. We also transform the samples back from the log domain to the linear domain.
 
 ```{r}
-
-out <- as.matrix(jags.out)
-mus=grep("mu", colnames(out))
-mu = exp(out[,mus])
-
-times=c(1:length(mus))
+times <- as.Date(as.character(dat$date))
 time.rng = c(1,length(times)) ## adjust to zoom in and out
 ciEnvelope <- function(x,ylo,yhi,...){
   polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
                                       ylo[1])), border = NA,...) 
 }
+out <- as.matrix(jags.out.mcmc)
+mus=grep("mu", colnames(out))
+mu = exp(out[,mus])
 ci <- apply(exp(out[,mus]),2,quantile,c(0.025,0.5,0.975))
 
-plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log="y", ylab="colonies",xlim=times[time.rng])
+plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log="y", ylab="observed Gloeo colonies",xlim=times[time.rng])
 
 ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
 ```
 
-one step ahead prediction: can plot using code above; plot out-of-sample predictions first because wide CIs; calculate means and plot predicted vs. observed
+#Edit this section to match features of your model 
+#one step ahead prediction: can plot using code above; plot out-of-sample predictions first because wide CIs; calculate means and plot predicted vs. observed
 ```{r}
+#How many times do you want to sample to get predictive interval for each sampling day?
+nsamp = 30
 
-nsamp = 500
-out <- as.matrix(jags.out)
+#Calculate prediction intervals for one timestep ahead
+#your latent states must be called "mu" in the model!
+
+out <- as.matrix(jags.out.mcmc)
 samp <- sample.int(nrow(out),nsamp)
 
 ## sample initial conditions
@@ -176,15 +187,30 @@ mus=grep("mu", colnames(out))
 mu = out[samp,mus] 
 times=c(1:length(mus))
 
-## sample tau
+## sample parameters - ADD IN THE PARAMETERS FROM YOUR MODEL HERE
 tau = out[samp,grep("tau",colnames(out))]
 
-pred <- matrix(NA, nrow=nsamp,ncol=ncol(mu))
-TS1 <- NULL
+pred <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
+  
+#Sample to get predictive interval for latent states based on process model
 pred[,t] = rnorm(nsamp,mu[,t-1],tau) #exponentiate these before comparing to data, because mu on log scale
+
+#exponentiate to get appropriate input for poisson
+m <- exp(pred[,t])
+
+#this fits the blended model to your observed data.
+pred_obs[,t] = rpois(nsamp, m)
+
 }
+
+
+```
+
+#Diagnostic Visualization
+```{r}
 
 #Visualization
 
@@ -193,45 +219,80 @@ ciEnvelope <- function(x,ylo,yhi,...){
   polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
                                       ylo[1])), border = NA,...) 
 }
-out <- as.matrix(jags.out)
+out <- as.matrix(jags.out.mcmc)
 mus=grep("mu", colnames(out))
 mu = exp(out[,mus])
 ci <- apply(exp(out[,mus]),2,quantile,c(0.025,0.5,0.975))
 pi <- apply(exp(pred),2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+obs_pi <- apply(pred_obs,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
 
-plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log="y", ylab="colonies/L",xlim=times[time.rng])
+plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log = "y", ylab="Gloeo count",xlim=times[time.rng])
+ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
 ciEnvelope(times,pi[1,],pi[3,],col="Green")
 ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
 
 ```
 
-#Checks
+#Further Diagnostic Checks and Visualization
 
 ```{r}
-
-#mu vs. preds
-
-diffs <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
-
-for(i in 1:nsamp){
-  for(j in 1:ncol(mu)){
-diffs[i,j]=mu[i,j]-pred[i,j]
-  }
-}
-row_sums=rowSums(diffs, na.rm=TRUE) #NA.rm required because first column is NA
-pred_sum=sum(row_sums)
 
 #y vs. preds
 
 obs_diff= vector(mode="numeric", length=0)
+obs_quantile = vector(mode="numeric", length=0)
+obs_quantile_dm = vector(mode="numeric",length=0)
+pred_mean = vector(mode="numeric",length=0)
 
-for(i in 1:ncol(pred)){
-  obs_diff[i]=mean(pred[,i])-y[i]
+for(i in 2:ncol(pred)){
+  obs_diff[i]=mean(exp(pred[,i]))-y[i] #difference between mean of pred. values and obs for each time point
+  pred_mean[i]=mean(exp(pred[,i])) #mean of pred. values at each time point
+  percentile <- ecdf(exp(pred[,i])) #create function to give percentile based on distribution of pred. values at each time point
+  obs_quantile[i] <- percentile(y[i]) #get percentile of obs in pred distribution
+  percentile1 <- ecdf(pred_obs[,i]) #create function to give percentile of obs in distribution of pred including observation error
+  obs_quantile_dm[i] <- percentile1(y[i]) #get percentile of obs 
 }
 
-obspred_sum=sum(obs_diff, na.rm=TRUE)
-obspred_sum
+#Mean of difference between pred and obs
+obspred_mean=mean(obs_diff, na.rm=TRUE)
+obspred_mean
 
+#Mean quantile of obs in distribution of pred
+obs_quantile_mean = mean(obs_quantile, na.rm = TRUE)
+obs_quantile_mean
+
+#Mean quantile of obs in distribution of pred including observation error
+obs_quantile_mean_dm = mean(obs_quantile_dm, na.rm = TRUE)
+obs_quantile_mean_dm
 ```
 
+#Plots
+
+```{r}
+
+#hist of quantiles
+hist(obs_quantile) #no observation error
+hist(obs_quantile_dm, breaks = seq(0,1,0.05)) #with observation error
+
+#plot of mean pred vs. obs
+plot(y,pred_mean, xlim = c(0,500), ylim = c(0,500)) #no obs error
+
+## qqplot - plot of quantiles of data in distribution including obs error
+plot(seq(0,1,length.out = length(obs_quantile_dm)-1),sort(obs_quantile_dm),
+     xlab = "Theoretical Quantile",
+     ylab = "Empirical Quantile")
+abline(0,1)
+
+## time series 
+date=as.character(dat$date)
+dates<-as.Date(date)
+par(mar = c(5,3,4,3))
+plot(dates, obs_quantile_dm,main = "dots = obs. quantiles, triangles = gloeo counts",ylab = "")
+mtext("obs. quantile", side=2, line=1.7)
+par(new = TRUE)
+plot(dates, y, axes = FALSE, bty = "n", xlab = "", ylab = "",pch = 17, col = "red", cex = 0.8)
+axis(side=4, at = pretty(range(y)))
+mtext("gloeo counts", side=4, line=1.6)
+
+```
