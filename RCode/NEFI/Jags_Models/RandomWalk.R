@@ -1,4 +1,4 @@
-RandomWalk = "
+"
 
   #### Data Model
   model{
