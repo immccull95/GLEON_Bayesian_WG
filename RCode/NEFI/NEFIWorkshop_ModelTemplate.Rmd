@@ -8,7 +8,7 @@ This activity will explore the state-space framework for modeling time-series an
 
 
 ```{r}
-install.packages("tidyverse")
+library(tidyverse)
 library(readxl)
 library(rjags)
 library(runjags)
@@ -16,7 +16,7 @@ library(moments)
 library(geosphere)
 ```
 
-#Reading in and visualize data
+#1) Reading in and visualize data
 
 ```{r}
 
@@ -49,228 +49,7 @@ range(y)
 
 ```
 
-Next define the JAGS code. The code itself has three components, the data model, the process model, and the priors. The data model relates the observed data, y, at any time point to the latent variable, x. For this example we'll assume that the observation model just consists of Gaussian observation error. The process model relates the state of the system at one point in time to the state one time step ahead. In this case we'll start with the simplest possible process model, a random walk, which just consists of Gaussian process error centered around the current value of the system. Finally, we need to define priors for all stochastic variables, including the initial value of x, the process error, and the observation error.
-
-##Random Walk Model
-
-```{r}
-RandomWalk = "
-
-  #### Data Model
-  model{
-  for(i in 1:N){
-    #this fits the blended model to your observed data. 
-    y[i] ~ dpois(m[i])
-    
-   
-    #when comparing these values to the data, we need to exponentiate
-    m[i] <- exp(mu[i]) 
-  }
-
-   #### Process Model
-  for(i in 2:N){
-    mu[i]~dnorm(mu[i-1],tau_add) #mu's here are on log scale
-  }
-  
-  #### Priors
-  mu[1] ~ dnorm(x_ic,tau_ic) 
-  tau_add ~ dgamma(a_add,r_add)
-}
-"
-```
-
-##Random Walk Zero-Inflation Model
-
-```{r}
-RandomWalkZIP = "
-
-  #### Data Model
-  model{
-  for(i in 1:N){
-    #this fits the blended model to your observed data. 
-    y[i] ~ dpois(m[i])
-    
-    #This blends the poisson and zero inflation models
-    m[i] <- exp(mu[i])*b[i] + 1E-10 #only when comparing them to the data, we need to exponentiate
-    
-    #this is the bernoulli outcome of the zero inflation
-    b[i] ~ dbern(theta)
-  }
-
-   #### Process Model
-  for(i in 2:N){
-    mu[i]~dnorm(mu[i-1],tau_add) #mu's here are on log scale
-  }
-  
-  #### Priors
-  mu[1] ~ dnorm(x_ic,tau_ic) 
-  tau_add ~ dgamma(a_add,r_add)
-  theta~ dbeta(alpha, epsilon)
-}
-"
-```
-
-##Model including Day Length (Linear)
-
-```{r}
-
-DayLength = "
-
-  #### Data Model
-  model{
-  for(i in 1:N){
-    #this fits the blended model to your observed data. 
-    y[i] ~ dpois(m[i])
-    
-    #This blends the poisson and zero inflation models
-    m[i] <- exp(mu[i])
-  }
-
-   #### Process Model
-  for(i in 2:N){
-    mu[i]~dnorm(lambda[i],tau_add) #mu's here are on log scale
-    lambda[i] <- beta[1] + beta[2]*mu[i-1] + beta[3]*DL[i]
-
-  }
-  
-  #### Priors
-  mu[1] ~ dnorm(x_ic,tau_ic) 
-  tau_add ~ dgamma(a_add,r_add)
-  beta ~ dmnorm(beta.m,beta.v)
-
-}
-"
-```
-
-##Model including DayLength: Quadratic 
-
-```{r}
-
-DayLength_Quad = "
-
-  #### Data Model
-  model{
-  for(i in 1:N){
-    #this fits the blended model to your observed data. 
-    y[i] ~ dpois(m[i])
-    
-    m[i] <- exp(mu[i])
-
-  }
-
-   #### Process Model
-  for(i in 2:N){
-    mu[i]~dnorm(lambda[i],tau_add) #mu's here are on log scale
-    lambda[i] <- beta[1] + beta[2]*mu[i-1] + beta[3]*DL[i] + beta[4]*DL[i]^2
-
-  }
-  
-  #### Priors
-  mu[1] ~ dnorm(x_ic,tau_ic) 
-  tau_add ~ dgamma(a_add,r_add)
-  beta ~ dmnorm(beta.m,beta.v)
-
-}
-"
-```
-
-##Model including Water Temp (Exponential)
-
-```{r}
-
-TempExp = "
-
-  #### Data Model
-  model{
-  for(i in 1:N){
-    #this fits the blended model to your observed data. 
-    y[i] ~ dpois(m[i])
-    
-    m[i] <- exp(mu[i])
-    
-  }
-
-   #### Process Model
-  for(i in 2:N){
-    mu[i]~dnorm(lambda[i],tau_add) #mu's here are on log scale
-    lambda[i] <- beta[1] + beta[2]*mu[i-1] + beta[3]*exp(Temp[i])
-
-  }
-  
-  #### Priors
-  mu[1] ~ dnorm(x_ic,tau_ic) 
-  tau_add ~ dgamma(a_add,r_add)
-  beta ~ dmnorm(beta.m,beta.v)
-
-}
-"
-```
-
-##Model including Water Temp: Quadratic 
-
-```{r}
-
-Temp_Quad = "
-
-  #### Data Model
-  model{
-  for(i in 1:N){
-    #this fits the blended model to your observed data. 
-    y[i] ~ dpois(m[i])
-    
-    m[i] <- exp(mu[i])
-  
-  }
-
-   #### Process Model
-  for(i in 2:N){
-    mu[i]~dnorm(lambda[i],tau_add) #mu's here are on log scale
-    lambda[i] <- beta[1] + beta[2]*mu[i-1] + beta[3]*Temp[i] + beta[4]*Temp[i]^2
-
-  }
-  
-  #### Priors
-  mu[1] ~ dnorm(x_ic,tau_ic) 
-  tau_add ~ dgamma(a_add,r_add)
-  beta ~ dmnorm(beta.m,beta.v)
-
-}
-"
-```
-
-##Model including Logistic Growth 
-
-```{r}
-
-Logistic = "
-
-  #### Data Model
-  model{
-  for(i in 1:N){
-    #this fits the blended model to your observed data. 
-    y[i] ~ dpois(m[i])
-    
-    m[i] <- exp(mu[i])
-  
-  }
-
-   #### Process Model
-  for(i in 2:N){
-    mu[i]~dnorm(lambda[i],tau_add) 
-    lambda[i] <- log(beta[1]*m[i-1]+ beta[2]*m[i-1]^2)
-
-  }
-  
-  #### Priors
-  mu[1] ~ dnorm(x_ic,tau_ic) 
-  tau_add ~ dgamma(a_add,r_add)
-  beta~ dmnorm(beta.m, beta.v)
-
-}
-"
-```
-
-#Betas: Change before running model
+#2) Edit # of Betas before running model: Can run whole chunk even if no betas so next chunk will run
 
 ```{r}
 beta.m <- as.vector(c(0,0,0)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
@@ -278,7 +57,7 @@ beta.v <- solve(diag(1E-03,3)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
 ```
 
 
-#JAGS Plug-Ins
+#3) JAGS Plug-Ins: Can run whole chunk or just model of interest
 
 ```{r}
 
@@ -288,9 +67,9 @@ data.RandomWalk <- list(y=y, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_a
 variable.names.RandomWalk<- c("tau_add")
 variable.namesout.RandomWalk<- c("tau_add", "mu")
 
-data.RandomWalkZIP <- list(y=y, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
-variable.names.RandomWalkZIP<- c("tau_add")
-variable.namesout.RandomWalkZIP<- c("tau_add", "mu")
+data.RandomWalkZip <- list(y=y, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
+variable.names.RandomWalkZip<- c("tau_add")
+variable.namesout.RandomWalkZip<- c("tau_add", "mu")
 
 data.DayLength <- list(y=y, beta.m=beta.m, beta.v=beta.v, DL=DL, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
 variable.names.DayLength <- c("tau_add", "beta")
@@ -313,7 +92,7 @@ variable.names.Logistic <- c("tau_add", "beta")
 variable.namesout.Logistic <- c("tau_add", "beta", "mu")
 ```
 
-Next we need to define the initial state of the model's parameters for each chain in the MCMC. The overall initialization is stored as a list the same length as the number of chains, where each chain is passed a list of the initial values for each parameter. Unlike the definition of the priors, which had to be done independent of the data, the inidialization of the MCMC is allowed (and even encouraged) to use the data. However, each chain should be started from different initial conditions. We handle this below by basing the initial conditions for each chain off of a different random sample of the original data. 
+#Initial Conditions
 
 ```{r}
 nchain = 3
@@ -328,23 +107,16 @@ for(i in 1:nchain){
 
 ```{r}
 
-name="RandomWalk.R"
-model=paste0("~/GitHub/GLEON_Bayesian_WG/RCode/NEFI/Jags_Models/",name) ##TYPE IN WHICH MODEL YOU WANT TO RUN
+name="RandomWalk.R" #TYPE IN WHICH MODEL YOU WANT TO RUN
 data.model=data.RandomWalk ##TYPE IN WHICH MODEL YOU WANT TO RUN
 variable.names.model=variable.names.RandomWalk ##TYPE IN WHICH MODEL YOU WANT TO RUN
 variable.namesout.model=variable.namesout.RandomWalk ##TYPE IN WHICH MODEL YOU WANT TO RUN
 
+model=paste0("~/GitHub/GLEON_Bayesian_WG/RCode/NEFI/Jags_Models/",name) 
+
 ```
 
 Now that we've defined the model, the data, and the initialization, we need to send all this info to JAGS, which will return the JAGS model object.
-
-```{r}
-
-j.model   <- jags.model (file = "~/GitHub/GLEON_Bayesian_WG/RCode/NEFI/Jags_Models/RandomWalk.R", 
-                             data = data.model, 
-                             inits = init,
-                             n.chains = 3)
-```
 
 Next, given the defined JAGS model, we'll want to take a few samples from the MCMC chain and assess when the model has converged. To take samples from the MCMC object we'll need to tell JAGS what variables to track and how many samples to take.
 
@@ -352,7 +124,7 @@ Since rjags returns the samples as a CODA object, we can use any of the diagnosi
 
 ```{r}
 
-jags.out <- run.jags(model = j.model,
+jags.out <- run.jags(model = model,
                        data = data.model,
                        adapt =  1000,
                        burnin =  500,
@@ -361,8 +133,7 @@ jags.out <- run.jags(model = j.model,
                        inits=init,
                        monitor = variable.namesout.model)
 
-write.jagsfile(jags.out, file=paste0("~/GitHub/GLEON_Bayesian_WG/RCode/NEFI/Jags_Models/",name), 
-              remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
+write.jagsfile(jags.out, file=paste0("~/GitHub/GLEON_Bayesian_WG/RCode/NEFI/Jags_Models/Results",name), remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
 plot(jags.out, vars=variable.names.model)
 
