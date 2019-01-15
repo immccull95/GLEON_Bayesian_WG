@@ -19,5 +19,4 @@
   #### Priors
   mu[1] ~ dnorm(x_ic,tau_ic) 
   tau_add ~ dgamma(a_add,r_add)
-  theta~ dbeta(alpha, epsilon)
 }
