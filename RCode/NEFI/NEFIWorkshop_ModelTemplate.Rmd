@@ -75,7 +75,6 @@ RandomWalk = "
   #### Priors
   mu[1] ~ dnorm(x_ic,tau_ic) 
   tau_add ~ dgamma(a_add,r_add)
-  theta~ dbeta(alpha, epsilon)
 }
 "
 ```
@@ -137,7 +136,6 @@ DayLength = "
   #### Priors
   mu[1] ~ dnorm(x_ic,tau_ic) 
   tau_add ~ dgamma(a_add,r_add)
-  #theta~ dbeta(alpha, epsilon)
   beta ~ dmnorm(beta.m,beta.v)
 
 }
@@ -170,7 +168,6 @@ DayLength_Quad = "
   #### Priors
   mu[1] ~ dnorm(x_ic,tau_ic) 
   tau_add ~ dgamma(a_add,r_add)
-  #theta~ dbeta(alpha, epsilon)
   beta ~ dmnorm(beta.m,beta.v)
 
 }
@@ -203,7 +200,6 @@ TempExp = "
   #### Priors
   mu[1] ~ dnorm(x_ic,tau_ic) 
   tau_add ~ dgamma(a_add,r_add)
-  #theta~ dbeta(alpha, epsilon)
   beta ~ dmnorm(beta.m,beta.v)
 
 }
@@ -236,7 +232,6 @@ Temp_Quad = "
   #### Priors
   mu[1] ~ dnorm(x_ic,tau_ic) 
   tau_add ~ dgamma(a_add,r_add)
-  #theta~ dbeta(alpha, epsilon)
   beta ~ dmnorm(beta.m,beta.v)
 
 }
@@ -269,7 +264,6 @@ Logistic = "
   #### Priors
   mu[1] ~ dnorm(x_ic,tau_ic) 
   tau_add ~ dgamma(a_add,r_add)
-  #theta~ dbeta(alpha, epsilon)
   beta~ dmnorm(beta.m, beta.v)
 
 }
