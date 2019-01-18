@@ -13,7 +13,7 @@ library(moments)
 library(geosphere)
 ```
 
-#1) Reading in and visualize data (Edit site of interest)
+#1) Reading in data (no edits)
 
 ```{r}
 
@@ -29,12 +29,21 @@ Coffin=subset(Data, site=="Coffin")
 Fichter=subset(Data, site=="Fichter")
 Newbury=subset(Data, site=="Newbury")
 
-#Choose correct site
+```
+
+#2) Edit to choose correct site
+
+```{r}
+
 dat=Midge
 #dat=Coffin
 #dat=Fichter
 #dat=Newbury
+```
 
+#3) Convert & visualize data (no edits)
+
+```{r}
 time=as.character(dat$date)
 #times<-as.Date(time)
 
@@ -43,10 +52,10 @@ y<-round(dat$totalperL*141.3707) #converting colonies per Liter to count data: v
 hist(y)  
 N=length(y)
 range(y)
-
 ```
 
-#2) Edit # of Betas before running model: Can run whole chunk even if no betas so next chunk will run
+#4) Edit to input appropriate # of Betas 
+#If model doesn't require betas, can run as-is so next code chunk will run 
 
 ```{r}
 beta.m <- as.vector(c(0,0,0)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
@@ -54,7 +63,9 @@ beta.v <- solve(diag(1E-03,3)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
 ```
 
 
-#3) JAGS Plug-Ins: Can run whole chunk or just model of interest
+#5) JAGS Plug-Ins: Can run whole chunk or just model of interest
+
+#Edit to add a model of interest if it's not already included; make sure model names matches name in R script in the "Jags_Models" folder
 
 ```{r}
 
@@ -91,7 +102,7 @@ variable.names.Logistic <- c("tau_add", "beta")
 variable.namesout.Logistic <- c("tau_add", "beta", "mu")
 ```
 
-#Initial Conditions
+#6) Initial Conditions: We haven't set up an initial conditions except for tau_add, so don't change for now
 
 ```{r}
 nchain = 3
@@ -102,16 +113,17 @@ for(i in 1:nchain){
 }
 ```
 
-#Edit model input names before running model
+#7) Edit site and model input names before running model
 
 ```{r}
 
-name="RandomWalk.R" #TYPE IN WHICH MODEL YOU WANT TO RUN
-data.model=data.RandomWalk ##TYPE IN WHICH MODEL YOU WANT TO RUN
-variable.names.model=variable.names.RandomWalk ##TYPE IN WHICH MODEL YOU WANT TO RUN
-variable.namesout.model=variable.namesout.RandomWalk ##TYPE IN WHICH MODEL YOU WANT TO RUN
+site="Midge" #Type in site
+name="RandomWalk.R" #Type in name of model script file
+data.model=data.RandomWalk ##Type in name of model after data.
+variable.names.model=variable.names.RandomWalk ##Type in name of model after variable.names.
+variable.namesout.model=variable.namesout.RandomWalk ##Type in name of model after variable.namesout.
 
-model=paste0("~/GitHub/GLEON_Bayesian_WG/RCode/NEFI/Jags_Models/",name) 
+model=paste0("~/GitHub/GLEON_Bayesian_WG/RCode/NEFI/Jags_Models/",name) #Do not edit
 
 ```
 
@@ -121,7 +133,8 @@ Next, given the defined JAGS model, we'll want to take a few samples from the MC
 
 Since rjags returns the samples as a CODA object, we can use any of the diagnositics in the R *coda* library to test for convergence, summarize the output, or visualize the chains.
 
-#Model should run as-is without name changes; can alter # of iterations as necessary for convergence
+#8) Run model (no edits, unless you want to change # of iterations)
+
 ```{r}
 
 j.model   <- jags.model (file = model,
@@ -138,12 +151,13 @@ jags.out <- run.jags(model = model,
                        inits=init,
                        monitor = variable.namesout.model)
 
-write.jagsfile(jags.out, file=paste0("~/GitHub/GLEON_Bayesian_WG/RCode/NEFI/Jags_Models/Results",name), remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
+write.jagsfile(jags.out, file=paste0("~/GitHub/GLEON_Bayesian_WG/RCode/NEFI/Jags_Models/Results",site,name), remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
-plot(jags.out, vars=variable.names.model)
+plot(jags.out, vars=variable.names.model) 
 
 jags.out.mcmc <- as.mcmc.list(jags.out)
 
+out <- as.matrix(jags.out.mcmc)
 
 DIC=dic.samples(j.model, n.iter=5000)
 DIC
@@ -152,7 +166,7 @@ DIC
 
 Given the full joint posterior samples, we're next going to visualize the output by just looking at the 95% credible interval of the timeseries of X's and compare that to the observed Y's. To do so we'll convert the coda output into a matrix and then calculate the quantiles. Looking at colnames(out) will show you that the first two columns are `tau_add` and `tau_obs`, so we calculate the CI starting from the 3rd column. We also transform the samples back from the log domain to the linear domain.
 
-#Obs. vs. Latent Variable CI Plots: Probably will not need to edit
+#9) Obs. vs. Latent Variable CI Plots (no edits)
 
 ```{r}
 times <- as.Date(as.character(dat$date))
@@ -161,7 +175,7 @@ ciEnvelope <- function(x,ylo,yhi,...){
   polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
                                       ylo[1])), border = NA,...) 
 }
-out <- as.matrix(jags.out.mcmc)
+
 mus=grep("mu", colnames(out))
 mu = exp(out[,mus])
 ci <- apply(exp(out[,mus]),2,quantile,c(0.025,0.5,0.975))
@@ -172,32 +186,37 @@ ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
 ```
 
-#Edit this section to match features of your model 
-#one step ahead prediction: can plot using code above; plot out-of-sample predictions first because wide CIs; calculate means and plot predicted vs. observed
+#10) one step ahead prediction: can plot using code above; plot out-of-sample predictions first because wide CIs; calculate means and plot predicted vs. observed
+
+#Edit this section to match features of your model (change nsamp, sample parameters, process model)
+
 ```{r}
 #How many times do you want to sample to get predictive interval for each sampling day?
-nsamp = 30
+#Edit nsamp to reflect a subset of total number of samples
+nsamp = 30 
 
 #Calculate prediction intervals for one timestep ahead
 #your latent states must be called "mu" in the model!
 
-out <- as.matrix(jags.out.mcmc)
 samp <- sample.int(nrow(out),nsamp)
 
-## sample initial conditions
+# sample initial conditions
 mus=grep("mu", colnames(out))
 mu = out[samp,mus] 
 times=c(1:length(mus))
 
-## sample parameters - ADD IN THE PARAMETERS FROM YOUR MODEL HERE
+# sample parameters 
+# Edit to add other parameters from your model here
 tau = out[samp,grep("tau",colnames(out))]
 
+#Create matrix for predictions
 pred <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
   
 #Sample to get predictive interval for latent states based on process model
+#Edit this to reflect process model
 pred[,t] = rnorm(nsamp,mu[,t-1],tau) #exponentiate these before comparing to data, because mu on log scale
 
 #exponentiate to get appropriate input for poisson
@@ -211,7 +230,8 @@ pred_obs[,t] = rpois(nsamp, m)
 
 ```
 
-#Diagnostic Visualization: Probably will not need to edit
+#11) Diagnostic Visualization (no edits)
+
 ```{r}
 
 #Visualization
@@ -236,7 +256,7 @@ points(times,y,pch="+",cex=0.5)
 
 ```
 
-#Further Diagnostic Checks and Visualization: Probably will not need to edit
+#12) Further Diagnostic Checks and Visualization (no edits)
 
 ```{r}
 
@@ -269,7 +289,7 @@ obs_quantile_mean_dm = mean(obs_quantile_dm, na.rm = TRUE)
 obs_quantile_mean_dm
 ```
 
-#Plots: Probably will not need to edit
+#13) Plots (no edits)
 
 ```{r}
 
