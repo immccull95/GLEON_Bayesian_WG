@@ -19,15 +19,16 @@ library(geosphere)
 
 Data=read.csv("~/GitHub/GLEON_Bayesian_WG/Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp.csv")
 Data$date=format(as.Date(Data$date), "%Y-%m-%d")
+time=as.character(Data$date)
 Data$daylength=daylength(43.3802, Data$date)
 DL = Data$daylength
 Temp= Data$watertemp_mean
 
 #Subset by Site
-Midge=subset(Data, site=="Midge")
-Coffin=subset(Data, site=="Coffin")
-Fichter=subset(Data, site=="Fichter")
-Newbury=subset(Data, site=="Newbury")
+Midge=subset(Data, site=="Midge" & year<2015)
+Coffin=subset(Data, site=="Coffin" & year<2015)
+Fichter=subset(Data, site=="Fichter" & year<2015)
+Newbury=subset(Data, site=="Newbury" & year<2015)
 
 ```
 
@@ -39,14 +40,12 @@ dat=Midge
 #dat=Coffin
 #dat=Fichter
 #dat=Newbury
+
 ```
 
-#3) Convert & visualize data (no edits)
+#3) Visualize data (no edits)
 
 ```{r}
-time=as.character(dat$date)
-#times<-as.Date(time)
-
 ##look at response variable 
 y<-round(dat$totalperL*141.3707) #converting colonies per Liter to count data: volume of 2, ~1 m net tows
 hist(y)  
@@ -186,14 +185,16 @@ ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
 ```
 
-#10) one step ahead prediction: can plot using code above; plot out-of-sample predictions first because wide CIs; calculate means and plot predicted vs. observed
+#10) one step ahead prediction: plot out-of-sample predictions first because wide CIs; calculate means and plot predicted vs. observed
 
-#Edit this section to match features of your model (change nsamp, sample parameters, process model)
+#Edit this section to match features of your model (change nsamp to be a subset of the total # of samples, change sample parameters & process model?)
+
+#The default is just set to calculate for a random walk
 
 ```{r}
 #How many times do you want to sample to get predictive interval for each sampling day?
 #Edit nsamp to reflect a subset of total number of samples
-nsamp = 30 
+nsamp = 200 
 
 #Calculate prediction intervals for one timestep ahead
 #your latent states must be called "mu" in the model!
@@ -216,7 +217,8 @@ pred_obs <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 for (t in 2:ncol(mu)){
   
 #Sample to get predictive interval for latent states based on process model
-#Edit this to reflect process model
+
+#Edit this to reflect additional components of process model?
 pred[,t] = rnorm(nsamp,mu[,t-1],tau) #exponentiate these before comparing to data, because mu on log scale
 
 #exponentiate to get appropriate input for poisson
@@ -226,7 +228,6 @@ m <- exp(pred[,t])
 pred_obs[,t] = rpois(nsamp, m)
 
 }
-
 
 ```
 
