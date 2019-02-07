@@ -22,13 +22,21 @@ sunapee_bth = google_drive_get(file = bth_file) %>%
   rename(depth_m = Bathymetry.Depths, 
          area_m2 = Bathymetry.Areas) 
 
-
 # writing out altered data locally and posting to google drive. Posting to google drive takes a few minutes depending on file size 
-write.csv(sunapee_buoy, file = gd_file, row.names = F)
+write = FALSE 
+if(write){
+  write.csv(sunapee_buoy, file = gd_file, row.names = F)
+}
 post = FALSE # post updated files or not to gd 
 if(post){
   google_drive_put(file = gd_file) 
 }
+
+
+## estimating stability metrics for Sunapee based on buoy data 
+
+
+
 
 
 
