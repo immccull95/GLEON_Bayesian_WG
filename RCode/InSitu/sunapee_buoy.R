@@ -67,10 +67,11 @@ stability_data <- sunapee_buoy %>%
 
 wnd_data <- left_join(stability_data, dplyr::filter(dplyr::select(sunapee_wnd, datetime, wnd, location), location == 'loon'), by = 'datetime') %>% 
   select(datetime, wnd)
+wnd.height = 1.7
 
 sunapee_schmidt <- ts.schmidt.stability(wtr = stability_data, bathy = sunapee_bth, na.rm = T) 
 sunapee_ln_na_incl <- ts.lake.number(wtr = stability_data, wnd = wnd_data, 
-                             wnd.height = 2, bathy = sunapee_bth)
+                             wnd.height = wnd.height, bathy = sunapee_bth)
 
 depths = get.offsets(stability_data)
 all.data = merge(stability_data, wnd_data, by = "datetime")
@@ -83,7 +84,6 @@ wtr.mat = as.matrix(wtr[, -1])
 dimnames(wtr.mat) <- NULL
 seasonal = TRUE
 bathy = sunapee_bth
-wnd.height = 2 
 
 for (i in 1:n) {
   temps = wtr.mat[i, ]
