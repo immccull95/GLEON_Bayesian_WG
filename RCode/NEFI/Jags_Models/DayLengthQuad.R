@@ -2,7 +2,6 @@ model{
   for(i in 1:N){
     #this fits the blended model to your observed data. 
     y[i] ~ dpois(m[i])
-    
     m[i] <- exp(mu[i])
     
   }
