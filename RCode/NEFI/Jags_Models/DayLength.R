@@ -1,9 +1,7 @@
 model{
   for(i in 1:N){
-    #this fits the blended model to your observed data. 
+    #this fits the model to your observed data. 
     y[i] ~ dpois(m[i])
-    
-    #This blends the poisson and zero inflation models
     m[i] <- exp(mu[i])
   }
   
