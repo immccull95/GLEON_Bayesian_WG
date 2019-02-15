@@ -86,7 +86,7 @@ jags.out <- run.jags(model = model,
                      inits=init,
                      monitor = jags_plug_ins$variable.namesout.model)
 
-write.jagsfile(jags.out, file=paste("Results/Jags_Models/",site,paste0(model_name,'.txt'), sep = '_'), 
+write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'.txt'), sep = '_')), 
                remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
 plot(jags.out, vars = jags_plug_ins$variable.names.model) 
