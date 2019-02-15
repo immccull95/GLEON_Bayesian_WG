@@ -11,36 +11,34 @@ library(moments)
 library(geosphere)
 source('RCode/helper_functions/google_drive_functions.R')
 source('RCode/NEFI/get_data.R')
+source('RCode/helper_functions/plug_n_play_functions.R')
 
-#1) Reading in data (no edits)
 
-start_date = '2007-01-01'
+#1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
+
+start_date = '2007-01-01' # in YYYY-MM-DD format 
 end_date = '2015-12-31' 
+site = c('midge') # options are midge, coffin, newbury, or fichter 
+model_timestep = 1 # model timestep in days if filling in dates
+fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's 
 
-Data = get_data(cal_time_start = start_date, 
-                cal_time_end = end_date, 
-                model_timestep = 1, # model timestep in days if filling in dates
-                fill_dates = TRUE,  # T/F for filling in dates w/o observations with NA's 
-                sites = c('midge','coffin','fichter','newbury')) %>%
-  mutate(daylength = daylength(43.4802, date))
+beta.m <- as.vector(c(0,0,0)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
+beta.v <- solve(diag(1E-03,3)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
 
-DL = Data$daylength
-Temp= Data$watertemp_mean
-time=as.character(Data$date)
+model_name = 'RandomWalk' # options are RandomWalk, RandomWalkZip, DayLength, DayLength_Quad, TempExp, Temp_Quad, or Logistic
+model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
-#Subset by Site
-Midge=subset(Data, site=="midge" & year<2015)
-Coffin=subset(Data, site=="coffin" & year<2015)
-Fichter=subset(Data, site=="fichter" & year<2015)
-Newbury=subset(Data, site=="newbury" & year<2015)
+#How many times do you want to sample to get predictive interval for each sampling day?
+#Edit nsamp to reflect a subset of total number of samples
+nsamp = 200 
 
-#2) Edit to choose correct site
-dat=Midge
-#dat=Coffin
-#dat=Fichter
-#dat=Newbury
 
-#3) Visualize data (no edits)
+#2) read in and visualize data ------------------------------------------------------------------------------------------------------------
+dat = plug_n_play_data(start_date = start_date,
+                       end_date = end_date,
+                       sites = site,
+                       model_timestep = model_timestep,
+                       fill_dates = fill_dates)
 
 ##look at response variable 
 y<-round(dat$totalperL*141.3707) #converting colonies per Liter to count data: volume of 2, ~1 m net tows
@@ -48,53 +46,17 @@ hist(y)
 N=length(y)
 range(y, na.rm = T)
 
-#4) Edit to input appropriate # of Betas 
-#If model doesn't require betas, can run as-is so next code chunk will run 
-
-beta.m <- as.vector(c(0,0,0)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
-beta.v <- solve(diag(1E-03,3)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
 
 
-#5) JAGS Plug-Ins: Can run whole chunk or just model of interest
+#3) JAGS Plug-Ins: Can run whole chunk or just model of interest --------------------------------------------------------------
+jags_plug_ins <- jags_plug_ins(model_name = model_name,  
+                               y = y, 
+                               beta.m = beta.m, 
+                               beta.v = beta.v, 
+                               Temp = dat$watertemp_mean, 
+                               DL = dat$daylength)  
 
-#Edit to add a model of interest if it's not already included; make sure model names matches name in R script in the "Jags_Models" folder
-
-
-#JAGS Plug-ins: Add each separate model here 
-#variable.names are variables you would like to plot for model diagnostics (e.g., excludes mu)
-#variable.names.out are all variables you would like to monitor in the jags run 
-
-data.RandomWalk <- list(y=y, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
-variable.names.RandomWalk<- c("tau_add")
-variable.namesout.RandomWalk<- c("tau_add", "mu")
-
-data.RandomWalkZip <- list(y=y, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
-variable.names.RandomWalkZip<- c("tau_add")
-variable.namesout.RandomWalkZip<- c("tau_add", "mu")
-
-data.DayLength <- list(y=y, beta.m=beta.m, beta.v=beta.v, DL=DL, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
-variable.names.DayLength <- c("tau_add", "beta")
-variable.namesout.DayLength <- c("tau_add", "beta", "mu")
-
-data.DayLength_Quad <- list(y=y, beta.m=beta.m, beta.v=beta.v, DL=DL, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
-variable.names.DayLength <- c("tau_add", "beta")
-variable.namesout.DayLength <- c("tau_add", "beta", "mu")
-
-data.TempExp <- list(y=y, beta.m=beta.m, beta.v=beta.v, Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
-variable.names.TempExp <- c("tau_add", "beta")
-variable.namesout.TempExp <- c("tau_add", "beta", "mu")
-
-data.Temp_Quad <- list(y=y, beta.m=beta.m, beta.v=beta.v, Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
-variable.names.Temp_Quad <- c("tau_add", "beta")
-variable.namesout.Temp_Quad <- c("tau_add", "beta", "mu")
-
-data.Logistic <- list(y=y, beta.m=beta.m, beta.v=beta.v, N=length(y),x_ic=log(0.1),tau_ic=100,a_add=.001,r_add=.001)
-variable.names.Logistic <- c("tau_add", "beta")
-variable.namesout.Logistic <- c("tau_add", "beta", "mu")
-
-
-#6) Initial Conditions: We haven't set up an initial conditions except for tau_add, so don't change for now
-
+#4) Initial Conditions: We haven't set up an initial conditions except for tau_add, so don't change for now -------------------
 nchain = 3
 init <- list()
 for(i in 1:nchain){
@@ -103,43 +65,31 @@ for(i in 1:nchain){
 }
 
 
-#7) Edit site and model input names before running model
-
-
-site="Midge" #Type in site
-name="RandomWalk" #Type in name of model script file
-data.model=data.RandomWalk ##Type in name of model after data.
-variable.names.model=variable.names.RandomWalk ##Type in name of model after variable.names.
-variable.namesout.model=variable.namesout.RandomWalk ##Type in name of model after variable.namesout.
-
-model=paste0("RCode/NEFI/Jags_Models/",name, '.R') #Do not edit
-
 # Now that we've defined the model, the data, and the initialization, we need to send all this info to JAGS, which will return the JAGS model object.
 # 
 # Next, given the defined JAGS model, we'll want to take a few samples from the MCMC chain and assess when the model has converged. To take samples from the MCMC object we'll need to tell JAGS what variables to track and how many samples to take.
 # 
 # Since rjags returns the samples as a CODA object, we can use any of the diagnositics in the R *coda* library to test for convergence, summarize the output, or visualize the chains.
 
-#8) Run model (no edits, unless you want to change # of iterations)
-
+#5) Run model (no edits, unless you want to change # of iterations) -------------------------------------------------------------
 j.model   <- jags.model (file = model,
-                         data = data.model,
+                         data = jags_plug_ins$data.model,
                          inits = init,
                          n.chains = 3)
 
 jags.out <- run.jags(model = model,
-                     data = data.model,
+                     data = jags_plug_ins$data.model,
                      adapt =  1000, 
                      burnin =  500, 
                      sample = 2500, 
                      n.chains = 3, 
                      inits=init,
-                     monitor = variable.namesout.model)
+                     monitor = jags_plug_ins$variable.namesout.model)
 
-write.jagsfile(jags.out, file=paste("RCode/NEFI/Jags_Models/Results",site,paste0(name,'.txt'), sep = '_'), 
+write.jagsfile(jags.out, file=paste("RCode/NEFI/Jags_Models/Results",site,paste0(model_name,'.txt'), sep = '_'), 
                remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
-plot(jags.out, vars=variable.names.model) 
+plot(jags.out, vars = jags_plug_ins$variable.names.model) 
 
 jags.out.mcmc <- as.mcmc.list(jags.out)
 
@@ -176,9 +126,6 @@ points(times,y,pch="+",cex=0.5)
 
 #The default is just set to calculate for a random walk
 
-#How many times do you want to sample to get predictive interval for each sampling day?
-#Edit nsamp to reflect a subset of total number of samples
-nsamp = 200 
 
 #Calculate prediction intervals for one timestep ahead
 #your latent states must be called "mu" in the model!
@@ -200,16 +147,16 @@ pred_obs <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
 
-#Sample to get predictive interval for latent states based on process model
-
-#Edit this to reflect additional components of process model?
-pred[,t] = rnorm(nsamp,mu[,t-1],tau) #exponentiate these before comparing to data, because mu on log scale
-
-#exponentiate to get appropriate input for poisson
-m <- exp(pred[,t])
-
-#this fits the blended model to your observed data.
-pred_obs[,t] = rpois(nsamp, m)
+  #Sample to get predictive interval for latent states based on process model
+  
+  #Edit this to reflect additional components of process model?
+  pred[,t] = rnorm(nsamp,mu[,t-1],tau) #exponentiate these before comparing to data, because mu on log scale
+  
+  #exponentiate to get appropriate input for poisson
+  m <- exp(pred[,t])
+  
+  #this fits the blended model to your observed data.
+  pred_obs[,t] = rpois(nsamp, m)
 
 }
 
@@ -247,12 +194,12 @@ obs_quantile_dm = vector(mode="numeric",length=0)
 pred_mean = vector(mode="numeric",length=0)
 
 for(i in 2:ncol(pred)){
-obs_diff[i]=mean(exp(pred[,i]))-y[i] #difference between mean of pred. values and obs for each time point
-pred_mean[i]=mean(exp(pred[,i])) #mean of pred. values at each time point
-percentile <- ecdf(exp(pred[,i])) #create function to give percentile based on distribution of pred. values at each time point
-obs_quantile[i] <- percentile(y[i]) #get percentile of obs in pred distribution
-percentile1 <- ecdf(pred_obs[,i]) #create function to give percentile of obs in distribution of pred including observation error
-obs_quantile_dm[i] <- percentile1(y[i]) #get percentile of obs 
+  obs_diff[i]=mean(exp(pred[,i]))-y[i] #difference between mean of pred. values and obs for each time point
+  pred_mean[i]=mean(exp(pred[,i])) #mean of pred. values at each time point
+  percentile <- ecdf(exp(pred[,i])) #create function to give percentile based on distribution of pred. values at each time point
+  obs_quantile[i] <- percentile(y[i]) #get percentile of obs in pred distribution
+  percentile1 <- ecdf(pred_obs[,i]) #create function to give percentile of obs in distribution of pred including observation error
+  obs_quantile_dm[i] <- percentile1(y[i]) #get percentile of obs 
 }
 
 #Mean of difference between pred and obs
