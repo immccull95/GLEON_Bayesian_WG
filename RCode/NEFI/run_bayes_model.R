@@ -25,7 +25,7 @@ fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's
 beta.m <- as.vector(c(0,0,0)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
 beta.v <- solve(diag(1E-03,3)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
 
-model_name = 'RandomWalk' # options are RandomWalk, RandomWalkZip, DayLength, DayLength_Quad, TempExp, Temp_Quad, or Logistic
+model_name = 'RandomWalk' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -54,7 +54,9 @@ jags_plug_ins <- jags_plug_ins(model_name = model_name,
                                beta.m = beta.m, 
                                beta.v = beta.v, 
                                Temp = dat$watertemp_mean, 
-                               DL = dat$daylength)  
+                               DL = dat$daylength,
+                               year_no = as.numeric(as.factor(dat$year))
+)  
 
 #4) Initial Conditions: We haven't set up an initial conditions except for tau_add, so don't change for now -------------------
 nchain = 3
