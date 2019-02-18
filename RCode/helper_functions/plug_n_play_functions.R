@@ -29,7 +29,7 @@ plug_n_play_data <- function(start_date, end_date, sites, model_timestep, fill_d
   return(dat) 
 }
 
-jags_plug_ins <- function(model_name, y, beta.m, beta.v, Temp, DL, x_ic = log(0.1), tau_ic = 100, a_add = 0.001, r_add = 0.001){
+jags_plug_ins <- function(model_name, y, beta.m, beta.v, Temp, DL, year_no, x_ic = log(0.1), tau_ic = 100, a_add = 0.001, r_add = 0.001){
   
   #JAGS Plug-ins: Add each separate model here 
   #variable.names are variables you would like to plot for model diagnostics (e.g., excludes mu)
@@ -63,6 +63,17 @@ jags_plug_ins <- function(model_name, y, beta.m, beta.v, Temp, DL, x_ic = log(0.
   variable.names.Logistic <- c("tau_add", "beta")
   variable.namesout.Logistic <- c("tau_add", "beta", "mu")
   
+  data.Exponential <- list(y=y, beta.m=beta.m, beta.v=beta.v, N=length(y),x_ic=x_ic,tau_ic = tau_ic,a_add = a_add,r_add = r_add)
+  variable.names.Exponential <- c("tau_add", "beta")
+  variable.namesout.Exponential <- c("tau_add", "beta", "mu")
+  
+  data.RandomYear <- list(y=y, beta.m=beta.m, beta.v=beta.v, year_no=year_no, N=length(y),x_ic=x_ic,tau_ic = tau_ic,a_add = a_add,r_add = r_add)
+  variable.names.RandomYear <- c("tau_add", "beta")
+  variable.namesout.RandomYear <- c("tau_add", "tau_yr", "beta", "yr","mu")
+  
+  data.ChangepointTempExp <- list(y=y, beta.m=beta.m, beta.v=beta.v, Temp=Temp, N=length(y),x_ic=x_ic,tau_ic = tau_ic,a_add = a_add,r_add = r_add)
+  variable.names.ChangepointTempExp <- c("tau_add", "beta", "k")
+  variable.namesout.ChangepointTempExp <- c("tau_add", "beta", "k", "mu")
   
   data = eval(parse(text = paste0('data.', model_name)))
   variable.names = eval(parse(text = paste0('variable.names.', model_name)))
