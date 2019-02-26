@@ -1,3 +1,5 @@
+#Does the lambda need to be logged? 
+
 model{
   for(i in 1:N){
     #this fits the blended model to your observed data. 

@@ -10,7 +10,7 @@ model{
   #### Process Model
   for(i in 2:N){
    mu[i]~dnorm(lambda[i],tau_add) 
-   log(lambda[i])<- beta[1]*mu[i-1] + beta[2]*mu[i-1]^2
+   lambda[i]<- beta[1]*mu[i-1] + beta[2]*mu[i-1]^2
     
   }
   
