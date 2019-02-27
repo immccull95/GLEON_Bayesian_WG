@@ -93,15 +93,193 @@ jags_plug_ins <- function(model_name){
   data = eval(parse(text = paste0('data.', model_name)))
   variable.names = eval(parse(text = paste0('variable.names.', model_name)))
   variable.namesout = eval(parse(text = paste0('variable.namesout.', model_name)))
-  pred_obs= eval(parse(text = paste0('pred_obs.', model_name)))
-  pred = eval(parse(text = paste0('pred.', model_name)))
+  
   
   return(list(data.model = data, variable.names.model = variable.names, variable.namesout.model = variable.namesout)) 
 }
 
 
 
+preds_plug_ins <- function(model_name){
+  
+## One step ahead prediction intervals
 
+samp <- sample.int(nrow(out),nsamp)
+mus=grep("mu", colnames(out))
+mu = out[samp,mus] 
+times=c(1:length(mus))
+  
+#RandomWalk
 
+if(model_name=="RandomWalk"){
+tau_add = out[samp,grep("tau_add",colnames(out))]
+pred.RandomWalk <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs.RandomWalk <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
+for (t in 2:ncol(mu)){
+  pred.RandomWalk[,t] = rnorm(nsamp,mu[,t-1],tau_add) #exponentiate these before comparing to data, because mu on log scale
+  m <- exp(pred.RandomWalk[,t]) 
+  pred_obs.RandomWalk[,t] = rpois(nsamp, m)}
+}
+
+#RandomWalkZip
+
+if(model_name=="RandomWalkZip"){
+tau_add = out[samp,grep("tau_add",colnames(out))]
+theta = out[samp,grep("theta",colnames(out))]
+pred.RandomWalkZip <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs.RandomWalkZip <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+
+for (t in 2:ncol(mu)){
+  pred.RandomWalkZip[,t] = rnorm(nsamp,mu[,t-1],tau_add) #exponentiate these before comparing to data, because mu on log scale
+  b <- rbinom(nsamp, 1, theta)
+  m <- exp(pred.RandomWalkZip[,t])*b+ 1E-10 
+  pred_obs.RandomWalkZip[,t] = rpois(nsamp, m)}
+}
+
+#RandomYear 
+
+if(model_name=="RandomYear"){
+tau_add = out[samp,grep("tau_add",colnames(out))]
+yr_temp = out[samp,grep("yr",colnames(out))]
+yr=yr_temp[,-1]
+
+pred.RandomYear <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs.RandomYear <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+x<- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+
+for (t in 2:ncol(mu)){
+  x[,t] <- mu[,t-1] + yr[,year_no[t]]
+  pred.RandomYear[,t] = rnorm(nsamp, x[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+  m <- exp(pred.RandomYear[,t]) 
+  pred_obs.RandomYear[,t] = rpois(nsamp, m)}
+}
+
+#RandomYearIntercept
+
+if(model_name=="RandomYearIntercept"){
+tau_add = out[samp,grep("tau_add",colnames(out))]
+yr_temp = out[samp,grep("yr",colnames(out))]
+yr=yr_temp[,-1]
+beta = out[samp,grep("beta",colnames(out))]
+
+pred.RandomYearIntercept <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs.RandomYearIntercept <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+x<- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+
+for (t in 2:ncol(mu)){
+  x[,t] <- beta[t] + mu[,t-1] + yr[,year_no[t]]
+  pred.RandomYearIntercept[,t] = rnorm(nsamp, x[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+  m <- exp(pred.RandomYearIntercept[,t]) 
+  pred_obs.RandomYearIntercept[,t] = rpois(nsamp, m)}
+}
+
+#Exponential
+
+if(model_name=="Exponential"){
+tau_add = out[samp,grep("tau_add",colnames(out))]
+beta = out[samp,grep("beta",colnames(out))]
+
+pred.Exponential <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs.Exponential <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+
+for (t in 2:ncol(mu)){
+  lambda[,t] <- beta[,t]*mu[,t-1] 
+  pred.Exponential[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+  m <- exp(pred.Exponential[,t]) 
+  pred_obs.Exponential[,t] = rpois(nsamp, m)}
+}
+
+#Logistic
+
+if(model_name=="Logistic"){
+tau_add = out[samp,grep("tau_add",colnames(out))]
+beta = out[samp,grep("beta",colnames(out))]
+
+pred.Logistic <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs.Logistic <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+
+for (t in 2:ncol(mu)){
+  lambda[,t] <- beta[t,1]*mu[,t-1] + beta[t,2]*mu[,t-1]*mu[,t-1]
+  pred.Logistic[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+  m <- exp(pred.Logistic[,t]) 
+  pred_obs.Logistic[,t] = rpois(nsamp, m)}
+}
+
+#DayLength
+
+if(model_name=="DayLength"){
+tau_add = out[samp,grep("tau_add",colnames(out))]
+beta = out[samp,grep("beta",colnames(out))]
+
+pred.DayLength <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs.DayLength <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+
+for (t in 2:ncol(mu)){
+  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*DL[t]
+  pred.DayLength[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+  m <- exp(pred[,t]) 
+  pred_obs.DayLength[,t] = rpois(nsamp, m)}
+}
+
+#DayLengthQuad
+
+if(model=="DayLengthQuad"){
+tau_add = out[samp,grep("tau_add",colnames(out))]
+beta = out[samp,grep("beta",colnames(out))]
+
+pred.DayLengthQuad <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs.DayLengthQuad <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+
+for (t in 2:ncol(mu)){
+  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*DL[t] + beta[t,4]*DL[t]*DL[t]
+  pred.DayLengthQuad[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+  m <- exp(pred.DayLengthQuad[,t]) 
+  pred_obs.DayLengthQuad[,t] = rpois(nsamp, m)}
+}
+
+#TempExp
+
+if(model=="TempExpt"){
+tau_add = out[samp,grep("tau_add",colnames(out))]
+beta = out[samp,grep("beta",colnames(out))]
+
+pred.TempExp <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs.TempExp <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+
+for (t in 2:ncol(mu)){
+  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*Temp[t]
+  pred.TempExp[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+  m <- exp(pred[,t]) 
+  pred_obs.TempExp[,t] = rpois(nsamp, m)}
+}
+
+#TempQuad
+
+if(model_name=="TempQuad"){
+tau_add = out[samp,grep("tau_add",colnames(out))]
+beta = out[samp,grep("beta",colnames(out))]
+
+pred.TempQuad <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+pred_obs.TempQuad <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+
+for (t in 2:ncol(mu)){
+  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*DL[t] + beta[t,4]*Temp[t]*Temp[t]
+  pred.TempQuad[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+  m <- exp(pred.TempQuad[,t]) 
+  pred_obs.TempQuad[,t] = rpois(nsamp, m)}
+}
+
+pred_obs= eval(parse(text = paste0('pred_obs.', model_name)))
+pred = eval(parse(text = paste0('pred.', model_name)))
+
+return(list(pred_obs.model = pred_obs, pred.model = pred)) 
+
+}
 

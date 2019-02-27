@@ -24,7 +24,7 @@ mu[1] ~ dgamma(1,1)
 tau_yr ~ dgamma(0.01,0.01)
 
 #Loops through number of years and defines prior for each year 
-for(i in 1:8) {
+for(i in 1:max(year_no)) {
 yr[i] ~ dnorm(0,tau_yr)
 }
 }
