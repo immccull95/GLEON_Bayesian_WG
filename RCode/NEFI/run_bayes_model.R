@@ -22,7 +22,7 @@ site = c('midge') # options are midge, coffin, newbury, or fichter
 model_timestep = 1 # model timestep in days if filling in dates
 fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'Logistic' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'RandomYearIntercept' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -117,11 +117,7 @@ points(times,y,pch="+",cex=0.5)
 
 #10) One-step Ahead Predictions
 
-samp <- sample.int(nrow(out),nsamp)
-mus=grep("mu", colnames(out))
-mu = out[samp,mus] 
-times=c(1:length(mus))
-
+preds_plug_ins <- preds_plug_ins(model_name = model_name)
 
 #10) Diagnostic Visualization (no edits)
 
@@ -136,8 +132,8 @@ out <- as.matrix(jags.out.mcmc)
 mus=grep("mu", colnames(out))
 mu = exp(out[,mus])
 ci <- apply(exp(out[,mus]),2,quantile,c(0.025,0.5,0.975))
-pi <- apply(exp(pred.model),2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
-obs_pi <- apply(pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+pi <- apply(exp(preds_plug_ins$pred.model),2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
 
 plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log = "y", ylab="Gloeo count",xlim=times[time.rng])
 ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
