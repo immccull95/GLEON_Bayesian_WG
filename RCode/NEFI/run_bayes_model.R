@@ -93,6 +93,8 @@ out <- as.matrix(jags.out.mcmc)
 DIC=dic.samples(j.model, n.iter=5000)
 DIC
 
+saveRDS(object = DIC, file = file.path("Results/Jags_Models/", paste(site, paste0(model_name,'_DIC.rds'), sep = '_')))
+
 
 #7) CI, PI, Obs PI Calculations
 
