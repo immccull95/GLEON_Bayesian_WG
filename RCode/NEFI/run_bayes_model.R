@@ -16,16 +16,13 @@ source('RCode/helper_functions/plug_n_play_functions.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-start_date = '2007-01-01' # in YYYY-MM-DD format 
-end_date = '2015-12-31' 
+start_date = '2007-01-01' # in YYYY-MM-DD format; 1st 
+end_date = '2015-12-31' # Excluding 2016-2017 to use as sample data
 site = c('midge') # options are midge, coffin, newbury, or fichter 
 model_timestep = 1 # model timestep in days if filling in dates
-fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's 
+fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 
-beta.m <- as.vector(c(0,0,0)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
-beta.v <- solve(diag(1E-03,3)) ##CHANGE THE NUMBER OF BETAS TO MATCH YOUR MODEL
-
-model_name = 'RandomWalk' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'RandomYearIntercept' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -46,17 +43,14 @@ hist(y)
 N=length(y)
 range(y, na.rm = T)
 
+Temp = dat$watertemp_mean
+DL = dat$daylength
+year_no = as.numeric(as.factor(dat$year))
 
 
 #3) JAGS Plug-Ins: Can run whole chunk or just model of interest --------------------------------------------------------------
-jags_plug_ins <- jags_plug_ins(model_name = model_name,  
-                               y = y, 
-                               beta.m = beta.m, 
-                               beta.v = beta.v, 
-                               Temp = dat$watertemp_mean, 
-                               DL = dat$daylength,
-                               year_no = as.numeric(as.factor(dat$year))
-)  
+jags_plug_ins <- jags_plug_ins(model_name = model_name)
+
 
 #4) Initial Conditions: We haven't set up an initial conditions except for tau_add, so don't change for now -------------------
 nchain = 3
@@ -81,7 +75,7 @@ j.model   <- jags.model (file = model,
 
 jags.out <- run.jags(model = model,
                      data = jags_plug_ins$data.model,
-                     adapt =  1000, 
+                     adapt =  2000, 
                      burnin =  500, 
                      sample = 2500, 
                      n.chains = 3, 
@@ -121,49 +115,11 @@ plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log="y", ylab="observed
 ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
 
+#10) One-step Ahead Predictions
 
-#10) one step ahead prediction: plot out-of-sample predictions first because wide CIs; calculate means and plot predicted vs. observed
+preds_plug_ins <- preds_plug_ins(model_name = model_name)
 
-#Edit this section to match features of your model (change nsamp to be a subset of the total # of samples, change sample parameters & process model?)
-
-#The default is just set to calculate for a random walk
-
-
-#Calculate prediction intervals for one timestep ahead
-#your latent states must be called "mu" in the model!
-
-samp <- sample.int(nrow(out),nsamp)
-
-# sample initial conditions
-mus=grep("mu", colnames(out))
-mu = out[samp,mus] 
-times=c(1:length(mus))
-
-# sample parameters 
-# Edit to add other parameters from your model here
-tau = out[samp,grep("tau",colnames(out))]
-
-#Create matrix for predictions
-pred <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
-pred_obs <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-
-for (t in 2:ncol(mu)){
-
-  #Sample to get predictive interval for latent states based on process model
-  
-  #Edit this to reflect additional components of process model?
-  pred[,t] = rnorm(nsamp,mu[,t-1],tau) #exponentiate these before comparing to data, because mu on log scale
-  
-  #exponentiate to get appropriate input for poisson
-  m <- exp(pred[,t])
-  
-  #this fits the blended model to your observed data.
-  pred_obs[,t] = rpois(nsamp, m)
-
-}
-
-
-#11) Diagnostic Visualization (no edits)
+#10) Diagnostic Visualization (no edits)
 
 #Visualization
 
@@ -176,8 +132,8 @@ out <- as.matrix(jags.out.mcmc)
 mus=grep("mu", colnames(out))
 mu = exp(out[,mus])
 ci <- apply(exp(out[,mus]),2,quantile,c(0.025,0.5,0.975))
-pi <- apply(exp(pred),2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
-obs_pi <- apply(pred_obs,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+pi <- apply(exp(preds_plug_ins$pred.model),2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
 
 plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log = "y", ylab="Gloeo count",xlim=times[time.rng])
 ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
@@ -186,7 +142,7 @@ ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
 
 
-#12) Further Diagnostic Checks and Visualization (no edits)
+#11) Further Diagnostic Checks and Visualization (no edits)
 
 #y vs. preds
 
@@ -195,12 +151,12 @@ obs_quantile = vector(mode="numeric", length=0)
 obs_quantile_dm = vector(mode="numeric",length=0)
 pred_mean = vector(mode="numeric",length=0)
 
-for(i in 2:ncol(pred)){
-  obs_diff[i]=mean(exp(pred[,i]))-y[i] #difference between mean of pred. values and obs for each time point
-  pred_mean[i]=mean(exp(pred[,i])) #mean of pred. values at each time point
-  percentile <- ecdf(exp(pred[,i])) #create function to give percentile based on distribution of pred. values at each time point
+for(i in 2:ncol(pred.model)){
+  obs_diff[i]=mean(exp(pred.model[,i]))-y[i] #difference between mean of pred. values and obs for each time point
+  pred_mean[i]=mean(exp(pred.model[,i])) #mean of pred. values at each time point
+  percentile <- ecdf(exp(pred.model[,i])) #create function to give percentile based on distribution of pred. values at each time point
   obs_quantile[i] <- percentile(y[i]) #get percentile of obs in pred distribution
-  percentile1 <- ecdf(pred_obs[,i]) #create function to give percentile of obs in distribution of pred including observation error
+  percentile1 <- ecdf(pred_obs.model[,i]) #create function to give percentile of obs in distribution of pred including observation error
   obs_quantile_dm[i] <- percentile1(y[i]) #get percentile of obs 
 }
 
@@ -217,7 +173,7 @@ obs_quantile_mean_dm = mean(obs_quantile_dm, na.rm = TRUE)
 obs_quantile_mean_dm
 
 
-#13) Plots (no edits)
+#12) Plots (no edits)
 
 #hist of quantiles
 hist(obs_quantile) #no observation error
