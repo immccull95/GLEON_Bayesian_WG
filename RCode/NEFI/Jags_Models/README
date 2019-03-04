@@ -1,0 +1,31 @@
+##Readme file for tracking progress of different models
+##Last updated: 02-25-2019 by Whitney Beck 
+
+ChangepointTempExp.R - not functional, waiting on water temperature data calibrations
+
+Exponential.R - functional, but unsure if "lambda" should be "log(lamdba)" 
+
+Logistic.R - functional, but unsure if lambda should be "log(lambda)"; should we implement better priors by calculating betas using r and k?
+
+RandomYearIntercept.R - functional, changed original workshop code so x[i] is a function of mu[i-1] not x[i-1]
+
+RandomYear.R - functional, changed original January Cary code so x[i] is a function of mu[i-1] not x[i-1]
+
+ChangepointDOY.R - Shannon code from January Cary workshop
+
+DayLengthQuad - functional
+
+DayLength.R - functional
+
+RandomWalk.R - functional
+
+RandomWalkOOS.R - not functional, beginning of code for model selection based on out of sample data
+
+DayLengthOOS.R - not functional, beginning of code for model selection based on out of sample data
+
+TempQuad.R - not functional because of missing data; ready to go once buoy data used to calculate missing sensor data
+
+TempExp.R - not functional because of missing data; ready to go once buoy data used to calculate missing sensor data
+
+RandomWalkZip.R - functional 
+
