@@ -1,7 +1,12 @@
 22AUG18
 Mary L.
 
+3MAR19 Update
+Whitney B.
+
 creating a file for any notes on these scripts that we'd like to archive...
+
+run_bayes_model.R: Allows user to input dates, site, and time intervals to run a model of interest and automatically save output. To-do's include inputting initial conditions, getting another set of eyes on the model code and predictions code, completing the temperature models including deciding on structure for the changepoint model, deciding on a number of iterations, and running all the models! 
 
 Useful functions.Rmd: uses the curve function to make example plots of several commonly used functional forms for ecological modeling. 
 You can alter the parameters and range over which the function is plotted to get a sense of how it would behave with your data. :)
