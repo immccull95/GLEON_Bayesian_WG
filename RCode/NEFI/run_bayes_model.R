@@ -22,7 +22,7 @@ site = c('midge') # options are midge, coffin, newbury, or fichter
 model_timestep = 1 # model timestep in days if filling in dates
 fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'RandomWalk' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'DayLength' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -48,25 +48,15 @@ DL = dat$daylength
 year_no = as.numeric(as.factor(dat$year))
 
 
-#3) JAGS Plug-Ins: Can run whole chunk or just model of interest --------------------------------------------------------------
+#3) JAGS Plug-Ins -----------------------------------------------------------------------------------------------------
 jags_plug_ins <- jags_plug_ins(model_name = model_name)
-
-
-#4) Initial Conditions: We haven't set up initial conditions except for tau_add, so don't change for now -------------------
-nchain = 3
-init <- list()
-for(i in 1:nchain){
-  y.samp = sample(y[!is.na(y)],length(y),replace=TRUE)
-  init[[i]] <- list(tau_add=1/var(diff(y.samp)))
-}
-
 
 # Now that we've defined the model, the data, and the initialization, we need to send all this info to JAGS, which will return the JAGS model object.
 
-#5) Run model (no edits, unless you want to change # of iterations) -------------------------------------------------------------
+#4) Run model (no edits, unless you want to change # of iterations) -------------------------------------------------------------
 j.model   <- jags.model (file = model,
                          data = jags_plug_ins$data.model,
-                         inits = init,
+                         inits = jags_plug_ins$init.model,
                          n.chains = 3)
 
 jags.out <- run.jags(model = model,
@@ -78,7 +68,7 @@ jags.out <- run.jags(model = model,
                      inits=init,
                      monitor = jags_plug_ins$variable.namesout.model)
 
-#6) Save and Process Output; Manually record DIC for now 
+#5) Save and Process Output
 
 write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'.txt'), sep = '_')), 
                remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
@@ -96,7 +86,7 @@ DIC
 saveRDS(object = DIC, file = file.path("Results/Jags_Models/", paste(site, paste0(model_name,'_DIC.rds'), sep = '_')))
 
 
-#7) CI, PI, Obs PI Calculations
+#6) CI, PI, Obs PI Calculations
 
 times <- as.Date(as.character(dat$date))
 time.rng = c(1,length(times)) ## adjust to zoom in and out
@@ -113,7 +103,7 @@ pi <- apply(exp(preds_plug_ins$pred.model),2,quantile,c(0.025,0.5,0.975), na.rm=
 obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
 
 
-#8) CI, PI, Obs PI Plots
+#7) CI, PI, Obs PI Plots
 
 png(file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')), res=300, width=15, height=20, units='cm')
 par(mfrow=c(2,1))
@@ -132,7 +122,7 @@ points(times,y,pch="+",cex=0.5)
 
 dev.off()
 
-#9) Further Diagnostic Checks and Visualization 
+#8) Further Diagnostic Checks and Visualization 
 
 #y vs. preds
 
@@ -163,7 +153,7 @@ obs_quantile_mean_dm = mean(obs_quantile_dm, na.rm = TRUE)
 obs_quantile_mean_dm
 
 
-#10) Diagnostic Plots
+#9) Diagnostic Plots
 
 png(file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'_Diagnostics.png'), sep = '_')), res=300, width=15, height=22, units='cm')
 par(mfrow=c(3,2))
