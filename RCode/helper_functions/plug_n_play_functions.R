@@ -14,16 +14,6 @@ plug_n_play_data <- function(start_date, end_date, sites, model_timestep, fill_d
                   sites = sites) %>%
     mutate(daylength = daylength(43.4802, date))
   
-  # DL = Data$daylength
-  # Temp= Data$watertemp_mean
-  # time=as.character(Data$date)
-  
-  #Subset by Site
-  midge=subset(Data, site=="midge" & year<2015)
-  coffin=subset(Data, site=="coffin" & year<2015)
-  fichter=subset(Data, site=="fichter" & year<2015)
-  newbury=subset(Data, site=="newbury" & year<2015)
-  
   #2) return correct site
   dat = eval(parse(text = sites))
   
@@ -33,7 +23,7 @@ plug_n_play_data <- function(start_date, end_date, sites, model_timestep, fill_d
 jags_plug_ins <- function(model_name){
 
 #JAGS Plug-ins: Add each separate model here 
-#variable.names are variables you would like to plot for model diagnostics (e.g., excludes mu)
+#variable.names are variables you would like to plot for model convergence (e.g., excludes mu)
 #variable.names.out are all variables you would like to monitor in the jags run 
 #init are a range of initial conditions for parameters in each of 3 chains 
   
@@ -105,6 +95,7 @@ jags_plug_ins <- function(model_name){
   variable.names = eval(parse(text = paste0('variable.names.', model_name)))
   variable.namesout = eval(parse(text = paste0('variable.namesout.', model_name)))
   init = eval(parse(text = paste0('init.', model_name)))
+  
   
   return(list(data.model = data, variable.names.model = variable.names, variable.namesout.model = variable.namesout, init.model = init)) 
 }
