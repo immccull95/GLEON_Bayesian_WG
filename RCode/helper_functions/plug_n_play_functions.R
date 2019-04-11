@@ -5,7 +5,7 @@
 
 plug_n_play_data <- function(start_date, end_date, sites, model_timestep, fill_dates){
   
-  sites = tolower(sites) 
+  sites = tolower(site) 
   
   Data = get_data(cal_time_start = start_date, 
                   cal_time_end = end_date, 
@@ -14,10 +14,10 @@ plug_n_play_data <- function(start_date, end_date, sites, model_timestep, fill_d
                   sites = sites) %>%
     mutate(daylength = daylength(43.4802, date))
   
-  #2) return correct site
-  dat = eval(parse(text = sites))
+  #2) return correct site - this is throwing an error - eliminating for now - MEL 10APR19
+  #dat = eval(parse(text = sites))
   
-  return(dat) 
+  return(Data) 
 }
 
 jags_plug_ins <- function(model_name){
@@ -282,4 +282,3 @@ pred = eval(parse(text = paste0('pred.', model_name)))
 return(list(pred_obs.model = pred_obs, pred.model = pred)) 
 
 }
-

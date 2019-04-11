@@ -18,16 +18,16 @@ source('RCode/helper_functions/plug_n_play_functions.R')
 
 start_date = '2007-01-01' # in YYYY-MM-DD format; 1st 
 end_date = '2015-12-31' # Excluding 2016-2017 to use as sample data
-site = c('midge') # options are midge, coffin, newbury, or fichter 
+site = c('newbury') # options are midge, coffin, newbury, or fichter 
 model_timestep = 1 # model timestep in days if filling in dates
 fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'DayLength' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'RandomWalk' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
 #Edit nsamp to reflect a subset of total number of samples
-nsamp = 200 
+nsamp = 500 
 
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
@@ -65,7 +65,7 @@ jags.out <- run.jags(model = model,
                      burnin =  500, 
                      sample = 2500, 
                      n.chains = 3, 
-                     inits=init,
+                     inits=jags_plug_ins$init.model,
                      monitor = jags_plug_ins$variable.namesout.model)
 
 #5) Save and Process Output
@@ -183,3 +183,5 @@ axis(side=4, at = pretty(range(y)))
 mtext("gloeo counts", side=4, line=1.6)
 
 dev.off()
+
+

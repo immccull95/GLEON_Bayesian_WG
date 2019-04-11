@@ -8,9 +8,9 @@ Exponential.R - functional, but unsure if "lambda" should be "log(lamdba)"
 
 Logistic.R - functional, but unsure if lambda should be "log(lambda)"; should we implement better priors by calculating betas using r and k?
 
-RandomYearIntercept.R - functional, changed original workshop code so x[i] is a function of mu[i-1] not x[i-1]
+RandomYearIntercept.R - functional, changed original workshop code so x[i] is a function of mu[i-1] not x[i-1]; MEL: confused by this because code still has x[i] as function of x[i-1] and that seems right to me, actually
 
-RandomYear.R - functional, changed original January Cary code so x[i] is a function of mu[i-1] not x[i-1]
+RandomYear.R - functional, changed original January Cary code so x[i] is a function of mu[i-1] not x[i-1]; MEL: confused by this because code still has x[i] as function of x[i-1] and that seems right to me, actually
 
 ChangepointDOY.R - Shannon code from January Cary workshop
 
