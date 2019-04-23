@@ -1,3 +1,6 @@
+# uncertainty partitioning 
+
+
 # State-space model - revised by S. LaDeau (11/2017) from the EcoForecast Activity by Michael Dietze, with reference "Ecological Forecasting", chapter 8
 # ========================================================
 #   
@@ -9,6 +12,7 @@ library(rjags)
 library(runjags)
 library(moments)
 library(geosphere)
+library(ecoforecastR)
 source('RCode/helper_functions/google_drive_functions.R')
 source('RCode/NEFI/get_data.R')
 source('RCode/helper_functions/plug_n_play_functions.R')
@@ -17,10 +21,12 @@ source('RCode/helper_functions/plug_n_play_functions.R')
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
 start_date = '2007-01-01' # in YYYY-MM-DD format; 1st 
-end_date = '2015-12-31' # Excluding 2016-2017 to use as sample data
+end_date = '2012-06-15' # Excluding 2016-2017 to use as sample data
 site = c('midge') # options are midge, coffin, newbury, or fichter 
 model_timestep = 1 # model timestep in days if filling in dates
 fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
+forecast = TRUE # T/F for returing forecast time period or not 
+forecast_end_date = '2014-01-01' 
 
 model_name = 'RandomWalk' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
@@ -35,17 +41,19 @@ dat = plug_n_play_data(start_date = start_date,
                        end_date = end_date,
                        sites = site,
                        model_timestep = model_timestep,
+                       forecast = forecast, 
+                       forecast_end_date = forecast_end_date,
                        fill_dates = fill_dates)
 
 ##look at response variable 
-y<-round(dat$totalperL*141.3707) #converting colonies per Liter to count data: volume of 2, ~1 m net tows
+y<-round(dat$cal$totalperL*141.3707) #converting colonies per Liter to count data: volume of 2, ~1 m net tows
 hist(y)  
 N=length(y)
 range(y, na.rm = T)
 
-Temp = dat$watertemp_mean
-DL = dat$daylength
-year_no = as.numeric(as.factor(dat$year))
+Temp = dat$cal$watertemp_mean
+DL = dat$cal$daylength
+year_no = as.numeric(as.factor(dat$cal$year))
 
 
 #3) JAGS Plug-Ins -----------------------------------------------------------------------------------------------------
@@ -70,25 +78,18 @@ jags.out <- run.jags(model = model,
 
 #5) Save and Process Output
 
-write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'.txt'), sep = '_')), 
-               remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
-
-png(file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'_Convergence.png'), sep = '_')))
 plot(jags.out, vars = jags_plug_ins$variable.names.model) 
-dev.off()
 
 jags.out.mcmc <- as.mcmc.list(jags.out)
 out <- as.matrix(jags.out.mcmc)
 
-DIC=dic.samples(j.model, n.iter=5000)
-DIC
-
-saveRDS(object = DIC, file = file.path("Results/Jags_Models/", paste(site, paste0(model_name,'_DIC.rds'), sep = '_')))
+# DIC=dic.samples(j.model, n.iter=5000)
+# DIC
 
 
 #6) CI, PI, Obs PI Calculations
 
-times <- as.Date(as.character(dat$date))
+times <- as.Date(as.character(dat$cal$date))
 time.rng = c(1,length(times)) ## adjust to zoom in and out
 ciEnvelope <- function(x,ylo,yhi,...){
   polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
@@ -105,9 +106,6 @@ obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.
 
 #7) CI, PI, Obs PI Plots
 
-png(file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')), res=300, width=15, height=20, units='cm')
-par(mfrow=c(2,1))
-
 #Obs vs. Latent
 plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log="y", ylab="observed Gloeo colonies",xlim=times[time.rng], main="Obs, Latent CI")
 ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
@@ -120,68 +118,103 @@ ciEnvelope(times,pi[1,],pi[3,],col="Green")
 ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
 
-dev.off()
 
-#8) Further Diagnostic Checks and Visualization 
+## Forward Simulation
 
-#y vs. preds
+### settings
+Nmc = 1000         ## set number of Monte Carlo draws
+N.cols <- c("red","green","blue","orange") ## set colors
+ylim = range(ci)
+trans <- 0.8       ## set transparancy
+cal_time = as.Date(as.character(dat$cal$date))
+forecast_time = as.Date(as.character(dat$forecast$date))
+all_time = c(cal_time, forecast_time)
 
-obs_diff= vector(mode="numeric", length=0)
-obs_quantile = vector(mode="numeric", length=0)
-obs_quantile_dm = vector(mode="numeric",length=0)
-pred_mean = vector(mode="numeric",length=0)
-
-for(i in 2:ncol(preds_plug_ins$pred.model)){
-  obs_diff[i]=mean(exp(preds_plug_ins$pred.model[,i]))-y[i] #difference between mean of pred. values and obs for each time point
-  pred_mean[i]=mean(exp(preds_plug_ins$pred.model[,i])) #mean of pred. values at each time point
-  percentile <- ecdf(exp(preds_plug_ins$pred.model[,i])) #create function to give percentile based on distribution of pred. values at each time point
-  obs_quantile[i] <- percentile(y[i]) #get percentile of obs in pred distribution
-  percentile1 <- ecdf(preds_plug_ins$pred_obs.model[,i]) #create function to give percentile of obs in distribution of pred including observation error
-  obs_quantile_dm[i] <- percentile1(y[i]) #get percentile of obs 
+plot.run <- function(){
+  plot(all_time, all_time, type='n', ylim=ylim, ylab="Gloeo count", log = 'y')
+  ecoforecastR::ciEnvelope(cal_time, ci[1,], ci[3,], col="lightBlue")
+  lines(cal_time, ci[2,], col="blue")
+  points(cal_time, ci[2,])
 }
 
-#Mean of difference between pred and obs
-obspred_mean=mean(obs_diff, na.rm=TRUE)
-obspred_mean
-
-#Mean quantile of obs in distribution of pred
-obs_quantile_mean = mean(obs_quantile, na.rm = TRUE)
-obs_quantile_mean
-
-#Mean quantile of obs in distribution of pred including observation error
-obs_quantile_mean_dm = mean(obs_quantile_dm, na.rm = TRUE)
-obs_quantile_mean_dm
+ci <- apply(exp(out[ ,mus]), 2, quantile, c(0.025,0.5,0.975))
+plot.run()
 
 
-#9) Diagnostic Plots
+#setting up deterministic forecast function for random walk 
+# IC = initial conditions from end of calibration period 
+# N_out = number of time steps to forecast 
+# tau_add = process error (defaults to zero) 
+# n = number of monte carlo sims 
+forecast_gloeo <- function(IC, N_out = N_out, tau_add = 0, n = Nmc){
+  out <- matrix(NA, n, N_out) # setting up output 
+  gloeo_prev <- IC
+  for(i in 1:N_out){
+    out[,i] <- rnorm(n, gloeo_prev, tau_add) # predict next step 
+    gloeo_prev <- out[,i] # update IC 
+  }
+  return(out)
+}
 
-png(file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'_Diagnostics.png'), sep = '_')), res=300, width=15, height=22, units='cm')
-par(mfrow=c(3,2))
+## deterministic predictions 
+N_out = nrow(dat$forecast) # length of forecast time points 
+IC = mu
 
-#hist of quantiles
-hist(obs_quantile, main="No obs error") #no observation error
-hist(obs_quantile_dm, breaks = seq(0,1,0.05), main="With obs error") #with observation error
+gloeo.det <- forecast_gloeo(IC = mean(IC[,N]), # last column of cal is the initial condition for forecast 
+                            N_out = N_out,
+                            tau_add = 0,
+                            n = 1)
 
-#plot of mean pred vs. obs
-plot(y,pred_mean, xlim = c(0,500), ylim = c(0,500), main="Mean pred vs. obs, no obs error") #no obs error
-
-## qqplot - plot of quantiles of data in distribution including obs error
-plot(seq(0,1,length.out = length(obs_quantile_dm)-1),sort(obs_quantile_dm), main="QQplot",
-xlab = "Theoretical Quantile",
-ylab = "Empirical Quantile")
-abline(0,1)
-
-## time series 
-date=as.character(dat$date)
-dates<-as.Date(date)
-par(mar = c(5,3,4,3))
-plot(dates, obs_quantile_dm,main = "dots = obs. quantiles, triangles = gloeo counts",ylab = "")
-mtext("obs. quantile", side=2, line=1.7)
-par(new = TRUE)
-plot(dates, y, axes = FALSE, bty = "n", xlab = "", ylab = "",pch = 17, col = "red", cex = 0.8)
-axis(side=4, at = pretty(range(y)))
-mtext("gloeo counts", side=4, line=1.6)
-
-dev.off()
+## Plot run
+plot.run()
+lines(forecast_time, gloeo.det, col="purple", lwd=3)
 
 
+######## initial condition uncertainty #######
+# sample rows from previous analysis
+prow = sample.int(nrow(out),Nmc,replace=TRUE)
+
+gloeo.I <- forecast_gloeo(IC = IC[prow, N],
+                      N_out = N_out,
+                      tau_add = 0,
+                      n = Nmc)
+
+## Plot run
+plot.run()
+gloeo.I.ci = apply(gloeo.I, 2, quantile, c(0.025,0.5,0.975))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
+lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
+
+###### parameter uncertainty #######
+# we don't have this for random walk 
+
+###### driver uncertainty ########## 
+# we don't have this for random walk 
+
+###### process uncertainty ######### 
+tau_add_mc <- 1/sqrt(out[prow,"tau_add"])  ## convert from precision to standard deviation
+
+gloeo.IP <- forecast_gloeo(IC = IC[prow, N],
+                          N_out = N_out,
+                          tau_add = tau_add_mc,
+                          n = Nmc)
+
+## Plot run
+plot.run()
+gloeo.IP.ci = apply(gloeo.IP, 2, quantile, c(0.025,0.5,0.975))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = col.alpha(N.cols[2], trans))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
+lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
+
+
+### calculation of variances
+varI     <- apply(gloeo.I,2,var)
+varIP    <- apply(gloeo.IP,2,var)
+varMat   <- rbind(varI,varIP)
+
+## stacked area plot
+V.pred.rel <- apply(varMat[,],2,function(x) {x/max(x)})
+plot(forecast_time, V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="time")
+ciEnvelope(forecast_time, rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
+ciEnvelope(forecast_time, V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
+legend("topleft", legend=c("Process", "Initial Cond"), col=rev(N.cols[1:2]), lty=1, lwd=5, bg = 'white')

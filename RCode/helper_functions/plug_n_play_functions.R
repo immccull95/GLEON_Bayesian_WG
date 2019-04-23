@@ -3,21 +3,40 @@
 # WB Updates
 
 
-plug_n_play_data <- function(start_date, end_date, sites, model_timestep, fill_dates){
+plug_n_play_data <- function(start_date, end_date, sites, model_timestep, fill_dates, forecast = FALSE, forecast_end_date){
   
   sites = tolower(site) 
   
-  Data = get_data(cal_time_start = start_date, 
-                  cal_time_end = end_date, 
-                  model_timestep = model_timestep, # model timestep in days if filling in dates
-                  fill_dates = fill_dates,  # T/F for filling in dates w/o observations with NA's 
-                  sites = sites) %>%
-    mutate(daylength = daylength(43.4802, date))
-  
+  if(forecast){
+    Data = get_data(cal_time_start = start_date, 
+                    cal_time_end = end_date, 
+                    model_timestep = model_timestep, # model timestep in days if filling in dates
+                    fill_dates = fill_dates,  # T/F for filling in dates w/o observations with NA's 
+                    forecast = forecast, 
+                    forecast_time_end = forecast_end_date,
+                    sites = sites)
+    
+    Data_cal = Data$cal %>% 
+      mutate(daylength = daylength(43.4802, date))
+    
+    Data_forecast = Data$forecast %>%
+      mutate(daylength = daylength(43.4802, date))
+    
+    return(list(cal = Data_cal, forecast = Data_forecast))
+    
+  }else{
+    Data = get_data(cal_time_start = start_date, 
+                    cal_time_end = end_date, 
+                    model_timestep = model_timestep, # model timestep in days if filling in dates
+                    fill_dates = fill_dates,  # T/F for filling in dates w/o observations with NA's 
+                    sites = sites) %>%
+      mutate(daylength = daylength(43.4802, date))
+    
+    return(Data) 
+  }
+
   #2) return correct site - this is throwing an error - eliminating for now - MEL 10APR19
   #dat = eval(parse(text = sites))
-  
-  return(Data) 
 }
 
 jags_plug_ins <- function(model_name){
