@@ -9,6 +9,7 @@ library(rjags)
 library(runjags)
 library(moments)
 library(geosphere)
+library(googledrive)
 source('RCode/helper_functions/google_drive_functions.R')
 source('RCode/NEFI/get_data.R')
 source('RCode/helper_functions/plug_n_play_functions.R')
@@ -19,15 +20,19 @@ source('RCode/helper_functions/plug_n_play_functions.R')
 start_date = '2007-01-01' # in YYYY-MM-DD format; 1st 
 end_date = '2015-12-31' # Excluding 2016-2017 to use as sample data
 site = c('midge') # options are midge, coffin, newbury, or fichter 
-model_timestep = 1 # model timestep in days if filling in dates
-fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
+model_timestep = 7 # model timestep in days if filling in dates
+fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'RandomWalk' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'DayLengthQuad' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
 #Edit nsamp to reflect a subset of total number of samples
 nsamp = 500 
+
+#My local directory - use as a temporary file repository for plot files before uploading
+#to Google Drive for the team to see :)
+my_directory <- "C:/Users/Mary Lofton/Desktop/MEL_Bayes"
 
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
@@ -73,9 +78,22 @@ jags.out <- run.jags(model = model,
 write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'.txt'), sep = '_')), 
                remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
-png(file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'_Convergence.png'), sep = '_')))
-plot(jags.out, vars = jags_plug_ins$variable.names.model) 
-dev.off()
+#this will create multiple plots if var names are different but doesn't create multiple
+#plots for vars with same names, i.e., betas, so still need to fix that
+for (i in 1:length(jags_plug_ins$variable.names.model)){
+  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',jags_plug_ins$variable.names.model[i],'.png'), sep = '_')))
+  plot(jags.out, vars = jags_plug_ins$variable.names.model[i]) 
+  dev.off()
+}
+
+#upload plot to Google Drive folder
+for (i in 1:length(jags_plug_ins$variable.names.model)){
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',jags_plug_ins$variable.names.model[i],'.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_Convergence_',jags_plug_ins$variable.names.model[i],'.png'), sep = '_')))
+}
+#need to view this to get parameter estimates for model comparison Excel file
+sum <- summary(jags.out, vars = jags_plug_ins$variable.names.model)
+sum
 
 jags.out.mcmc <- as.mcmc.list(jags.out)
 out <- as.matrix(jags.out.mcmc)
@@ -98,6 +116,7 @@ ciEnvelope <- function(x,ylo,yhi,...){
 mus=grep("mu", colnames(out))
 mu = exp(out[,mus])
 ci <- apply(exp(out[,mus]),2,quantile,c(0.025,0.5,0.975))
+#got stuck on this line with DayLengthQuad --> need to troubleshoot! :)
 preds_plug_ins <- preds_plug_ins(model_name = model_name)
 pi <- apply(exp(preds_plug_ins$pred.model),2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
 obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
@@ -105,7 +124,7 @@ obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.
 
 #7) CI, PI, Obs PI Plots
 
-png(file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')), res=300, width=15, height=20, units='cm')
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')), res=300, width=15, height=20, units='cm')
 par(mfrow=c(2,1))
 
 #Obs vs. Latent
@@ -121,6 +140,10 @@ ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
 
 dev.off()
+
+#upload plot to Google Drive folder
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
 
 #8) Further Diagnostic Checks and Visualization 
 
@@ -155,7 +178,7 @@ obs_quantile_mean_dm
 
 #9) Diagnostic Plots
 
-png(file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'_Diagnostics.png'), sep = '_')), res=300, width=15, height=22, units='cm')
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_Diagnostics.png'), sep = '_')), res=300, width=15, height=22, units='cm')
 par(mfrow=c(3,2))
 
 #hist of quantiles
@@ -166,7 +189,7 @@ hist(obs_quantile_dm, breaks = seq(0,1,0.05), main="With obs error") #with obser
 plot(y,pred_mean, xlim = c(0,500), ylim = c(0,500), main="Mean pred vs. obs, no obs error") #no obs error
 
 ## qqplot - plot of quantiles of data in distribution including obs error
-plot(seq(0,1,length.out = length(obs_quantile_dm)-1),sort(obs_quantile_dm), main="QQplot",
+plot(seq(0,1,length.out = length(sort(obs_quantile_dm))),sort(obs_quantile_dm), main="QQplot",
 xlab = "Theoretical Quantile",
 ylab = "Empirical Quantile")
 abline(0,1)
@@ -184,4 +207,7 @@ mtext("gloeo counts", side=4, line=1.6)
 
 dev.off()
 
+#once again, upload plot to Google Drive folder
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Diagnostics.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_Diagnostics.png'), sep = '_')))
 
