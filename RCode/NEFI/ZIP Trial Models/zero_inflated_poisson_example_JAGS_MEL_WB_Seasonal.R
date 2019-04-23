@@ -71,14 +71,14 @@ beta.pois.v <- solve(diag(1E-03,2))
 
 
 #set values in between "weekly sampling" to NA
-#ind <- seq(1, length(y.obs), by=7)
+ind <- seq(1, length(y.obs), by=7)
 
-#for (i in 1:length(y.obs)){
-#  if(!(i %in% ind)){
-#    y.obs[i] <- NA
-#  }
-#}
-#plot(Nvec,y.obs, type = "p", main = "Simulated Gloeo data with winter & weekly obs.")
+for (i in 1:length(y.obs)){
+ if(!(i %in% ind)){
+   y.obs[i] <- NA
+ }
+}
+plot(Nvec,y.obs, type = "p", main = "Simulated Gloeo data with winter & weekly obs.")
 
 
 jags.model <- "
@@ -140,10 +140,13 @@ jags.out <- run.jags(    model = jags.model,
                      # inits=init,
                        monitor = c('tau.proc', 'beta.bern', 'beta.pois', 'm'))
 
+#write.jagsfile(jags.out, file="Datasets/Sunapee/Jags Models/SimWeeklyNA", 
+#              remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
+
 #summarize output.
 plot(jags.out, vars=c("beta.bern", "beta.pois", "tau.proc"))
 jags.out.mcmc <- as.mcmc.list(jags.out)
-summary(jags.out)
+summary(jags.out, vars=c("beta.bern", "beta.pois", "tau.proc"))
 gelman.plot(jags.out.mcmc, vars=c("beta.bern", "beta.pois", "tau.proc"))
 
 #Credible intervals

@@ -3,7 +3,7 @@
 require(dplyr)
 require(rlang)
 
-get_data <- function(cal_time_start, cal_time_end, forecast_time_end, model_timestep = 1, sites){
+get_data <- function(cal_time_start, cal_time_end, fill_dates = TRUE, forecast = FALSE, forecast_time_end, model_timestep = 1, sites){
   
   gleo <- read.csv('Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp.csv', stringsAsFactors = F) %>%
     as_data_frame() %>% 
@@ -12,7 +12,7 @@ get_data <- function(cal_time_start, cal_time_end, forecast_time_end, model_time
     pull(value)) %>%
     mutate(week = lubridate::week(date),
            site = tolower(site)) %>%
-    dplyr::filter(site %in% sites) 
+    dplyr::filter(site %in% tolower(sites))
 
   
   # # temperature data 
@@ -24,27 +24,36 @@ get_data <- function(cal_time_start, cal_time_end, forecast_time_end, model_time
   
   data <- gleo
   
-  add_cols = colnames(select(data, -date))
-  
-  #filling in rows to make it daily time step ; or specified model timestep 
-  all_dates <- data_frame(date = seq(min(data$date), max(data$date), by= paste(model_timestep, 'day')))
-  
-  other_cols = lapply(add_cols, function(col){
-        mutate(all_dates, !!col := NA)
-    }) %>% bind_cols() %>% select(-contains('date'))
-  
-  all_dates <- bind_cols(all_dates, other_cols) %>%
-    select(colnames(data))
-  
-  data <- bind_rows(data, all_dates) %>%
-    dplyr::filter(!duplicated(date)) %>%
-    arrange(date)
+  if(fill_dates){
+    add_cols = colnames(select(data, -date, -site))
+    
+    #filling in rows to make it daily time step ; or specified model timestep 
+    all_dates <- data_frame(date = rep(seq(min(data$date), max(data$date), by= paste(model_timestep, 'day')), each = length(sites))) %>% 
+      mutate(site = rep(sites, nrow(.)/length(sites)))
+    
+    other_cols = lapply(add_cols, function(col){
+      mutate(all_dates, !!col := NA)
+    }) %>% bind_cols() %>% select(-contains('date'),-contains('site'))
+    
+    all_dates <- bind_cols(all_dates, other_cols) %>%
+      select(colnames(data))
+    
+    data <- bind_rows(data, all_dates) %>%
+      dplyr::filter(!duplicated(paste0(date,site))) %>%
+      arrange(date) %>% 
+      mutate(year = lubridate::year(date)) 
+  }
   
   cal <- data %>%
     dplyr::filter(date > as.Date(cal_time_start), date < as.Date(cal_time_end)) 
   
-  forecast <- data %>%
-    dplyr::filter(date > as.Date(cal_time_end), date < as.Date(forecast_time_end)) 
-  
-  return(list(cal = cal, forecast = forecast)) 
+  if(forecast){
+    forecast <- data %>%
+      dplyr::filter(date > as.Date(cal_time_end), date < as.Date(forecast_time_end))
+    
+    return(list(cal = cal, forecast = forecast))
+  }else{
+    return(cal)
+  }
+
 }
