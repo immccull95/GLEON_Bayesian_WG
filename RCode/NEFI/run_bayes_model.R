@@ -23,7 +23,7 @@ site = c('midge') # options are midge, coffin, newbury, or fichter
 model_timestep = 7 # model timestep in days if filling in dates
 fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'DayLengthQuad' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Exponential' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -79,17 +79,21 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0
                remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
 #this will create multiple plots if var names are different but doesn't create multiple
-#plots for vars with same names, i.e., betas, so still need to fix that
-for (i in 1:length(jags_plug_ins$variable.names.model)){
-  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',jags_plug_ins$variable.names.model[i],'.png'), sep = '_')))
-  plot(jags.out, vars = jags_plug_ins$variable.names.model[i]) 
+#plots for vars with same names, i.e., betas, so have created a quick hack to fix that
+
+#ok, you have to edit this vector to include the actual names of the parameters in your model :(
+vars <- c("tau_add","beta[1]")
+
+for (i in 1:length(vars)){
+  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
+  plot(jags.out, vars = vars[i]) 
   dev.off()
 }
 
 #upload plot to Google Drive folder
-for (i in 1:length(jags_plug_ins$variable.names.model)){
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',jags_plug_ins$variable.names.model[i],'.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_Convergence_',jags_plug_ins$variable.names.model[i],'.png'), sep = '_')))
+for (i in 1:length(vars)){
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
 }
 #need to view this to get parameter estimates for model comparison Excel file
 sum <- summary(jags.out, vars = jags_plug_ins$variable.names.model)
@@ -116,7 +120,6 @@ ciEnvelope <- function(x,ylo,yhi,...){
 mus=grep("mu", colnames(out))
 mu = exp(out[,mus])
 ci <- apply(exp(out[,mus]),2,quantile,c(0.025,0.5,0.975))
-#got stuck on this line with DayLengthQuad --> need to troubleshoot! :)
 preds_plug_ins <- preds_plug_ins(model_name = model_name)
 pi <- apply(exp(preds_plug_ins$pred.model),2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
 obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
