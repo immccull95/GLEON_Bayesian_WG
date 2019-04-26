@@ -221,7 +221,7 @@ pred_obs.Logistic <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[t,1]*mu[,t-1] + beta[t,2]*mu[,t-1]*mu[,t-1]
+  lambda[,t] <- beta[,1]*mu[,t-1] + beta[,2]*mu[,t-1]*mu[,t-1]
   pred.Logistic[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred.Logistic[,t]) 
   pred_obs.Logistic[,t] = rpois(nsamp, m)}
@@ -235,7 +235,7 @@ beta = out[samp,grep("beta",colnames(out))]
 
 pred.DayLength <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs.DayLength <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
   lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*DL[t]
@@ -246,16 +246,16 @@ for (t in 2:ncol(mu)){
 
 #DayLengthQuad
 
-if(model=="DayLengthQuad"){
+if(model_name =="DayLengthQuad"){
 tau_add = out[samp,grep("tau_add",colnames(out))]
 beta = out[samp,grep("beta",colnames(out))]
 
 pred.DayLengthQuad <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs.DayLengthQuad <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*DL[t] + beta[t,4]*DL[t]*DL[t]
+  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*DL[t] + beta[,4]*DL[t]*DL[t]
   pred.DayLengthQuad[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred.DayLengthQuad[,t]) 
   pred_obs.DayLengthQuad[,t] = rpois(nsamp, m)}
