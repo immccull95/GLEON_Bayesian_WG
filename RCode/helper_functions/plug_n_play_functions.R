@@ -204,7 +204,7 @@ pred_obs.Exponential <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[,t]*mu[,t-1] 
+  lambda[,t] <- beta*mu[,t-1] 
   pred.Exponential[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred.Exponential[,t]) 
   pred_obs.Exponential[,t] = rpois(nsamp, m)}
