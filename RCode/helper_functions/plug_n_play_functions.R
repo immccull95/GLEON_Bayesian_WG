@@ -69,6 +69,12 @@ jags_plug_ins <- function(model_name){
   variable.names.DayLengthQuad <- c("tau_add", "beta")
   variable.namesout.DayLengthQuad <- c("tau_add", "beta", "mu")
   init.DayLengthQuad <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5,0.5)))
+
+#Temp
+  data.Temp <- list(y=y, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+  variable.names.Temp <- c("tau_add", "beta")
+  variable.namesout.Temp <- c("tau_add", "beta", "mu")
+  init.Temp <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5)))
   
 #TempExp
   data.TempExp <- list(y=y, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
@@ -99,6 +105,12 @@ jags_plug_ins <- function(model_name){
   variable.names.RandomYear <- c("tau_add", "tau_yr")
   variable.namesout.RandomYear <- c("tau_add", "tau_yr","yr","mu", "x")
   init.RandomYear <- list(list(tau_add=0.001, tau_yr=0.001), list(tau_add=0.1, tau_yr=0.1), list(tau_add=1, tau_yr=1))
+  
+#Exponential_RandomYear
+  data.Exponential_RandomYear <- list(y=y, beta.m=0, beta.v=1E-03, year_no=year_no, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+  variable.names.Exponential_RandomYear <- c("tau_add", "beta","tau_yr")
+  variable.namesout.Exponential_RandomYear <- c("tau_add", "beta", "mu","tau_yr","yr")
+  init.Exponential_RandomYear <- list(list(tau_add=0.001, beta=-0.5,tau_yr=0.001), list(tau_add=0.1, beta=0,tau_yr=0.1), list(tau_add=1, beta=0.5,tau_yr=1))
   
 #RandomYearIntercept
   data.RandomYearIntercept <- list(y=y, year_no=year_no, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001, beta.m=0, beta.v=1E-03)
@@ -156,23 +168,6 @@ for (t in 2:ncol(mu)){
   pred_obs.RandomWalkZip[,t] = rpois(nsamp, m)}
 }
 
-#RandomYear 
-
-if(model_name=="RandomYear"){
-tau_add = out[samp,grep("tau_add",colnames(out))]
-yr_temp = out[samp,grep("yr",colnames(out))]
-yr=yr_temp[,-1]
-
-pred.RandomYear <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
-pred_obs.RandomYear <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-x<- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-
-for (t in 2:ncol(mu)){
-  x[,t] <- mu[,t-1] + yr[,year_no[t]]
-  pred.RandomYear[,t] = rnorm(nsamp, x[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
-  m <- exp(pred.RandomYear[,t]) 
-  pred_obs.RandomYear[,t] = rpois(nsamp, m)}
-}
 
 #RandomYearIntercept
 
@@ -204,10 +199,47 @@ pred_obs.Exponential <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[,t]*mu[,t-1] 
+  lambda[,t] <- beta*mu[,t-1] 
   pred.Exponential[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred.Exponential[,t]) 
   pred_obs.Exponential[,t] = rpois(nsamp, m)}
+}
+
+#RandomYear 
+
+if(model_name=="RandomYear"){
+  tau_add = out[samp,grep("tau_add",colnames(out))]
+  yr_temp = out[samp,grep("yr",colnames(out))]
+  yr=yr_temp[,-1]
+  
+  pred.RandomYear <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.RandomYear <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  x<- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  
+  for (t in 2:ncol(mu)){
+    x[,t] <- mu[,t-1] + yr[,year_no[t]]
+    pred.RandomYear[,t] = rnorm(nsamp, x[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+    m <- exp(pred.RandomYear[,t]) 
+    pred_obs.RandomYear[,t] = rpois(nsamp, m)}
+}
+
+#Exponential_RandomYear
+
+if(model_name=="Exponential_RandomYear"){
+  tau_add = out[samp,grep("tau_add",colnames(out))]
+  beta = out[samp,grep("beta",colnames(out))]
+  yr_temp = out[samp,grep("yr",colnames(out))]
+  yr=yr_temp[,-1]
+  
+  pred.Exponential_RandomYear <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Exponential_RandomYear <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  
+  for (t in 2:ncol(mu)){
+    lambda[,t] <- beta*mu[,t-1] + yr[,year_no[t]]
+    pred.Exponential_RandomYear[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+    m <- exp(pred.Exponential_RandomYear[,t]) 
+    pred_obs.Exponential_RandomYear[,t] = rpois(nsamp, m)}
 }
 
 #Logistic
@@ -221,7 +253,7 @@ pred_obs.Logistic <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[t,1]*mu[,t-1] + beta[t,2]*mu[,t-1]*mu[,t-1]
+  lambda[,t] <- beta[,1]*mu[,t-1] + beta[,2]*mu[,t-1]*mu[,t-1]
   pred.Logistic[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred.Logistic[,t]) 
   pred_obs.Logistic[,t] = rpois(nsamp, m)}
@@ -235,35 +267,53 @@ beta = out[samp,grep("beta",colnames(out))]
 
 pred.DayLength <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs.DayLength <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*DL[t]
+  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*DL[t]
   pred.DayLength[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
-  m <- exp(pred[,t]) 
+  m <- exp(pred.DayLength[,t]) 
   pred_obs.DayLength[,t] = rpois(nsamp, m)}
 }
 
 #DayLengthQuad
 
-if(model=="DayLengthQuad"){
+if(model_name =="DayLengthQuad"){
 tau_add = out[samp,grep("tau_add",colnames(out))]
 beta = out[samp,grep("beta",colnames(out))]
 
 pred.DayLengthQuad <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs.DayLengthQuad <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*DL[t] + beta[t,4]*DL[t]*DL[t]
+  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*DL[t] + beta[,4]*DL[t]*DL[t]
   pred.DayLengthQuad[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred.DayLengthQuad[,t]) 
   pred_obs.DayLengthQuad[,t] = rpois(nsamp, m)}
 }
 
+#Temp
+
+if(model=="Temp"){
+  tau_add = out[samp,grep("tau_add",colnames(out))]
+  beta = out[samp,grep("beta",colnames(out))]
+  
+  pred.Temp <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Temp <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+  
+  for (t in 2:ncol(mu)){
+    lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*Temp[t]
+    pred.Temp[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+    m <- exp(pred[,t]) 
+    pred_obs.Temp[,t] = rpois(nsamp, m)}
+}
+
+
 #TempExp
 
-if(model=="TempExpt"){
+if(model=="TempExp"){
 tau_add = out[samp,grep("tau_add",colnames(out))]
 beta = out[samp,grep("beta",colnames(out))]
 
@@ -272,7 +322,7 @@ pred_obs.TempExp <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*Temp[t]
+  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*exp(Temp[t])
   pred.TempExp[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred[,t]) 
   pred_obs.TempExp[,t] = rpois(nsamp, m)}
