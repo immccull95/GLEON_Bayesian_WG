@@ -238,9 +238,9 @@ pred_obs.DayLength <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*DL[t]
+  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*DL[t]
   pred.DayLength[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
-  m <- exp(pred[,t]) 
+  m <- exp(pred.DayLength[,t]) 
   pred_obs.DayLength[,t] = rpois(nsamp, m)}
 }
 
