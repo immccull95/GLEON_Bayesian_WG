@@ -23,7 +23,7 @@ site = c('midge') # options are midge, coffin, newbury, or fichter
 model_timestep = 7 # model timestep in days if filling in dates
 fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'Exponential' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Exponential_RandomYear' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -82,7 +82,7 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0
 #plots for vars with same names, i.e., betas, so have created a quick hack to fix that
 
 #ok, you have to edit this vector to include the actual names of the parameters in your model :(
-vars <- c("tau_add","beta[1]")
+vars <- c("tau_add","beta[1]","tau_yr")
 
 for (i in 1:length(vars)){
   png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
