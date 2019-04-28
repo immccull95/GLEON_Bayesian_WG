@@ -23,7 +23,7 @@ site = c('midge') # options are midge, coffin, newbury, or fichter
 model_timestep = 7 # model timestep in days if filling in dates
 fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'Temperature' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'TempQuad' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -82,12 +82,12 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0
 #plots for vars with same names, i.e., betas, so have created a quick hack to fix that
 
 #ok, you have to edit this vector to include the actual names of the parameters in your model :(
-vars <- c("tau_add","beta[1]","beta[2]","beta[3]")
+vars <- c("tau_add","beta[1]","beta[2]","beta[3]","beta[4]")
 
 for (i in 1:length(vars)){
-  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
+  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
   plot(jags.out, vars = vars[i]) 
-  #dev.off()
+  dev.off()
 }
 
 #upload plot to Google Drive folder
@@ -119,7 +119,7 @@ ciEnvelope <- function(x,ylo,yhi,...){
 
 mus=grep("mu", colnames(out))
 mu = exp(out[,mus])
-ci <- apply(exp(out[,mus]),2,quantile,c(0.025,0.5,0.975))
+ci <- apply(mu,2,quantile,c(0.025,0.5,0.975))
 preds_plug_ins <- preds_plug_ins(model_name = model_name)
 pi <- apply(exp(preds_plug_ins$pred.model),2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
 obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
