@@ -2,17 +2,17 @@ model{
   for(i in 1:N){
     #this fits the blended model to your observed data. 
     y[i] ~ dpois(m[i])
-    
     m[i] <- exp(mu[i])
     
   }
   
   #### Process Model
+  
   for(i in 2:N){
     mu[i]~dnorm(lambda[i],tau_add) #mu's here are on log scale
     lambda[i] <- beta[1] + beta[2]*mu[i-1] + beta[3]*Temp[i]
-    
   }
+  
   
   #### Priors
   mu[1] ~ dnorm(x_ic,tau_ic) 

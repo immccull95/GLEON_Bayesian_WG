@@ -70,11 +70,11 @@ jags_plug_ins <- function(model_name){
   variable.namesout.DayLengthQuad <- c("tau_add", "beta", "mu")
   init.DayLengthQuad <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5,0.5)))
 
-#Temp
-  data.Temp <- list(y=y, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
-  variable.names.Temp <- c("tau_add", "beta")
-  variable.namesout.Temp <- c("tau_add", "beta", "mu")
-  init.Temp <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5)))
+#Temperature
+  data.Temperature <- list(y=y, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+  variable.names.Temperature <- c("tau_add", "beta")
+  variable.namesout.Temperature <- c("tau_add", "beta", "mu")
+  init.Temperature <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5)))
   
 #TempExp
   data.TempExp <- list(y=y, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
@@ -83,10 +83,10 @@ jags_plug_ins <- function(model_name){
   init.TempExp <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5)))
   
 #Temp_Quad
-  data.Temp_Quad <- list(y=y, beta.m=as.vector(c(0,0,0,0)), beta.v=solve(diag(1E-03,4)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
-  variable.names.Temp_Quad <- c("tau_add", "beta")
-  variable.namesout.Temp_Quad <- c("tau_add", "beta", "mu")
-  init.Temp_Quad <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5,0.5)))
+  data.TempQuad <- list(y=y, beta.m=as.vector(c(0,0,0,0)), beta.v=solve(diag(1E-03,4)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+  variable.names.TempQuad <- c("tau_add", "beta")
+  variable.namesout.TempQuad <- c("tau_add", "beta", "mu")
+  init.TempQuad <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5,0.5)))
   
 #Logistic
   data.Logistic <- list(y=y, beta.m=as.vector(c(0,0)), beta.v=solve(diag(1E-03,2)), N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
@@ -295,19 +295,19 @@ for (t in 2:ncol(mu)){
 
 #Temp
 
-if(model=="Temp"){
+if(model_name=="Temperature"){
   tau_add = out[samp,grep("tau_add",colnames(out))]
   beta = out[samp,grep("beta",colnames(out))]
   
-  pred.Temp <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
-  pred_obs.Temp <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-  lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+  pred.Temperature <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Temperature <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
   
   for (t in 2:ncol(mu)){
     lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*Temp[t]
-    pred.Temp[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
-    m <- exp(pred[,t]) 
-    pred_obs.Temp[,t] = rpois(nsamp, m)}
+    pred.Temperature[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+    m <- exp(pred.Temperature[,t]) 
+    pred_obs.Temperature[,t] = rpois(nsamp, m)}
 }
 
 
@@ -336,10 +336,10 @@ beta = out[samp,grep("beta",colnames(out))]
 
 pred.TempQuad <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs.TempQuad <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-lambda <- matrix(NA, nrow=1, ncol=ncol(mu))
+lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[t,1] + beta[t,2]*mu[,t-1] + beta[t,3]*DL[t] + beta[t,4]*Temp[t]*Temp[t]
+  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*Temp[t] + beta[,4]*Temp[t]*Temp[t]
   pred.TempQuad[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred.TempQuad[,t]) 
   pred_obs.TempQuad[,t] = rpois(nsamp, m)}
