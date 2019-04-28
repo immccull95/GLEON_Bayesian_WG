@@ -21,9 +21,9 @@ start_date = '2007-01-01' # in YYYY-MM-DD format; 1st
 end_date = '2015-12-31' # Excluding 2016-2017 to use as sample data
 site = c('midge') # options are midge, coffin, newbury, or fichter 
 model_timestep = 7 # model timestep in days if filling in dates
-fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's 
+fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'Exponential_RandomYear' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Temperature' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -48,7 +48,7 @@ hist(y)
 N=length(y)
 range(y, na.rm = T)
 
-Temp = dat$watertemp_mean
+Temp = dat$TOBS
 DL = dat$daylength
 year_no = as.numeric(as.factor(dat$year))
 
@@ -82,12 +82,12 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0
 #plots for vars with same names, i.e., betas, so have created a quick hack to fix that
 
 #ok, you have to edit this vector to include the actual names of the parameters in your model :(
-vars <- c("tau_add","beta[1]","tau_yr")
+vars <- c("tau_add","beta[1]","beta[2]","beta[3]")
 
 for (i in 1:length(vars)){
-  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
+  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
   plot(jags.out, vars = vars[i]) 
-  dev.off()
+  #dev.off()
 }
 
 #upload plot to Google Drive folder
@@ -141,6 +141,7 @@ ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
 ciEnvelope(times,pi[1,],pi[3,],col="Green")
 ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
+
 
 dev.off()
 
