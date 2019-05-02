@@ -217,15 +217,6 @@ lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
 tau_yr_mc <- 1/sqrt(out[prow,"tau_yr"]) ## converts from precision to std deviation
 aNew.mc <- rnorm(Nmc,0,tau_yr_mc)
 
-N.IPDEA <- forecastN(IC=IC[prow,"N[6,30]"],  ## sample IC
-                     r=params[prow,"r_global"],  ## sample parameters
-                     Kg=params[prow,"K_global"],
-                     alpha=aNew.mc,              ## sample random effect
-                     beta=params[prow,"beta"],
-                     ppt=ppt_ensemble[drow,],   ## Sample drivers
-                     Q=Qmc,
-                     n=Nmc)
-
 gloeo.IPR <- forecast_gloeo(IC = IC[prow, N],
                            N_out = N_out,
                            tau_add = tau_add_mc,
