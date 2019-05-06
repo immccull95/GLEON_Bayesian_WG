@@ -127,7 +127,7 @@ points(times,y,pch="+",cex=0.5)
 
 ### settings
 Nmc = 1000         ## set number of Monte Carlo draws
-N.cols <- c("red","green","blue","orange") ## set colors
+N.cols <- c("black","red","green","blue","orange") ## set colors
 ylim = range(ci+0.01, na.rm = TRUE)
 trans <- 0.8       ## set transparancy
 cal_time = as.Date(as.character(dat$cal$date))
@@ -208,7 +208,7 @@ gloeo.IP.ci = apply(exp(gloeo.IP), 2, quantile, c(0.025,0.5,0.975))
 ## Plot run
 png(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=15, height=10, units='cm')
 plot.run()
-ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = col.alpha(N.cols[2], trans))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = col.alpha(N.cols[4], trans))
 ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
 lines(forecast_time, exp(gloeo.det), col="purple", lwd=3)
 dev.off()
@@ -229,8 +229,8 @@ V.pred.rel <- apply(varMat[,],2,function(x) {x/max(x)})
 png(file=file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')), res=300, width=15, height=10, units='cm')
 plot(forecast_time, V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="2016")
 ciEnvelope(forecast_time, rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
-ciEnvelope(forecast_time, V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
-legend("topleft", legend=c("Process", "Initial Cond"), col=rev(N.cols[1:2]), lty=1, lwd=5, bg = 'white')
+ciEnvelope(forecast_time, V.pred.rel[1,], V.pred.rel[2,], col = N.cols[4])
+legend("topleft", legend=c("Initial Cond","Process"), col=N.cols[c(1,4)], lty=1, lwd=5, bg = 'white')
 dev.off()
 
 drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')),
