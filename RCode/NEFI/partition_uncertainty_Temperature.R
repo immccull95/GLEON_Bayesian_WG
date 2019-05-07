@@ -13,6 +13,7 @@ library(runjags)
 library(moments)
 library(geosphere)
 library(ecoforecastR)
+library(googledrive)
 source('RCode/helper_functions/google_drive_functions.R')
 source('RCode/NEFI/get_data.R')
 source('RCode/helper_functions/plug_n_play_functions.R')
@@ -21,20 +22,23 @@ source('RCode/helper_functions/plug_n_play_functions.R')
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
 start_date = '2007-01-01' # in YYYY-MM-DD format; 1st 
-end_date = '2012-06-15' # Excluding 2016-2017 to use as sample data
+end_date = '2015-12-31' # Excluding 2016-2017 to use as sample data
 site = c('midge') # options are midge, coffin, newbury, or fichter 
 model_timestep = 7 # model timestep in days if filling in dates
 fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 forecast = TRUE # T/F for returing forecast time period or not 
-forecast_end_date = '2014-01-01' 
+forecast_end_date = '2017-12-31' 
 
-model_name = 'RandomYear' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Temperature' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
 #Edit nsamp to reflect a subset of total number of samples
 nsamp = 500 
 
+#My local directory - use as a temporary file repository for plot files before uploading
+#to Google Drive for the team to see :)
+my_directory <- "C:/Users/Mary Lofton/Desktop/MEL_Bayes"
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
 dat = plug_n_play_data(start_date = start_date,
@@ -51,8 +55,8 @@ hist(y)
 N=length(y)
 range(y, na.rm = T)
 
-Temp = dat$cal$watertemp_mean
-DL = dat$cal$daylength
+Temp = dat$cal$TOBS
+DL = c(dat$cal$daylength)
 year_no = as.numeric(as.factor(dat$cal$year))
 
 
@@ -123,8 +127,8 @@ points(times,y,pch="+",cex=0.5)
 
 ### settings
 Nmc = 1000         ## set number of Monte Carlo draws
-N.cols <- c("red","green","blue","orange") ## set colors
-ylim = range(ci)
+N.cols <- c("black","red","green","blue","orange") ## set colors
+ylim = range(ci+0.01, na.rm = TRUE)
 trans <- 0.8       ## set transparancy
 cal_time = as.Date(as.character(dat$cal$date))
 forecast_time = as.Date(as.character(dat$forecast$date))
@@ -132,12 +136,13 @@ all_time = c(cal_time, forecast_time)
 
 plot.run <- function(){
   plot(all_time, all_time, type='n', ylim=ylim, ylab="Gloeo count", log = 'y')
+  axis(2)
   ecoforecastR::ciEnvelope(cal_time, ci[1,], ci[3,], col="lightBlue")
-  lines(cal_time, ci[2,], col="blue")
+  lines(cal_time, ci[2,], col="purple")
   points(cal_time, ci[2,])
 }
 
-ci <- apply(exp(out[ ,mus]), 2, quantile, c(0.025,0.5,0.975))
+#ci <- apply(exp(out[ ,mus]), 2, quantile, c(0.025,0.5,0.975))
 plot.run()
 
 
@@ -146,30 +151,36 @@ plot.run()
 # N_out = number of time steps to forecast 
 # tau_add = process error (defaults to zero) 
 # n = number of monte carlo sims 
-forecast_gloeo <- function(IC, N_out = N_out, tau_add = 0, year = 0, n = Nmc){
+forecast_gloeo <- function(IC, beta1, beta2, beta3, Temp = Temp, N_out = N_out, tau_add = 0, n = Nmc){
   out <- matrix(NA, n, N_out) # setting up output 
   gloeo_prev <- IC
   for(i in 1:N_out){
-    out[,i] <- rnorm(n, gloeo_prev, tau_add) + year # predict next step 
+    lambda <- beta1 + beta2*gloeo_prev + beta3*Temp[i]
+    out[,i] <- rnorm(n,lambda,tau_add) 
     gloeo_prev <- out[,i] # update IC 
   }
   return(out)
 }
 
 ## deterministic predictions 
+Temp = c(dat$forecast$TOBS) #DL during forecasted period
 N_out = nrow(dat$forecast) # length of forecast time points 
-IC = mu
-years_mean = apply(out[,grep('yr[',colnames(out), fixed = T)], 2, mean) # mean of the random effect for each year 
+IC = out[,mus]
+betas = out[,grep("beta",colnames(out))]
+betas.mean <- apply(betas,2,mean)
 
 gloeo.det <- forecast_gloeo(IC = mean(IC[,N]), # last column of cal is the initial condition for forecast 
                             N_out = N_out,
+                            beta1 = betas.mean[1],
+                            beta2 = betas.mean[2],
+                            beta3 = betas.mean[3],
+                            Temp = Temp,
                             tau_add = 0,
-                            year = years_mean[length(years_mean)], # taking mean of last year's random effect
                             n = 1)
 
 ## Plot run
 plot.run()
-lines(forecast_time, gloeo.det, col="purple", lwd=3)
+lines(forecast_time, exp(gloeo.det), col="purple", lwd=3)
 
 
 ######## initial condition uncertainty #######
@@ -179,62 +190,81 @@ prow = sample.int(nrow(out),Nmc,replace=TRUE)
 gloeo.I <- forecast_gloeo(IC = IC[prow, N],
                       N_out = N_out,
                       tau_add = 0,
-                      year = years_mean[length(years_mean)], # taking mean of last year's random effect
+                      beta1 = betas.mean[1],
+                      beta2 = betas.mean[2],
+                      beta3 = betas.mean[3],
+                      Temp = Temp,
                       n = Nmc)
+gloeo.I.ci = apply(exp(gloeo.I), 2, quantile, c(0.025,0.5,0.975))
 
 ## Plot run
 plot.run()
-gloeo.I.ci = apply(gloeo.I, 2, quantile, c(0.025,0.5,0.975))
 ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
 lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
 
 ###### parameter uncertainty #######
-last_year_col = max(grep('yr[', colnames(out),fixed = T)) # need to figure out last year's random effect column number
-
-gloeo.IR <- forecast_gloeo(IC = IC[prow, N],
-                          N_out = N_out,
-                          tau_add = 0,
-                          year = out[prow, last_year_col], # sampling from last year's random effect 
-                          n = Nmc)
+gloeo.IP <- forecast_gloeo(IC=IC[prow,N],  ## shouldn't I be holding IC constant tho??
+                      N_out = N_out,
+                      beta1 = betas[prow,1],
+                      beta2 = betas[prow,2],
+                      beta3 = betas[prow,3],
+                      Temp = Temp,
+                      tau_add=0,
+                      n=Nmc)
 
 ## Plot run
 plot.run()
-gloeo.IR.ci = apply(gloeo.IR, 2, quantile, c(0.025,0.5,0.975))
-ecoforecastR::ciEnvelope(forecast_time, gloeo.IR.ci[1,], gloeo.IR.ci[3,], col = col.alpha(N.cols[2], trans))
-ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
-lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
+gloeo.IP.ci = apply(exp(gloeo.IP),2,quantile,c(0.025,0.5,0.975))
+ecoforecastR::ciEnvelope(forecast_time,gloeo.IP.ci[1,],gloeo.IP.ci[3,],col=col.alpha(N.cols[2],trans))
+ecoforecastR::ciEnvelope(forecast_time,gloeo.I.ci[1,],gloeo.I.ci[3,],col=col.alpha(N.cols[1],trans))
+lines(forecast_time,gloeo.I.ci[2,],lwd=0.5)
 
 ###### driver uncertainty ########## 
-# we don't have this for random walk 
+# we don't have this for exponential 
 
 ###### process uncertainty ######### 
 tau_add_mc <- 1/sqrt(out[prow,"tau_add"])  ## convert from precision to standard deviation
 
-gloeo.IRP <- forecast_gloeo(IC = IC[prow, N],
+gloeo.IPE <- forecast_gloeo(IC = IC[prow, N],
                           N_out = N_out,
+                          beta1 = betas[prow,1],
+                          beta2 = betas[prow,2],
+                          beta3 = betas[prow,3],
+                          Temp = Temp,
                           tau_add = tau_add_mc,
-                          year = out[prow, last_year_col], # sampling from last year's random effect 
                           n = Nmc)
+gloeo.IPE.ci = apply(exp(gloeo.IPE), 2, quantile, c(0.025,0.5,0.975))
 
 ## Plot run
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=15, height=10, units='cm')
 plot.run()
-gloeo.IRP.ci = apply(gloeo.IRP, 2, quantile, c(0.025,0.5,0.975))
-ecoforecastR::ciEnvelope(forecast_time, gloeo.IRP.ci[1,], gloeo.IRP.ci[3,], col = col.alpha(N.cols[3], trans))
-ecoforecastR::ciEnvelope(forecast_time, gloeo.IR.ci[1,], gloeo.IR.ci[3,], col = col.alpha(N.cols[2], trans))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IPE.ci[1,], gloeo.IPE.ci[3,], col = col.alpha(N.cols[4], trans))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = col.alpha(N.cols[2], trans))
 ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
-lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
+lines(forecast_time, exp(gloeo.det), col="purple", lwd=3)
+dev.off()
+
+#upload to Drive
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_forecast.png'), sep = '_')))
 
 
 ### calculation of variances
 varI     <- apply(gloeo.I,2,var)
-varIR    <- apply(gloeo.IR,2,var) 
-varIRP    <- apply(gloeo.IRP,2,var)
-varMat   <- rbind(varI,varIR, varIRP)
+varIP    <- apply(gloeo.IP,2,var)
+varIPE   <- apply(gloeo.IPE,2,var)
+varMat   <- rbind(varI,varIP,varIPE)
+V.pred.rel <- apply(varMat,2,function(x) {x/max(x)})
+
 
 ## stacked area plot
-V.pred.rel <- apply(varMat[,],2,function(x) {x/max(x)})
-plot(forecast_time, V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="time")
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')), res=300, width=15, height=10, units='cm')
+plot(forecast_time, V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="2016")
 ciEnvelope(forecast_time, rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
 ciEnvelope(forecast_time, V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
-ciEnvelope(forecast_time, V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
-legend("topleft", legend=c("Process", "Random Effects", "Initial Cond"), col=rev(N.cols[1:3]), lty=1, lwd=5, bg = 'white')
+ciEnvelope(forecast_time, V.pred.rel[2,], V.pred.rel[3,], col = N.cols[4])
+legend("topleft", legend=c("Initial Cond","Parameter", "Process"), col=(N.cols[c(1,2,4)]), lty=1, lwd=5, bg = 'white')
+dev.off()
+
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_var_part.png'), sep = '_')))
