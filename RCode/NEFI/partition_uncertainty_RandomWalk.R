@@ -13,6 +13,7 @@ library(runjags)
 library(moments)
 library(geosphere)
 library(ecoforecastR)
+library(googledrive)
 source('RCode/helper_functions/google_drive_functions.R')
 source('RCode/NEFI/get_data.R')
 source('RCode/helper_functions/plug_n_play_functions.R')
@@ -35,6 +36,9 @@ model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 #Edit nsamp to reflect a subset of total number of samples
 nsamp = 500 
 
+#My local directory - use as a temporary file repository for plot files before uploading
+#to Google Drive for the team to see :)
+my_directory <- "C:/Users/Mary Lofton/Desktop/MEL_Bayes"
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
 dat = plug_n_play_data(start_date = start_date,
@@ -123,7 +127,7 @@ points(times,y,pch="+",cex=0.5)
 
 ### settings
 Nmc = 1000         ## set number of Monte Carlo draws
-N.cols <- c("red","green","blue","orange") ## set colors
+N.cols <- c("black","red","green","blue","orange") ## set colors
 ylim = range(ci+0.01, na.rm = TRUE)
 trans <- 0.8       ## set transparancy
 cal_time = as.Date(as.character(dat$cal$date))
@@ -134,7 +138,7 @@ plot.run <- function(){
   plot(all_time, all_time, type='n', ylim=ylim, ylab="Gloeo count", log = 'y')
   axis(2)
   ecoforecastR::ciEnvelope(cal_time, ci[1,], ci[3,], col="lightBlue")
-  lines(cal_time, ci[2,], col="blue")
+  lines(cal_time, ci[2,], col="purple")
   points(cal_time, ci[2,])
 }
 
@@ -202,20 +206,32 @@ gloeo.IP <- forecast_gloeo(IC = IC[prow, N],
 gloeo.IP.ci = apply(exp(gloeo.IP), 2, quantile, c(0.025,0.5,0.975))
 
 ## Plot run
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=15, height=10, units='cm')
 plot.run()
-ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = col.alpha(N.cols[2], trans))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = col.alpha(N.cols[4], trans))
 ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
-lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
+lines(forecast_time, exp(gloeo.det), col="purple", lwd=3)
+dev.off()
+
+#upload to Drive
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_forecast.png'), sep = '_')))
 
 
 ### calculation of variances
 varI     <- apply(gloeo.I,2,var)
 varIP    <- apply(gloeo.IP,2,var)
 varMat   <- rbind(varI,varIP)
+V.pred.rel <- apply(varMat[,],2,function(x) {x/max(x)})
+
 
 ## stacked area plot
-V.pred.rel <- apply(varMat[,],2,function(x) {x/max(x)})
-plot(forecast_time, V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="time")
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')), res=300, width=15, height=10, units='cm')
+plot(forecast_time, V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="2016")
 ciEnvelope(forecast_time, rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
-ciEnvelope(forecast_time, V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
-legend("topleft", legend=c("Process", "Initial Cond"), col=rev(N.cols[1:2]), lty=1, lwd=5, bg = 'white')
+ciEnvelope(forecast_time, V.pred.rel[1,], V.pred.rel[2,], col = N.cols[4])
+legend("topleft", legend=c("Initial Cond","Process"), col=N.cols[c(1,4)], lty=1, lwd=5, bg = 'white')
+dev.off()
+
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_var_part.png'), sep = '_')))
