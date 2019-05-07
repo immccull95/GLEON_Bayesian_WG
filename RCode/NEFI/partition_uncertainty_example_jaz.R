@@ -23,12 +23,12 @@ source('RCode/helper_functions/plug_n_play_functions.R')
 start_date = '2007-01-01' # in YYYY-MM-DD format; 1st 
 end_date = '2012-06-15' # Excluding 2016-2017 to use as sample data
 site = c('midge') # options are midge, coffin, newbury, or fichter 
-model_timestep = 1 # model timestep in days if filling in dates
+model_timestep = 7 # model timestep in days if filling in dates
 fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 forecast = TRUE # T/F for returing forecast time period or not 
 forecast_end_date = '2014-01-01' 
 
-model_name = 'RandomWalk' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'RandomYear' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -146,11 +146,11 @@ plot.run()
 # N_out = number of time steps to forecast 
 # tau_add = process error (defaults to zero) 
 # n = number of monte carlo sims 
-forecast_gloeo <- function(IC, N_out = N_out, tau_add = 0, n = Nmc){
+forecast_gloeo <- function(IC, N_out = N_out, tau_add = 0, year = 0, n = Nmc){
   out <- matrix(NA, n, N_out) # setting up output 
   gloeo_prev <- IC
   for(i in 1:N_out){
-    out[,i] <- rnorm(n, gloeo_prev, tau_add) # predict next step 
+    out[,i] <- rnorm(n, gloeo_prev, tau_add) + year # predict next step 
     gloeo_prev <- out[,i] # update IC 
   }
   return(out)
@@ -159,10 +159,12 @@ forecast_gloeo <- function(IC, N_out = N_out, tau_add = 0, n = Nmc){
 ## deterministic predictions 
 N_out = nrow(dat$forecast) # length of forecast time points 
 IC = mu
+years_mean = apply(out[,grep('yr[',colnames(out), fixed = T)], 2, mean) # mean of the random effect for each year 
 
 gloeo.det <- forecast_gloeo(IC = mean(IC[,N]), # last column of cal is the initial condition for forecast 
                             N_out = N_out,
                             tau_add = 0,
+                            year = years_mean[length(years_mean)], # taking mean of last year's random effect
                             n = 1)
 
 ## Plot run
@@ -177,6 +179,7 @@ prow = sample.int(nrow(out),Nmc,replace=TRUE)
 gloeo.I <- forecast_gloeo(IC = IC[prow, N],
                       N_out = N_out,
                       tau_add = 0,
+                      year = years_mean[length(years_mean)], # taking mean of last year's random effect
                       n = Nmc)
 
 ## Plot run
@@ -186,7 +189,20 @@ ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = co
 lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
 
 ###### parameter uncertainty #######
-# we don't have this for random walk 
+last_year_col = max(grep('yr[', colnames(out),fixed = T)) # need to figure out last year's random effect column number
+
+gloeo.IR <- forecast_gloeo(IC = IC[prow, N],
+                          N_out = N_out,
+                          tau_add = 0,
+                          year = out[prow, last_year_col], # sampling from last year's random effect 
+                          n = Nmc)
+
+## Plot run
+plot.run()
+gloeo.IR.ci = apply(gloeo.IR, 2, quantile, c(0.025,0.5,0.975))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IR.ci[1,], gloeo.IR.ci[3,], col = col.alpha(N.cols[2], trans))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
+lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
 
 ###### driver uncertainty ########## 
 # we don't have this for random walk 
@@ -194,27 +210,31 @@ lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
 ###### process uncertainty ######### 
 tau_add_mc <- 1/sqrt(out[prow,"tau_add"])  ## convert from precision to standard deviation
 
-gloeo.IP <- forecast_gloeo(IC = IC[prow, N],
+gloeo.IRP <- forecast_gloeo(IC = IC[prow, N],
                           N_out = N_out,
                           tau_add = tau_add_mc,
+                          year = out[prow, last_year_col], # sampling from last year's random effect 
                           n = Nmc)
 
 ## Plot run
 plot.run()
-gloeo.IP.ci = apply(gloeo.IP, 2, quantile, c(0.025,0.5,0.975))
-ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = col.alpha(N.cols[2], trans))
+gloeo.IRP.ci = apply(gloeo.IRP, 2, quantile, c(0.025,0.5,0.975))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IRP.ci[1,], gloeo.IRP.ci[3,], col = col.alpha(N.cols[3], trans))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IR.ci[1,], gloeo.IR.ci[3,], col = col.alpha(N.cols[2], trans))
 ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
 lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
 
 
 ### calculation of variances
 varI     <- apply(gloeo.I,2,var)
-varIP    <- apply(gloeo.IP,2,var)
-varMat   <- rbind(varI,varIP)
+varIR    <- apply(gloeo.IR,2,var) 
+varIRP    <- apply(gloeo.IRP,2,var)
+varMat   <- rbind(varI,varIR, varIRP)
 
 ## stacked area plot
 V.pred.rel <- apply(varMat[,],2,function(x) {x/max(x)})
 plot(forecast_time, V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="time")
 ciEnvelope(forecast_time, rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
 ciEnvelope(forecast_time, V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
-legend("topleft", legend=c("Process", "Initial Cond"), col=rev(N.cols[1:2]), lty=1, lwd=5, bg = 'white')
+ciEnvelope(forecast_time, V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
+legend("topleft", legend=c("Process", "Random Effects", "Initial Cond"), col=rev(N.cols[1:3]), lty=1, lwd=5, bg = 'white')
