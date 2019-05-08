@@ -20,15 +20,15 @@ source('RCode/helper_functions/plug_n_play_functions.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-start_date = '2007-01-01' # in YYYY-MM-DD format; 1st 
-end_date = '2012-06-15' # Excluding 2016-2017 to use as sample data
+start_date = '2005-07-21' # in YYYY-MM-DD format; 1st 
+end_date = '2014-06-12' # Excluding 2016-2017 to use as sample data
 site = c('midge') # options are midge, coffin, newbury, or fichter 
-model_timestep = 1 # model timestep in days if filling in dates
-fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
+model_timestep = 7 # model timestep in days if filling in dates
+fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's 
 forecast = TRUE # T/F for returing forecast time period or not 
-forecast_end_date = '2014-01-01' 
+forecast_end_date = '2016-10-05' 
 
-model_name = 'RandomWalk' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'RandomYear' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -83,8 +83,8 @@ plot(jags.out, vars = jags_plug_ins$variable.names.model)
 jags.out.mcmc <- as.mcmc.list(jags.out)
 out <- as.matrix(jags.out.mcmc)
 
-# DIC=dic.samples(j.model, n.iter=5000)
-# DIC
+DIC=dic.samples(j.model, n.iter=5000)
+DIC
 
 
 #6) CI, PI, Obs PI Calculations
@@ -141,16 +141,18 @@ ci <- apply(exp(out[ ,mus]), 2, quantile, c(0.025,0.5,0.975))
 plot.run()
 
 
-#setting up deterministic forecast function for random walk 
+
+#setting up deterministic forecast function for random walk with random year
 # IC = initial conditions from end of calibration period 
 # N_out = number of time steps to forecast 
 # tau_add = process error (defaults to zero) 
+# tau_yr = random effect error? (also defaults to zero?)
 # n = number of monte carlo sims 
-forecast_gloeo <- function(IC, N_out = N_out, tau_add = 0, n = Nmc){
+forecast_gloeo <- function(IC, N_out = N_out, tau_add = 0, tau_yr = 0, n = Nmc){
   out <- matrix(NA, n, N_out) # setting up output 
   gloeo_prev <- IC
   for(i in 1:N_out){
-    out[,i] <- rnorm(n, gloeo_prev, tau_add) # predict next step 
+    out[,i] <- rnorm(n, gloeo_prev, tau_add) # predict next step JB getting error here when include tau_yr - unsure why?
     gloeo_prev <- out[,i] # update IC 
   }
   return(out)
@@ -163,6 +165,7 @@ IC = mu
 gloeo.det <- forecast_gloeo(IC = mean(IC[,N]), # last column of cal is the initial condition for forecast 
                             N_out = N_out,
                             tau_add = 0,
+                            tau_yr = 0,
                             n = 1)
 
 ## Plot run
@@ -177,6 +180,7 @@ prow = sample.int(nrow(out),Nmc,replace=TRUE)
 gloeo.I <- forecast_gloeo(IC = IC[prow, N],
                       N_out = N_out,
                       tau_add = 0,
+                      tau_yr = 0,
                       n = Nmc)
 
 ## Plot run
@@ -192,11 +196,12 @@ lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
 # we don't have this for random walk 
 
 ###### process uncertainty ######### 
-tau_add_mc <- 1/sqrt(out[prow,"tau_add"])  ## convert from precision to standard deviation
+tau_add_mc <- 1/sqrt(out[prow,"tau_add"])  ## converts from precision to standard deviation
 
 gloeo.IP <- forecast_gloeo(IC = IC[prow, N],
                           N_out = N_out,
                           tau_add = tau_add_mc,
+                          tau_yr = 0,
                           n = Nmc)
 
 ## Plot run
@@ -206,15 +211,37 @@ ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = 
 ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
 lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
 
+###### randome effect uncertainty #######
+
+## Random effect samples
+tau_yr_mc <- 1/sqrt(out[prow,"tau_yr"]) ## converts from precision to std deviation
+aNew.mc <- rnorm(Nmc,0,tau_yr_mc)
+
+gloeo.IPR <- forecast_gloeo(IC = IC[prow, N],
+                           N_out = N_out,
+                           tau_add = tau_add_mc,
+                           tau_yr = aNew.mc,
+                           n = Nmc)
+
+## Plot run
+plot.run()
+gloeo.IPR.ci = apply(gloeo.IPR, 2, quantile, c(0.025,0.5,0.975))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IPR.ci[1,], gloeo.IPR.ci[3,], col = col.alpha(N.cols[3], trans))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = col.alpha(N.cols[2], trans))
+ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
+lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
+
 
 ### calculation of variances
 varI     <- apply(gloeo.I,2,var)
 varIP    <- apply(gloeo.IP,2,var)
-varMat   <- rbind(varI,varIP)
+varIPR   <- apply(gloeo.IPR,2,var)
+varMat   <- rbind(varI,varIP, varIPR)
 
 ## stacked area plot
 V.pred.rel <- apply(varMat[,],2,function(x) {x/max(x)})
 plot(forecast_time, V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="time")
 ciEnvelope(forecast_time, rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
 ciEnvelope(forecast_time, V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
-legend("topleft", legend=c("Process", "Initial Cond"), col=rev(N.cols[1:2]), lty=1, lwd=5, bg = 'white')
+ciEnvelope(forecast_time, V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
+legend("topleft", legend=c("Random Effect","Process","Initial Cond"), col=rev(N.cols[1:3]), lty=1, lwd=5, bg = 'white')
