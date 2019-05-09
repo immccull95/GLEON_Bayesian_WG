@@ -27,7 +27,7 @@ site = c('midge') # options are midge, coffin, newbury, or fichter
 model_timestep = 7 # model timestep in days if filling in dates
 fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's 
 forecast = TRUE # T/F for returing forecast time period or not 
-forecast_end_date = '2017-12-31' 
+forecast_end_date = '2016-12-31' 
 
 model_name = 'Exponential' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
@@ -227,6 +227,15 @@ plot.run()
 ecoforecastR::ciEnvelope(forecast_time, gloeo.IPE.ci[1,], gloeo.IPE.ci[3,], col = col.alpha(N.cols[4], trans))
 ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = col.alpha(N.cols[2], trans))
 ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
+lines(forecast_time, exp(gloeo.det), col="purple", lwd=3)
+dev.off()
+
+#plot to show total amount of uncertainty
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_tot_uncert.png'), sep = '_')), res=300, width=15, height=10, units='cm')
+plot.run()
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IPE.ci[1,], gloeo.IPE.ci[3,], col = "thistle1")
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = "thistle1")
+ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = "thistle1")
 lines(forecast_time, exp(gloeo.det), col="purple", lwd=3)
 dev.off()
 
