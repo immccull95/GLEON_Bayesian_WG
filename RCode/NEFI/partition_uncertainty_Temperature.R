@@ -244,6 +244,15 @@ ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = co
 lines(forecast_time, exp(gloeo.det), col="purple", lwd=3)
 dev.off()
 
+## Plot total uncertainty for poster
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_tot_uncert.png'), sep = '_')), res=300, width=15, height=10, units='cm')
+plot.run()
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IPE.ci[1,], gloeo.IPE.ci[3,], col = "thistle1")
+ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = "thistle1")
+ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = "thistle1")
+lines(forecast_time, exp(gloeo.det), col="purple", lwd=3)
+dev.off()
+
 #upload to Drive
 drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')),
              path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_forecast.png'), sep = '_')))
