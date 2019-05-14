@@ -95,6 +95,7 @@ out <- as.matrix(jags.out.mcmc)
 
 times <- as.Date(as.character(dat$cal$date))
 time.rng = c(1,length(times)) ## adjust to zoom in and out
+time.rng = c(534,563)
 ciEnvelope <- function(x,ylo,yhi,...){
   polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
                                       ylo[1])), border = NA,...) 
@@ -121,7 +122,6 @@ ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
 ciEnvelope(times,pi[1,],pi[3,],col="Green")
 ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
-
 
 ## Forward Simulation
 
