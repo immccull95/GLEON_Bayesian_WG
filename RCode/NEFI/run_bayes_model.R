@@ -23,7 +23,7 @@ site = c('midge') # options are midge, coffin, newbury, or fichter
 model_timestep = 7 # model timestep in days if filling in dates
 fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'Temperature' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Temperature_obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?

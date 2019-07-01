@@ -75,6 +75,12 @@ jags_plug_ins <- function(model_name){
   variable.names.Temperature <- c("tau_add", "beta", "tau_yr")
   variable.namesout.Temperature <- c("tau_add", "beta", "mu", "tau_yr", "yr")
   init.Temperature <- list(list(tau_add=0.001, tau_yr=0.001, beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, tau_yr=0.1, beta=c(0,0,0)), list(tau_add=1, tau_yr=1, beta=c(0.5,0.5,0.5)))
+ 
+#Temperature_obs_error
+  data.Temperature_obs_error <- list(y=y, year_no = year_no, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+  variable.names.Temperature_obs_error <- c("tau_add", "beta", "tau_yr","sd_proc")
+  variable.namesout.Temperature_obs_error <- c("tau_add", "beta", "mu", "tau_yr", "yr","sd_proc")
+  init.Temperature_obs_error <- list(list(tau_add=0.001, tau_yr=0.001, sd_proc = 0.001, beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, tau_yr=0.1, sd_proc = 0.1, beta=c(0,0,0)), list(tau_add=1, tau_yr=1, sd_proc = 1, beta=c(0.5,0.5,0.5)))
   
 #TempExp
   data.TempExp <- list(y=y, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
@@ -293,7 +299,7 @@ for (t in 2:ncol(mu)){
   pred_obs.DayLengthQuad[,t] = rpois(nsamp, m)}
 }
 
-#Temp
+#Temperature
 
 if(model_name=="Temperature"){
   tau_add = out[samp,grep("tau_add",colnames(out))]
@@ -310,6 +316,26 @@ if(model_name=="Temperature"){
     pred.Temperature[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
     m <- exp(pred.Temperature[,t]) 
     pred_obs.Temperature[,t] = rpois(nsamp, m)}
+}
+
+#Temperature_obs_error
+
+if(model_name=="Temperature_obs_error"){
+  tau_add = out[samp,grep("tau_add",colnames(out))]
+  beta = out[samp,grep("beta",colnames(out))]
+  sd_proc = out[samp,grep("sd_proc",colnames(out))]
+  yr_temp = out[samp,grep("yr",colnames(out))]
+  yr=yr_temp[,-1]
+  
+  pred.Temperature <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Temperature <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  
+  for (t in 2:ncol(mu)){
+    lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*Temp[t] + yr[,year_no[t]]
+    pred.Temperature[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
+    m <- exp(pred.Temperature[,t]) 
+    pred_obs.Temperature[,t] = rlnorm(nsamp, m, 1/sd_proc^2)}
 }
 
 
