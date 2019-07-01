@@ -59,16 +59,16 @@ jags_plug_ins <- function(model_name){
   init.RandomWalkZip <- list(list(tau_add=0.001, theta=0), list(tau_add=0.1, theta=0.5), list(tau_add=1, theta=1))
   
 #DayLength  
-  data.DayLength <- list(y=y, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), DL=DL, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
-  variable.names.DayLength <- c("tau_add", "beta")
-  variable.namesout.DayLength <- c("tau_add", "beta", "mu")
-  init.DayLength <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5)))
+  data.DayLength <- list(y=y, year_no = year_no,beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), DL=DL, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+  variable.names.DayLength <- c("tau_add", "beta", "tau_yr")
+  variable.namesout.DayLength <- c("tau_add", "beta", "mu", "tau_yr", "yr")
+  init.DayLength <- list(list(tau_add=0.001, tau_yr=0.001,beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, tau_yr=0.1,beta=c(0,0,0)), list(tau_add=1, tau_yr=1,beta=c(0.5,0.5,0.5)))
   
 #DayLengthQuad
-  data.DayLengthQuad <- list(y=y, beta.m=as.vector(c(0,0,0,0)), beta.v=solve(diag(1E-03,4)), DL=DL, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
-  variable.names.DayLengthQuad <- c("tau_add", "beta")
-  variable.namesout.DayLengthQuad <- c("tau_add", "beta", "mu")
-  init.DayLengthQuad <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5,0.5)))
+  data.DayLengthQuad <- list(y=y, year_no = year_no,beta.m=as.vector(c(0,0,0,0)), beta.v=solve(diag(1E-03,4)), DL=DL, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+  variable.names.DayLengthQuad <- c("tau_add", "beta", "tau_yr")
+  variable.namesout.DayLengthQuad <- c("tau_add", "beta", "mu", "tau_yr", "yr")
+  init.DayLengthQuad <- list(list(tau_add=0.001, tau_yr=0.001,beta=c(-0.5,-0.5,-0.5,-0.5)), list(tau_add=0.1, tau_yr=0.1,beta=c(0,0,0,0)), list(tau_add=1, tau_yr=1,beta=c(0.5,0.5,0.5,0.5)))
 
 #Temperature
   data.Temperature <- list(y=y, year_no = year_no, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
@@ -89,16 +89,16 @@ jags_plug_ins <- function(model_name){
   init.TempExp <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5)))
   
 #Temp_Quad
-  data.TempQuad <- list(y=y, beta.m=as.vector(c(0,0,0,0)), beta.v=solve(diag(1E-03,4)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
-  variable.names.TempQuad <- c("tau_add", "beta")
-  variable.namesout.TempQuad <- c("tau_add", "beta", "mu")
-  init.TempQuad <- list(list(tau_add=0.001, beta=c(-0.5,-0.5,-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0,0,0)), list(tau_add=1, beta=c(0.5,0.5,0.5,0.5)))
+  data.TempQuad <- list(y=y, year_no = year_no,beta.m=as.vector(c(0,0,0,0)), beta.v=solve(diag(1E-03,4)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+  variable.names.TempQuad <- c("tau_add", "beta", "tau_yr")
+  variable.namesout.TempQuad <- c("tau_add", "beta", "mu", "tau_yr", "yr")
+  init.TempQuad <- list(list(tau_add=0.001, tau_yr=0.001,beta=c(-0.5,-0.5,-0.5,-0.5)), list(tau_add=0.1, tau_yr=0.1,beta=c(0,0,0,0)), list(tau_add=1, tau_yr=1,beta=c(0.5,0.5,0.5,0.5)))
   
 #Logistic
-  data.Logistic <- list(y=y, beta.m=as.vector(c(0,0)), beta.v=solve(diag(1E-03,2)), N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
-  variable.names.Logistic <- c("tau_add", "beta")
-  variable.namesout.Logistic <- c("tau_add", "beta", "mu")
-  init.Logistic <- list(list(tau_add=0.001, beta=c(-0.5,-0.5)), list(tau_add=0.1, beta=c(0,0)), list(tau_add=1, beta=c(0.5,0.5)))
+  data.Logistic <- list(y=y, N=length(y),a_add = 0.001,r_add = 0.001)
+  variable.names.Logistic <- c("tau_add", "r0","K")
+  variable.namesout.Logistic <- c("tau_add", "mu", "r0", "K")
+  init.Logistic <- list(list(tau_add=0.001, r0 = 0.1, K = 10000), list(tau_add=0.1, r0 = 1.5, K = 18000), list(tau_add=1, r0 = 3.25, K = 25000))
   
 #Exponential
   data.Exponential <- list(y=y, beta.m=0, beta.v=1E-03, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
@@ -252,17 +252,17 @@ if(model_name=="Exponential_RandomYear"){
 
 if(model_name=="Logistic"){
 tau_add = out[samp,grep("tau_add",colnames(out))]
-beta = out[samp,grep("beta",colnames(out))]
+r0 = out[samp,grep("r0",colnames(out))]
+K = out[samp,grep("K",colnames(out))]
 
 pred.Logistic <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs.Logistic <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[,1]*mu[,t-1] + beta[,2]*mu[,t-1]*mu[,t-1]
+  lambda[,t] <- mu[t-1]*exp(r0*(1-(mu[t-1]/K)))
   pred.Logistic[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
-  m <- exp(pred.Logistic[,t]) 
-  pred_obs.Logistic[,t] = rpois(nsamp, m)}
+  pred_obs.Logistic[,t] = rpois(nsamp, pred.Logistic[,t])}
 }
 
 #DayLength
@@ -270,13 +270,15 @@ for (t in 2:ncol(mu)){
 if(model_name=="DayLength"){
 tau_add = out[samp,grep("tau_add",colnames(out))]
 beta = out[samp,grep("beta",colnames(out))]
+yr_temp = out[samp,grep("yr",colnames(out))]
+yr=yr_temp[,-1]
 
 pred.DayLength <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs.DayLength <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*DL[t]
+  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*DL[t] + yr[,year_no[t]]
   pred.DayLength[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred.DayLength[,t]) 
   pred_obs.DayLength[,t] = rpois(nsamp, m)}
@@ -287,13 +289,15 @@ for (t in 2:ncol(mu)){
 if(model_name =="DayLengthQuad"){
 tau_add = out[samp,grep("tau_add",colnames(out))]
 beta = out[samp,grep("beta",colnames(out))]
+yr_temp = out[samp,grep("yr",colnames(out))]
+yr=yr_temp[,-1]
 
 pred.DayLengthQuad <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs.DayLengthQuad <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*DL[t] + beta[,4]*DL[t]*DL[t]
+  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*DL[t] + beta[,4]*DL[t]*DL[t] + yr[,year_no[t]]
   pred.DayLengthQuad[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred.DayLengthQuad[,t]) 
   pred_obs.DayLengthQuad[,t] = rpois(nsamp, m)}
@@ -361,13 +365,15 @@ for (t in 2:ncol(mu)){
 if(model_name=="TempQuad"){
 tau_add = out[samp,grep("tau_add",colnames(out))]
 beta = out[samp,grep("beta",colnames(out))]
+yr_temp = out[samp,grep("yr",colnames(out))]
+yr=yr_temp[,-1]
 
 pred.TempQuad <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs.TempQuad <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
 
 for (t in 2:ncol(mu)){
-  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*Temp[t] + beta[,4]*Temp[t]*Temp[t]
+  lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*Temp[t] + beta[,4]*Temp[t]*Temp[t] + yr[,year_no[t]]
   pred.TempQuad[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
   m <- exp(pred.TempQuad[,t]) 
   pred_obs.TempQuad[,t] = rpois(nsamp, m)}
