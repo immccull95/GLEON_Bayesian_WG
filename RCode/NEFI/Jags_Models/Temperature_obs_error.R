@@ -1,7 +1,7 @@
 model{
   for(i in 1:N){
     #this fits the blended model to your observed data. 
-    log(y[i]) ~ dlnorm(mu[i],1/sd_proc^2)
+    y[i] ~ dlnorm(mu[i],1/sd_proc^2)
     #m[i] <- exp(mu[i])
     
   }
