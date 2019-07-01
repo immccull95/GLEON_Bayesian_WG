@@ -23,7 +23,7 @@ site = c('midge') # options are midge, coffin, newbury, or fichter
 model_timestep = 7 # model timestep in days if filling in dates
 fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'Temperature' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Logistic' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -41,6 +41,7 @@ dat = plug_n_play_data(start_date = start_date,
                        sites = site,
                        model_timestep = model_timestep,
                        fill_dates = fill_dates)
+#dat <- dat %>% filter(!is.na(totalperL))
 
 ##look at response variable 
 y<-round(dat$totalperL*141.3707) #converting colonies per Liter to count data: volume of 2, ~1 m net tows
@@ -82,12 +83,12 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0
 #plots for vars with same names, i.e., betas, so have created a quick hack to fix that
 
 #ok, you have to edit this vector to include the actual names of the parameters in your model :(
-vars <- c("tau_add","beta[1]","beta[2]","beta[3]","tau_yr")
+vars <- c("tau_add","r0","K")
 
 for (i in 1:length(vars)){
-  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
+  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
   plot(jags.out, vars = vars[i]) 
-  dev.off()
+  #dev.off()
 }
 
 #upload plot to Google Drive folder
@@ -136,6 +137,12 @@ ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 points(times,y,pch="+",cex=0.5)
 
 #CI, PI, Obs PI
+plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log = "y", ylab="Gloeo count",xlim=times[time.rng], main="Obs, Latent CI (blue), PI (green), Obs PI (grey)")
+ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
+ciEnvelope(times,pi[1,],pi[3,],col="Green")
+ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
+points(times,y,pch="+",cex=0.5)
+
 plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log = "y", ylab="Gloeo count",xlim=times[time.rng], main="Obs, Latent CI (blue), PI (green), Obs PI (grey)")
 ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
 ciEnvelope(times,pi[1,],pi[3,],col="Green")

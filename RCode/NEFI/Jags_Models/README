@@ -18,9 +18,9 @@ included on EFI poster
 
 ChangepointDOY.R - Shannon code from January Cary workshop
 
-DayLengthQuad - functional; included on EFI poster
+DayLengthQuad - functional; included on EFI poster; 01JUL19 added random year effect
 
-DayLength.R - functional; included on EFI poster
+DayLength.R - functional; included on EFI poster; 01JUL19 added random year effect
 
 RandomWalk.R - functional; included on EFI poster
 
@@ -31,7 +31,7 @@ DayLengthOOS.R - not functional, beginning of code for model selection based on 
 Temperature.R - functional, working with air temperature data right now because can't have missing values for water temperature; included on EFI poster
 added random year effect 12JUN19
 
-TempQuad.R - not functional because of missing data; ready to go once buoy data used to calculate missing sensor data; included on EFI poster
+TempQuad.R - not functional because of missing data; ready to go once buoy data used to calculate missing sensor data; included on EFI poster; 01JUL19 added random year effect
 
 TempExp.R - not functional because of missing data; ready to go once buoy data used to calculate missing sensor data
 
