@@ -10,15 +10,13 @@ library(runjags)
 library(moments)
 library(geosphere)
 library(googledrive)
-source('RCode/helper_functions/google_drive_functions.R')
-source('RCode/NEFI/get_data.R')
-source('RCode/helper_functions/plug_n_play_functions.R')
+source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Temperature_obs_error_seasonal' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
-model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
+model_name = 'Seasonal_RandomWalk_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
 #Edit nsamp to reflect a subset of total number of samples
@@ -41,19 +39,7 @@ site = "Midge"
 
 
 #3) JAGS Plug-Ins -----------------------------------------------------------------------------------------------------
-
-data.Temperature_obs_error_seasonal <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
-variable.names.Temperature_obs_error_seasonal <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","sd_obs")
-variable.namesout.Temperature_obs_error_seasonal <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","sd_obs")
-init.Temperature_obs_error_seasonal <- list(list(tau_proc=0.001, tau_yr=0.001, sd_obs = 100, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, sd_obs = 200, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, sd_obs = 300, beta1=0.5,beta2=0.5,beta3=0.5))
-
-data = eval(parse(text = paste0('data.', model_name)))
-variable.names = eval(parse(text = paste0('variable.names.', model_name)))
-variable.namesout = eval(parse(text = paste0('variable.namesout.', model_name)))
-init = eval(parse(text = paste0('init.', model_name)))
-
-jags_plug_ins <- list(data.model = data, variable.names.model = variable.names, variable.namesout.model = variable.namesout, init.model = init) 
-
+jags_plug_ins <- jags_plug_ins(model_name = model_name)
 
 # Now that we've defined the model, the data, and the initialization, we need to send all this info to JAGS, which will return the JAGS model object.
 
@@ -66,14 +52,13 @@ j.model   <- jags.model (file = model,
 jags.out <- run.jags(model = model,
                      data = jags_plug_ins$data.model,
                      adapt =  10000, 
-                     burnin =  5000, 
+                     burnin =  20000, 
                      sample = 5000, 
                      n.chains = 3, 
                      inits=jags_plug_ins$init.model,
                      monitor = jags_plug_ins$variable.namesout.model)
 
 #5) Save and Process Output
-
 write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'.txt'), sep = '_')), 
                remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
@@ -81,18 +66,18 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0
 #plots for vars with same names, i.e., betas, so have created a quick hack to fix that
 
 #ok, you have to edit this vector to include the actual names of the parameters in your model :(
-vars <- c("tau_proc","beta1", "beta2", "beta3", "tau_yr","sd_obs")
+params <- jags_plug_ins$params.model
 
-for (i in 1:length(vars)){
-  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
-  plot(jags.out, vars = vars[i]) 
-  dev.off()
+for (i in 1:length(params)){
+  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
+  plot(jags.out, vars = params[i]) 
+  #dev.off()
 }
 
 #upload plot to Google Drive folder
-for (i in 1:length(vars)){
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
+for (i in 1:length(params)){
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
 }
 #need to view this to get parameter estimates for model comparison Excel file
 sum <- summary(jags.out, vars = jags_plug_ins$variable.names.model)
@@ -103,6 +88,13 @@ out <- as.matrix(jags.out.mcmc)
 
 DIC=dic.samples(j.model, n.iter=5000)
 DIC
+
+#Seasonal_RandomWalk_Obs_error
+
+#Seasonal_Temperature_Obs_error
+# Mean deviance:  -407.1 
+# penalty 22139 
+# Penalized deviance: 21732 
 
 saveRDS(object = DIC, file = file.path("Results/Jags_Models/", paste(site, paste0(model_name,'_DIC.rds'), sep = '_')))
 

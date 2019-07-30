@@ -41,10 +41,10 @@ dev.off()
 
 gloeo <- read_xlsx("./Datasets/Sunapee/SummarizedData/CompareMidgeDailytoWeeklyGloeoSamples_17April2019.xlsx")
 
-hist(gloeo$OurWeekly_GloeoDensity*141.3707)
+hist(gloeo$OurWeekly_GloeoDensity)
 
-diff = abs(gloeo$OurWeekly_GloeoDensity*141.3707 - gloeo$MidgeDaily_GloeoDensity*141.3707)
-diff_log = log(gloeo$OurWeekly_GloeoDensity*141.3707) - log(gloeo$MidgeDaily_GloeoDensity*141.3707)
+diff = abs(gloeo$OurWeekly_GloeoDensity - gloeo$MidgeDaily_GloeoDensity)
+diff_log = log(gloeo$OurWeekly_GloeoDensity) - log(gloeo$MidgeDaily_GloeoDensity)
 
 hist(diff)
 
@@ -53,10 +53,13 @@ diff_log <- diff_log[!diff_log %in% c("-Inf","NaN","Inf")]
 mean(diff, na.rm = TRUE)
 #0.519 in log space; using this for prior?
 #155.0856 in not-log space
+#1.79 in densities
 
 
 sd(diff, na.rm = TRUE)
 #1.006; using this for prior?
 #908.4293 in not-log space
+#6.23 in densities
+
 
 1/(mean(diff, na.rm = TRUE)^2)

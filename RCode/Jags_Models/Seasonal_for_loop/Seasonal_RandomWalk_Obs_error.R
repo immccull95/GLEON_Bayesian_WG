@@ -15,6 +15,6 @@ model{
   }
   #### Priors
   tau_proc ~ dgamma(a_add,r_add)
-  sd_obs ~ dnorm(155,1/908^2)
+  sd_obs ~ dgamma(1.79,1/6.23^2)
   
 }

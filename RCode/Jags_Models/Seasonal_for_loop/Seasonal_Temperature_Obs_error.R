@@ -27,7 +27,7 @@ model{
   beta2 ~ dnorm(beta.m2,beta.v2) 
   beta3 ~ dnorm(beta.m3,beta.v3) 
   tau_yr ~ dgamma(0.01,0.01)
-  sd_obs ~ dnorm(155,1/908^2)
+  sd_obs ~ dnorm(1.79,1/6.23^2)
   
   #Loops through number of years and defines prior for each year 
   
