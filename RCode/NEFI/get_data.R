@@ -5,7 +5,7 @@ require(rlang)
 
 get_data <- function(cal_time_start, cal_time_end, fill_dates = TRUE, forecast = FALSE, forecast_time_end, model_timestep = 1, sites){
   
-  gleo <- read.csv('Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp_airtemp.csv', stringsAsFactors = F) %>%
+  gleo <- read.csv('Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp_airtemp-Final_02JUL19.csv', stringsAsFactors = F) %>%
     as_data_frame() %>% 
     mutate(date = lapply(date, function(date){as.Date(strsplit(date, 'T')[[1]][1]) %>% as_data_frame()}) %>%  # changing date format to date 
     bind_rows() %>%

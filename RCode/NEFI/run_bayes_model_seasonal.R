@@ -17,46 +17,43 @@ source('RCode/helper_functions/plug_n_play_functions.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-start_date = '2007-01-01' # in YYYY-MM-DD format; 1st 
-end_date = '2015-12-31' # Excluding 2016-2017 to use as sample data
-site = c('midge') # options are midge, coffin, newbury, or fichter 
-model_timestep = 7 # model timestep in days if filling in dates
-fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
-
-model_name = 'Temperature_obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Temperature_obs_error_seasonal' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
 #Edit nsamp to reflect a subset of total number of samples
-nsamp = 500 
+nsamp = 1500 
 
 #My local directory - use as a temporary file repository for plot files before uploading
 #to Google Drive for the team to see :)
-my_directory <- "C:/Users/Mary Lofton/Desktop/MEL_Bayes"
+my_directory <- "C:/Users/Mary Lofton/Desktop/MEL_Bayes/Temperature_obs_error_seasonal"
 
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
-dat = plug_n_play_data(start_date = start_date,
-                       end_date = end_date,
-                       sites = site,
-                       model_timestep = model_timestep,
-                       fill_dates = fill_dates)
-#dat <- dat %>% filter(!is.na(totalperL))
+y <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))
 
-##look at response variable 
-y<-round(dat$totalperL*141.3707) #converting colonies per Liter to count data: volume of 2, ~1 m net tows
-hist(y)  
-N=length(y)
-range(y, na.rm = T)
+Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
 
-Temp = dat$TOBS
-DL = dat$daylength
-year_no = as.numeric(as.factor(dat$year))
-season_weeks = length(c(min(dat$season_week):max(dat$season_week)))
+years <- c(2009:2014)
+year_no = as.numeric(as.factor(years))
+season_weeks = c(1:20)
+site = "Midge"
 
 
 #3) JAGS Plug-Ins -----------------------------------------------------------------------------------------------------
-jags_plug_ins <- jags_plug_ins(model_name = model_name)
+
+data.Temperature_obs_error_seasonal <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+variable.names.Temperature_obs_error_seasonal <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","sd_obs")
+variable.namesout.Temperature_obs_error_seasonal <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","sd_obs")
+init.Temperature_obs_error_seasonal <- list(list(tau_proc=0.001, tau_yr=0.001, sd_obs = 100, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, sd_obs = 200, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, sd_obs = 300, beta1=0.5,beta2=0.5,beta3=0.5))
+
+data = eval(parse(text = paste0('data.', model_name)))
+variable.names = eval(parse(text = paste0('variable.names.', model_name)))
+variable.namesout = eval(parse(text = paste0('variable.namesout.', model_name)))
+init = eval(parse(text = paste0('init.', model_name)))
+
+jags_plug_ins <- list(data.model = data, variable.names.model = variable.names, variable.namesout.model = variable.namesout, init.model = init) 
+
 
 # Now that we've defined the model, the data, and the initialization, we need to send all this info to JAGS, which will return the JAGS model object.
 
@@ -87,9 +84,9 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0
 vars <- c("tau_proc","beta1", "beta2", "beta3", "tau_yr","sd_obs")
 
 for (i in 1:length(vars)){
-  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
+  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
   plot(jags.out, vars = vars[i]) 
-  #dev.off()
+  dev.off()
 }
 
 #upload plot to Google Drive folder
@@ -112,76 +109,77 @@ saveRDS(object = DIC, file = file.path("Results/Jags_Models/", paste(site, paste
 
 #6) CI, PI, Obs PI Calculations
 
-times <- as.Date(as.character(dat$date))
-time.rng = c(79,98) ## adjust to zoom in and out
+dat <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp.csv") %>%
+  filter(site == "midge")
+
+time <- as.Date(as.character(dat$date))
+times <- time[101:120]
+#time.rng = c(1,20) ## adjust to zoom in and out
 ciEnvelope <- function(x,ylo,yhi,...){
   polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
                                       ylo[1])), border = NA,...) 
 }
 
-mus=grep("mu", colnames(out))
+mus=grep("mu\\[6,", colnames(out))
 mu = out[,mus]
-ci <- apply(mu,2,quantile,c(0.1,0.5,0.9))
-preds_plug_ins <- preds_plug_ins(model_name = model_name)
-pi <- apply(preds_plug_ins$pred.model,2,quantile,c(0.1,0.5,0.9), na.rm=TRUE)
-obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.1,0.5,0.9), na.rm=TRUE)
+ci <- apply(mu,2,quantile,c(0.025,0.5,0.975))
+
+## One step ahead prediction intervals
+
+samp <- sample.int(nrow(out),nsamp)
+mus=grep("mu\\[6,", colnames(out))
+mu = out[samp,mus] 
+Temps=Temp[6,]
+
+#Temperature_obs_error
+
+  tau_proc = out[samp,grep("tau_proc",colnames(out))]
+  beta1 = out[samp,grep("beta1",colnames(out))]
+  beta2 = out[samp,grep("beta2",colnames(out))]
+  beta3 = out[samp,grep("beta3",colnames(out))]
+  sd_obs = out[samp,grep("sd_obs",colnames(out))]
+  yr_temp = out[samp,grep("yr",colnames(out))]
+  yr=yr_temp[,-1]
+  
+  pred.Temperature_obs_error_seasonal <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Temperature_obs_error_seasonal <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  
+  for (k in 1:length(year_no)){
+  for (t in 2:ncol(mu)){
+    lambda[,t] <- beta1 + beta2*mu[,t-1] + beta3*Temps[t] + yr[,year_no[k]]
+    pred.Temperature_obs_error_seasonal[,t] = rnorm(nsamp, lambda[,t], tau_proc) 
+    m <- pred.Temperature_obs_error_seasonal[,t] 
+    pred_obs.Temperature_obs_error_seasonal[,t] = rnorm(nsamp, m, 1/sd_obs^2)}}
+
+  pred_obs= eval(parse(text = paste0('pred_obs.', model_name)))
+  pred = eval(parse(text = paste0('pred.', model_name)))
+  
+  preds_plug_ins <- list(pred_obs.model = pred_obs, pred.model = pred) 
+
+pi <- apply(preds_plug_ins$pred.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
 
 
 #7) CI, PI, Obs PI Plots
 
-png(file=file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')), res=300, width=15, height=20, units='cm')
-par(mfrow=c(2,1))
-
-#Obs vs. Latent
-plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log="y", ylab="observed Gloeo colonies",xlim=times[time.rng], main="Obs, Latent CI")
-ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
-points(times,y,pch="+",cex=0.5)
 
 #CI, PI, Obs PI
-plot(times,ci[2,],type='n', ylab="Gloeo count",xlim=times[time.rng], main="Obs, Latent CI (blue), PI (green), Obs PI (grey)")
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_CI_PI_2014.png'), sep = '_')), res=300, width=15, height=20, units='cm')
+plot(times,ci[2,],type='n', ylab="Gloeo count", ylim = c(min(ci[1,]),max(ci[3,])),main="Obs, Latent CI (blue), PI (green), Obs PI (grey)")
+ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
 ciEnvelope(times,obs_pi[1,],obs_pi[3,],col="gray")
 ciEnvelope(times,pi[1,],pi[3,],col="Green")
-ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
-points(times,y,pch="+",cex=0.8)
+points(times,y[6,],pch="+",cex=0.8)
 points(times,obs_pi[2,],pch = 5, cex = 0.8)
-
-plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log = "y", ylab="Gloeo count",xlim=times[time.rng], main="Obs, Latent CI (blue), PI (green), Obs PI (grey)")
-ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
-ciEnvelope(times,pi[1,],pi[3,],col="Green")
-ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
-points(times,y,pch="+",cex=0.5)
-
-
 dev.off()
 
-#upload plot to Google Drive folder
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
-
-#same but for a single year (2010)
-time.rng = c(182,216)
-
-png(file=file.path(my_directory,paste(site,paste0(model_name,'_CI_PI_2010.png'), sep = '_')), res=300, width=15, height=20, units='cm')
-par(mfrow=c(2,1))
-
-#Obs vs. Latent
-plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log="y", ylab="observed Gloeo colonies",xlim=times[time.rng], main="Obs, Latent CI")
-ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
-points(times,y,pch="+",cex=0.5)
-
-#CI, PI, Obs PI
-plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log = "y", ylab="Gloeo count",xlim=times[time.rng], main="Obs, Latent CI (blue), PI (green), Obs PI (grey)")
-ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
-ciEnvelope(times,pi[1,],pi[3,],col="Green")
-ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
-points(times,y,pch="+",cex=0.5)
 
 
-dev.off()
+# #upload plot to Google Drive folder
+# drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')),
+#              path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
 
-#upload plot to Google Drive folder
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI_2010.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
 
 
 #8) Further Diagnostic Checks and Visualization 
@@ -194,12 +192,12 @@ obs_quantile_dm = vector(mode="numeric",length=0)
 pred_mean = vector(mode="numeric",length=0)
 
 for(i in 2:ncol(preds_plug_ins$pred.model)){
-  obs_diff[i]=mean(exp(preds_plug_ins$pred.model[,i]))-y[i] #difference between mean of pred. values and obs for each time point
-  pred_mean[i]=mean(exp(preds_plug_ins$pred.model[,i])) #mean of pred. values at each time point
-  percentile <- ecdf(exp(preds_plug_ins$pred.model[,i])) #create function to give percentile based on distribution of pred. values at each time point
-  obs_quantile[i] <- percentile(y[i]) #get percentile of obs in pred distribution
+  obs_diff[i]=mean(preds_plug_ins$pred.model[,i])-y[1,i] #difference between mean of pred. values and obs for each time point
+  pred_mean[i]=mean(preds_plug_ins$pred.model[,i]) #mean of pred. values at each time point
+  percentile <- ecdf(preds_plug_ins$pred.model[,i]) #create function to give percentile based on distribution of pred. values at each time point
+  obs_quantile[i] <- percentile(y[1,i]) #get percentile of obs in pred distribution
   percentile1 <- ecdf(preds_plug_ins$pred_obs.model[,i]) #create function to give percentile of obs in distribution of pred including observation error
-  obs_quantile_dm[i] <- percentile1(y[i]) #get percentile of obs 
+  obs_quantile_dm[i] <- percentile1(y[1,i]) #get percentile of obs 
 }
 
 #Mean of difference between pred and obs
@@ -217,21 +215,23 @@ obs_quantile_mean_dm
 
 #9) Diagnostic Plots
 
-png(file=file.path(my_directory,paste(site,paste0(model_name,'_Diagnostics.png'), sep = '_')), res=300, width=15, height=22, units='cm')
-par(mfrow=c(3,2))
+# png(file=file.path(my_directory,paste(site,paste0(model_name,'_Diagnostics.png'), sep = '_')), res=300, width=15, height=22, units='cm')
+# par(mfrow=c(3,2))
 
 #hist of quantiles
 hist(obs_quantile, main="No obs error") #no observation error
 hist(obs_quantile_dm, breaks = seq(0,1,0.05), main="With obs error") #with observation error
 
 #plot of mean pred vs. obs
-plot(y,pred_mean, xlim = c(0,500), ylim = c(0,500), main="Mean pred vs. obs, no obs error") #no obs error
+plot(y[1,],pred_mean, main="Mean pred vs. obs, no obs error") #no obs error
 
 ## qqplot - plot of quantiles of data in distribution including obs error
 plot(seq(0,1,length.out = length(sort(obs_quantile_dm))),sort(obs_quantile_dm), main="QQplot",
 xlab = "Theoretical Quantile",
 ylab = "Empirical Quantile")
 abline(0,1)
+
+######STOPPED ADAPTING HERE
 
 ## time series 
 date=as.character(dat$date)
