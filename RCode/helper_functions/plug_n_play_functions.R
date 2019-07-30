@@ -77,10 +77,16 @@ jags_plug_ins <- function(model_name){
   init.Temperature <- list(list(tau_add=0.001, tau_yr=0.001, beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, tau_yr=0.1, beta=c(0,0,0)), list(tau_add=1, tau_yr=1, beta=c(0.5,0.5,0.5)))
  
 #Temperature_obs_error
-  data.Temperature_obs_error <- list(y=y, year_no = year_no, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
-  variable.names.Temperature_obs_error <- c("tau_add", "beta", "tau_yr","sd_proc")
-  variable.namesout.Temperature_obs_error <- c("tau_add", "beta", "mu", "tau_yr", "yr","sd_proc")
-  init.Temperature_obs_error <- list(list(tau_add=0.001, tau_yr=0.001, sd_proc = 0.001, beta=c(-0.5,-0.5,-0.5)), list(tau_add=0.1, tau_yr=0.1, sd_proc = 0.1, beta=c(0,0,0)), list(tau_add=1, tau_yr=1, sd_proc = 1, beta=c(0.5,0.5,0.5)))
+  data.Temperature_obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+  variable.names.Temperature_obs_error <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","sd_obs")
+  variable.namesout.Temperature_obs_error <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","sd_obs")
+  init.Temperature_obs_error <- list(list(tau_proc=0.001, tau_yr=0.001, sd_obs = 100, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, sd_obs = 200, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, sd_obs = 300, beta1=0.5,beta2=0.5,beta3=0.5))
+
+#Temperature_obs_error_seasonal
+  data.Temperature_obs_error_seasonal <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
+  variable.names.Temperature_obs_error_seasonal <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","sd_obs")
+  variable.namesout.Temperature_obs_error_seasonal <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","sd_obs")
+  init.Temperature_obs_error_seasonal <- list(list(tau_proc=0.001, tau_yr=0.001, sd_obs = 100, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, sd_obs = 200, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, sd_obs = 300, beta1=0.5,beta2=0.5,beta3=0.5))
   
 #TempExp
   data.TempExp <- list(y=y, beta.m=as.vector(c(0,0,0)), beta.v=solve(diag(1E-03,3)), Temp=Temp, N=length(y),x_ic=log(0.1),tau_ic = 100,a_add = 0.001,r_add = 0.001)
@@ -325,21 +331,23 @@ if(model_name=="Temperature"){
 #Temperature_obs_error
 
 if(model_name=="Temperature_obs_error"){
-  tau_add = out[samp,grep("tau_add",colnames(out))]
-  beta = out[samp,grep("beta",colnames(out))]
-  sd_proc = out[samp,grep("sd_proc",colnames(out))]
+  tau_proc = out[samp,grep("tau_proc",colnames(out))]
+  beta1 = out[samp,grep("beta1",colnames(out))]
+  beta2 = out[samp,grep("beta2",colnames(out))]
+  beta3 = out[samp,grep("beta3",colnames(out))]
+  sd_obs = out[samp,grep("sd_obs",colnames(out))]
   yr_temp = out[samp,grep("yr",colnames(out))]
   yr=yr_temp[,-1]
   
-  pred.Temperature <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
-  pred_obs.Temperature <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  pred.Temperature_obs_error <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Temperature_obs_error <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
   lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
   
   for (t in 2:ncol(mu)){
-    lambda[,t] <- beta[,1] + beta[,2]*mu[,t-1] + beta[,3]*Temp[t] + yr[,year_no[t]]
-    pred.Temperature[,t] = rnorm(nsamp, lambda[,t], tau_add) #exponentiate these before comparing to data, because mu on log scale
-    m <- exp(pred.Temperature[,t]) 
-    pred_obs.Temperature[,t] = rlnorm(nsamp, m, 1/sd_proc^2)}
+    lambda[,t] <- beta1[t] + beta2[t]*mu[,t-1] + beta3[t]*Temp[t] + yr[,year_no[t]]
+    pred.Temperature_obs_error[,t] = rnorm(nsamp, lambda[,t], tau_proc) 
+    m <- pred.Temperature_obs_error[,t] 
+    pred_obs.Temperature_obs_error[,t] = rnorm(nsamp, m, 1/sd_obs^2)}
 }
 
 
