@@ -14,7 +14,7 @@ model{
     mu[k,1] ~ dnorm(x_ic,tau_ic) #keep in mind you'll need to index like a matrix 
   }
   #### Priors
-  tau_proc ~ dgamma(a_add,r_add)
-  sd_obs ~ dgamma(1.79,1/6.23^2)
+  tau_proc ~ dgamma(a_proc,r_proc)
+  sd_obs ~ dgamma(a_obs, r_obs)
   
 }
