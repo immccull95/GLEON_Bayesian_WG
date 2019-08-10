@@ -60,7 +60,7 @@ times=c(1:length(mus))
 #Seasonal_RandomWalk_Obs_error
 
 if(model_name=="Seasonal_RandomWalk_Obs_error"){
-tau_add = out[samp,grep("tau_add",colnames(out))]
+tau_proc = out[samp,grep("tau_proc",colnames(out))]
 tau_obs = out[samp,grep("tau_obs",colnames(out))]
 pred.Seasonal_RandomWalk_Obs_error <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
 pred_obs.Seasonal_RandomWalk_Obs_error <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
@@ -78,10 +78,10 @@ for(k in 1:max(year_no)){
   for(j in 2:max(season_weeks)){
     
     #process model
-    pred.Seasonal_RandomWalk_Obs_error[,t[j]] = rtruncnorm(nsamp,a = 0, b = Inf, mean = mydata[,j-1],sd = 1/tau_proc)
+    pred.Seasonal_RandomWalk_Obs_error[,t[j]] = rnorm(nsamp,mydata[,j-1],tau_proc)
     
     #data model
-    pred_obs.Seasonal_RandomWalk_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_RandomWalk_Obs_error[,t[j]],1/tau_obs)
+    pred_obs.Seasonal_RandomWalk_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_RandomWalk_Obs_error[,t[j]],tau_obs)
     
   }
  }
