@@ -10,6 +10,7 @@ library(runjags)
 library(moments)
 library(geosphere)
 library(googledrive)
+library(truncnorm)
 source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 
@@ -103,24 +104,25 @@ saveRDS(object = DIC, file = file.path("Results/Jags_Models/Seasonal_for_loop", 
 dat <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp.csv") %>%
   filter(site == "midge")
 
-time <- as.Date(as.character(dat$date))
-times <- time[101:120]
+times <- as.Date(as.character(dat$date))
 #time.rng = c(1,20) ## adjust to zoom in and out
 ciEnvelope <- function(x,ylo,yhi,...){
   polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
                                       ylo[1])), border = NA,...) 
 }
 
-mus=grep("mu\\[1,", colnames(out))
+mus=c(grep("mu\\[1,", colnames(out)),grep("mu\\[2,", colnames(out)),
+      grep("mu\\[3,", colnames(out)),grep("mu\\[4,", colnames(out)),
+      grep("mu\\[5,", colnames(out)),grep("mu\\[6,", colnames(out)))
 mu = out[,mus]
 ci <- apply(mu,2,quantile,c(0.025,0.5,0.975))
 
 ## One step ahead prediction intervals
 
 samp <- sample.int(nrow(out),nsamp)
-mus=grep("mu\\[1,", colnames(out))
 mu = out[samp,mus] 
-Temps=Temp[1,]
+Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
+ys = c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,])
 
 #Temperature_obs_error
 
@@ -146,7 +148,7 @@ Temps=Temp[1,]
   pred_obs= eval(parse(text = paste0('pred_obs.', model_name)))
   pred = eval(parse(text = paste0('pred.', model_name)))
   
-  preds_plug_ins <- list(pred_obs.model = pred_obs, pred.model = pred) 
+  preds_plug_ins <- preds_plug_ins(model_name) 
 
 pi <- apply(preds_plug_ins$pred.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
 obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
@@ -156,13 +158,72 @@ obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.
 
 
 #CI, PI, Obs PI
-png(file=file.path(my_directory,paste(site,paste0(model_name,'_CI_PI_2014.png'), sep = '_')), res=300, width=15, height=20, units='cm')
-plot(times,ci[2,],type='n', ylab="Gloeo count", ylim = c(min(ci[1,]),max(ci[3,])),main="Obs, Latent CI (blue), PI (green), Obs PI (grey)")
-ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
-ciEnvelope(times,obs_pi[1,],obs_pi[3,],col="gray")
-ciEnvelope(times,pi[1,],pi[3,],col="Green")
-points(times,y[6,],pch="+",cex=0.8)
-points(times,obs_pi[2,],pch = 5, cex = 0.8)
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')), res=300, width=20, height=15, units='cm')
+par(mfrow = c(3,2), oma = c(1,1,5,1), mar = c(4,4,2,2)+0.1)
+
+#2009
+plot(times[1:20],ci[2,1:20],type='n', ylab="Gloeo count", ylim = c(min(ci[1,1:20]),max(ci[3,1:20])),
+     main="",xlab = "")
+ciEnvelope(times[1:20],obs_pi[1,1:20],obs_pi[3,1:20],col="gray")
+ciEnvelope(times[1:20],pi[1,1:20],pi[3,1:20],col="Green")
+ciEnvelope(times[1:20],ci[1,1:20],ci[3,1:20],col="lightBlue")
+points(times[1:20],ys[1:20],pch="+",cex=0.8)
+legend("topleft",legend = "2009", bty = "n")
+#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+
+#2010
+plot(times[21:40],ci[2,21:40],type='n', ylab="Gloeo count", ylim = c(min(ci[1,21:40]),max(ci[3,21:40])),
+     main="",xlab = "")
+ciEnvelope(times[21:40],obs_pi[1,21:40],obs_pi[3,21:40],col="gray")
+ciEnvelope(times[21:40],pi[1,21:40],pi[3,21:40],col="Green")
+ciEnvelope(times[21:40],ci[1,21:40],ci[3,21:40],col="lightBlue")
+points(times[21:40],ys[21:40],pch="+",cex=0.8)
+legend("topleft",legend = "2010", bty = "n")
+#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+
+#2011
+plot(times[41:60],ci[2,41:60],type='n', ylab="Gloeo count", ylim = c(min(ci[1,41:60]),max(ci[3,41:60])),
+     main="",xlab = "")
+ciEnvelope(times[41:60],obs_pi[1,41:60],obs_pi[3,41:60],col="gray")
+ciEnvelope(times[41:60],pi[1,41:60],pi[3,41:60],col="Green")
+ciEnvelope(times[41:60],ci[1,41:60],ci[3,41:60],col="lightBlue")
+points(times[41:60],ys[41:60],pch="+",cex=0.8)
+legend("topleft",legend = "2011", bty = "n")
+#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+
+#2012
+plot(times[61:80],ci[2,61:80],type='n', ylab="Gloeo count", ylim = c(min(ci[1,61:80]),max(ci[3,61:80])),
+     main="",xlab = "")
+ciEnvelope(times[61:80],obs_pi[1,61:80],obs_pi[3,61:80],col="gray")
+ciEnvelope(times[61:80],pi[1,61:80],pi[3,61:80],col="Green")
+ciEnvelope(times[61:80],ci[1,61:80],ci[3,61:80],col="lightBlue")
+points(times[61:80],ys[61:80],pch="+",cex=0.8)
+legend("topleft",legend = "2012", bty = "n")
+#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+
+#2013
+plot(times[81:100],ci[2,81:100],type='n', ylab="Gloeo count", ylim = c(min(ci[1,81:100]),max(ci[3,81:100])),
+     main="",xlab = "")
+ciEnvelope(times[81:100],obs_pi[1,81:100],obs_pi[3,81:100],col="gray")
+ciEnvelope(times[81:100],pi[1,81:100],pi[3,81:100],col="Green")
+ciEnvelope(times[81:100],ci[1,81:100],ci[3,81:100],col="lightBlue")
+points(times[81:100],ys[81:100],pch="+",cex=0.8)
+legend("topleft",legend = "2013", bty = "n")
+#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+
+#2014
+plot(times[101:120],ci[2,101:120],type='n', ylab="Gloeo count", ylim = c(min(ci[1,101:120]),max(ci[3,101:120])),
+     main="",xlab = "")
+ciEnvelope(times[101:120],obs_pi[1,101:120],obs_pi[3,101:120],col="gray")
+ciEnvelope(times[101:120],pi[1,101:120],pi[3,101:120],col="Green")
+ciEnvelope(times[101:120],ci[1,101:120],ci[3,101:120],col="lightBlue")
+points(times[101:120],ys[101:120],pch="+",cex=0.8)
+legend("topleft",legend = "2014", bty = "n")
+#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+
+title(main="Obs (+), Latent CI (blue), PI (green), Obs PI (grey)",outer=T) 
+
+
 dev.off()
 
 

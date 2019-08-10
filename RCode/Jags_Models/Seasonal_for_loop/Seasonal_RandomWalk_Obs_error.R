@@ -4,7 +4,7 @@ model{
   
   for(j in 1:max(season_weeks)){
     #this fits the blended model to your observed data. 
-    y[k,j] ~ dnorm(mu[k,j],tau_obs)
+    y[k,j] ~ dtruncnorm(mu[k,j],a = 0, b = Inf, tau_obs)
   }
   #### Process Model
   for(j in 2:max(season_weeks)){
