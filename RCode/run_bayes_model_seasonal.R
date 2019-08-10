@@ -24,7 +24,7 @@ nsamp = 1500
 
 #My local directory - use as a temporary file repository for plot files before uploading
 #to Google Drive for the team to see :)
-my_directory <- "C:/Users/Mary Lofton/Desktop/MEL_Bayes/Temperature_obs_error_seasonal"
+my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/Prelim_results_10AUG19"
 
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
@@ -52,14 +52,14 @@ j.model   <- jags.model (file = model,
 jags.out <- run.jags(model = model,
                      data = jags_plug_ins$data.model,
                      adapt =  10000, 
-                     burnin =  20000, 
-                     sample = 5000, 
+                     burnin =  50000, 
+                     sample = 10000, 
                      n.chains = 3, 
                      inits=jags_plug_ins$init.model,
                      monitor = jags_plug_ins$variable.namesout.model)
 
 #5) Save and Process Output
-write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0(model_name,'.txt'), sep = '_')), 
+write.jagsfile(jags.out, file=file.path("Results/Jags_Models/Seasonal_for_loop",paste(site,paste0(model_name,'.txt'), sep = '_')), 
                remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
 #this will create multiple plots if var names are different but doesn't create multiple
@@ -69,34 +69,33 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0
 params <- jags_plug_ins$params.model
 
 for (i in 1:length(params)){
-  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
+  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
   plot(jags.out, vars = params[i]) 
-  #dev.off()
+  dev.off()
 }
 
 #upload plot to Google Drive folder
 for (i in 1:length(params)){
 drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics/Seasonal_for_loop",paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
 }
 #need to view this to get parameter estimates for model comparison Excel file
 sum <- summary(jags.out, vars = jags_plug_ins$variable.names.model)
+DIC=dic.samples(j.model, n.iter=5000)
+
+#save results
+sink(file = file.path("Results/Jags_Models/Seasonal_for_loop",paste(site,paste0(model_name,'_param_summary.txt'), sep = '_')))
+print("Parameter summary")
 sum
+print("DIC")
+DIC
+sink()
 
 jags.out.mcmc <- as.mcmc.list(jags.out)
 out <- as.matrix(jags.out.mcmc)
 
-DIC=dic.samples(j.model, n.iter=5000)
-DIC
-
 #Seasonal_RandomWalk_Obs_error
-
-#Seasonal_Temperature_Obs_error
-# Mean deviance:  -407.1 
-# penalty 22139 
-# Penalized deviance: 21732 
-
-saveRDS(object = DIC, file = file.path("Results/Jags_Models/", paste(site, paste0(model_name,'_DIC.rds'), sep = '_')))
+saveRDS(object = DIC, file = file.path("Results/Jags_Models/Seasonal_for_loop", paste(site, paste0(model_name,'_DIC.rds'), sep = '_')))
 
 
 #6) CI, PI, Obs PI Calculations
@@ -112,16 +111,16 @@ ciEnvelope <- function(x,ylo,yhi,...){
                                       ylo[1])), border = NA,...) 
 }
 
-mus=grep("mu\\[6,", colnames(out))
+mus=grep("mu\\[1,", colnames(out))
 mu = out[,mus]
 ci <- apply(mu,2,quantile,c(0.025,0.5,0.975))
 
 ## One step ahead prediction intervals
 
 samp <- sample.int(nrow(out),nsamp)
-mus=grep("mu\\[6,", colnames(out))
+mus=grep("mu\\[1,", colnames(out))
 mu = out[samp,mus] 
-Temps=Temp[6,]
+Temps=Temp[1,]
 
 #Temperature_obs_error
 
@@ -129,7 +128,7 @@ Temps=Temp[6,]
   beta1 = out[samp,grep("beta1",colnames(out))]
   beta2 = out[samp,grep("beta2",colnames(out))]
   beta3 = out[samp,grep("beta3",colnames(out))]
-  sd_obs = out[samp,grep("sd_obs",colnames(out))]
+  tau_obs = out[samp,grep("tau_obs",colnames(out))]
   yr_temp = out[samp,grep("yr",colnames(out))]
   yr=yr_temp[,-1]
   

@@ -67,15 +67,15 @@ season_check
 
 #get in shape for seasonal for-loop
 gloeo_seasonal <- cleaned_dat1 %>%
-  filter(site == "midge") %>%
+  filter(site == "fichter") %>%
   select(year, season_week, totalperL) %>%
-  mutate(totalperL = round(totalperL*141.3707)) %>%
+  #mutate(totalperL = round(totalperL*141.3707)) %>%
   spread(key = season_week, value = totalperL) %>%
   select(-year)
 
 colnames(gloeo_seasonal) <- paste("wk", colnames(gloeo_seasonal), sep = "_")
 
-write.csv(gloeo_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_Gloeocount_22JUL19.csv", row.names = FALSE)
+write.csv(gloeo_seasonal, "./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_totalperL_31JUL19.csv", row.names = FALSE)
 
 
 #same thing for temp

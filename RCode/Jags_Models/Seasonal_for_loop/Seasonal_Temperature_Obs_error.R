@@ -4,7 +4,7 @@ model{
   
   for(j in 1:max(season_weeks)){
     #this fits the blended model to your observed data. 
-    y[k,j] ~ dnorm(mu[k,j],1/sd_obs^2)
+    y[k,j] ~ dnorm(mu[k,j],tau_obs)
 
   }
   
@@ -27,7 +27,7 @@ model{
   beta2 ~ dnorm(beta.m2,beta.v2) 
   beta3 ~ dnorm(beta.m3,beta.v3) 
   tau_yr ~ dgamma(0.01,0.01)
-  sd_obs ~ dgamma(a_obs,r_obs)
+  tau_obs ~ dgamma(a_obs,r_obs)
   
   #Loops through number of years and defines prior for each year 
   

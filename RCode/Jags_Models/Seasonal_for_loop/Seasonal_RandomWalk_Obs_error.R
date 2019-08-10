@@ -4,7 +4,7 @@ model{
   
   for(j in 1:max(season_weeks)){
     #this fits the blended model to your observed data. 
-    y[k,j] ~ dnorm(mu[k,j],1/sd_obs^2)
+    y[k,j] ~ dnorm(mu[k,j],tau_obs)
   }
   #### Process Model
   for(j in 2:max(season_weeks)){
@@ -15,6 +15,6 @@ model{
   }
   #### Priors
   tau_proc ~ dgamma(a_proc,r_proc)
-  sd_obs ~ dgamma(a_obs, r_obs)
+  tau_obs ~ dgamma(a_obs, r_obs)
   
 }
