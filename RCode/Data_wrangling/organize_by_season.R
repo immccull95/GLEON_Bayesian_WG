@@ -78,7 +78,7 @@ colnames(gloeo_seasonal) <- paste("wk", colnames(gloeo_seasonal), sep = "_")
 write.csv(gloeo_seasonal, "./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_totalperL_31JUL19.csv", row.names = FALSE)
 
 
-#same thing for temp
+#same thing for air temp
 temp_seasonal <- cleaned_dat1 %>%
   filter(site == "midge") %>%
   select(year, season_week, TOBS) %>%
@@ -89,6 +89,30 @@ colnames(temp_seasonal) <- paste("wk", colnames(temp_seasonal), sep = "_")
 
 write.csv(temp_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv", row.names = FALSE)
 
+#same thing for water temp
+watertemp_seasonal <- cleaned_dat1 %>%
+  filter(site == "midge") %>%
+  select(year, season_week, watertemp_mean) %>%
+  spread(key = season_week, value = watertemp_mean) %>%
+  select(-year)
+
+colnames(watertemp_seasonal) <- paste("wk", colnames(watertemp_seasonal), sep = "_")
+
+watertemp_plot <- cleaned_dat1 %>%
+  filter(site == "midge") %>%
+  select(year, season_week, watertemp_mean)
+
+ggplot(data = watertemp_plot, aes(x = season_week, y = watertemp_mean, group = year, colour = year))+
+  geom_line(size = 1)+
+  theme_bw()
+
+write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_11AUG19.csv", row.names = FALSE)
+
+mean(watertemp_plot$watertemp_mean, na.rm = TRUE)
+#21.04
+1/var(watertemp_plot$watertemp_mean, na.rm = TRUE)
+1/(sd(watertemp_plot$watertemp_mean, na.rm = TRUE)^2)
+#0.100
 
 
 #####################################################################

@@ -10,13 +10,12 @@ library(runjags)
 library(moments)
 library(geosphere)
 library(googledrive)
-library(truncnorm)
 source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_RandomWalk_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Seasonal_Temperature_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -31,7 +30,7 @@ my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/Prelim_results_10AUG19"
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
 y <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))
 
-Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
+Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_11AUG19.csv"))
 
 years <- c(2009:2014)
 year_no = as.numeric(as.factor(years))
@@ -70,9 +69,9 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/Seasonal_for_loop",
 params <- jags_plug_ins$params.model
 
 for (i in 1:length(params)){
-  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
+  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
   plot(jags.out, vars = params[i]) 
-  dev.off()
+  #dev.off()
 }
 
 #upload plot to Google Drive folder
@@ -124,30 +123,6 @@ mu = out[samp,mus]
 Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
 ys = c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,])
 
-# #Temperature_obs_error
-# 
-#   tau_proc = out[samp,grep("tau_proc",colnames(out))]
-#   beta1 = out[samp,grep("beta1",colnames(out))]
-#   beta2 = out[samp,grep("beta2",colnames(out))]
-#   beta3 = out[samp,grep("beta3",colnames(out))]
-#   tau_obs = out[samp,grep("tau_obs",colnames(out))]
-#   yr_temp = out[samp,grep("yr",colnames(out))]
-#   yr=yr_temp[,-1]
-#   
-#   pred.Temperature_obs_error_seasonal <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
-#   pred_obs.Temperature_obs_error_seasonal <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-#   lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
-#   
-#   for (k in 1:length(year_no)){
-#   for (t in 2:ncol(mu)){
-#     lambda[,t] <- beta1 + beta2*mu[,t-1] + beta3*Temps[t] + yr[,year_no[k]]
-#     pred.Temperature_obs_error_seasonal[,t] = rnorm(nsamp, lambda[,t], tau_proc) 
-#     m <- pred.Temperature_obs_error_seasonal[,t] 
-#     pred_obs.Temperature_obs_error_seasonal[,t] = rnorm(nsamp, m, 1/sd_obs^2)}}
-# 
-#   pred_obs= eval(parse(text = paste0('pred_obs.', model_name)))
-#   pred = eval(parse(text = paste0('pred.', model_name)))
-#   
 
 #get one-step-ahead predictions
 preds_plug_ins <- preds_plug_ins(model_name) 
@@ -230,9 +205,9 @@ dev.off()
 
 
 
-# #upload plot to Google Drive folder
-# drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')),
-#              path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
+#upload plot to Google Drive folder
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
 
 
 

@@ -18,11 +18,11 @@ jags_plug_ins <- function(model_name){
   params.Seasonal_RandomWalk_Obs_error <- c("tau_proc","tau_obs")
   
 #Seasonal_Temperature_Obs_error
-  data.Seasonal_Temperature_Obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001)
-  variable.names.Seasonal_Temperature_Obs_error <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","tau_obs")
-  variable.namesout.Seasonal_Temperature_Obs_error <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","tau_obs")
-  init.Seasonal_Temperature_Obs_error <- list(list(tau_proc=0.001, tau_yr=0.001, tau_obs = 0.1, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, tau_obs = 1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, tau_obs = 5, beta1=0.5,beta2=0.5,beta3=0.5))
-  params.Seasonal_Temperature_Obs_error <- c("tau_proc","beta1", "beta2", "beta3", "tau_yr","tau_obs")
+  data.Seasonal_Temperature_Obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001, T_mean = 21.04, tau_proc_T = 0.1)
+  variable.names.Seasonal_Temperature_Obs_error <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","tau_obs","tau_T_obs")
+  variable.namesout.Seasonal_Temperature_Obs_error <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","tau_obs","tau_T_obs","mu_T")
+  init.Seasonal_Temperature_Obs_error <- list(list(tau_proc=0.001, tau_yr=0.001, tau_obs = 0.1, tau_T_obs = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, tau_obs = 1,tau_T_obs = 0.1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, tau_obs = 5,tau_T_obs = 1, beta1=0.5,beta2=0.5,beta3=0.5))
+  params.Seasonal_Temperature_Obs_error <- c("tau_proc","beta1", "beta2", "beta3", "tau_yr","tau_obs","tau_T_obs")
   
   data = eval(parse(text = paste0('data.', model_name)))
   variable.names = eval(parse(text = paste0('variable.names.', model_name)))
@@ -40,22 +40,30 @@ jags_plug_ins <- function(model_name){
 preds_plug_ins <- function(model_name){
   
 ## One step ahead prediction intervals
+nsamp = 1500
 dat <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp.csv") %>%
     filter(site == "midge")
   
-times <- as.Date(as.character(dat$date))
+#times <- as.Date(as.character(dat$date))
   
 samp <- sample.int(nrow(out),nsamp)
+
 mus=c(grep("mu\\[1,", colnames(out)),grep("mu\\[2,", colnames(out)),
       grep("mu\\[3,", colnames(out)),grep("mu\\[4,", colnames(out)),
       grep("mu\\[5,", colnames(out)),grep("mu\\[6,", colnames(out)))
 mu = out[samp,mus] 
+
+mus_T=c(grep("mu_T\\[1,", colnames(out)),grep("mu_T\\[2,", colnames(out)),
+      grep("mu_T\\[3,", colnames(out)),grep("mu_T\\[4,", colnames(out)),
+      grep("mu_T\\[5,", colnames(out)),grep("mu_T\\[6,", colnames(out)))
+mu_T = out[samp,mus_T] 
+
 Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
 
-samp <- sample.int(nrow(out),nsamp)
-mus=grep("mu", colnames(out))
-mu = out[samp,mus] 
-times=c(1:length(mus))
+# samp <- sample.int(nrow(out),nsamp)
+# mus=grep("mu", colnames(out))
+# mu = out[samp,mus] 
+# times=c(1:length(mus))
   
 #Seasonal_RandomWalk_Obs_error
 
@@ -106,32 +114,62 @@ for (t in 2:ncol(mu)){
   pred_obs.RandomYearIntercept[,t] = rpois(nsamp, m)}
 }
 
-#Temperature_obs_error
+#Seasonal_Temperature_obs_error
 
-if(model_name=="Temperature_obs_error"){
+if(model_name=="Seasonal_Temperature_Obs_error"){
   tau_proc = out[samp,grep("tau_proc",colnames(out))]
+  tau_obs = out[samp,grep("tau_obs",colnames(out))]
   beta1 = out[samp,grep("beta1",colnames(out))]
   beta2 = out[samp,grep("beta2",colnames(out))]
   beta3 = out[samp,grep("beta3",colnames(out))]
-  sd_obs = out[samp,grep("sd_obs",colnames(out))]
+  tau_yr = out[samp,grep("tau_yr",colnames(out))]
+  tau_T_obs = out[samp,grep("tau_T_obs",colnames(out))]
   yr_temp = out[samp,grep("yr",colnames(out))]
   yr=yr_temp[,-1]
-  
-  pred.Temperature_obs_error <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
-  pred_obs.Temperature_obs_error <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  pred.Seasonal_Temperature_Obs_error <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Seasonal_Temperature_Obs_error <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  predT.Seasonal_Temperature_Obs_error <- matrix(NA,nrow=nsamp,ncol=ncol(mu_T))
+  predT_obs.Seasonal_Temperature_Obs_error <- matrix(NA, nrow=nsamp, ncol=ncol(mu_T))
+  year_no <- c(1:6)
+  season_weeks <- c(1:20)
+  mu_greps <- c("mu\\[1,","mu\\[2,","mu\\[3,","mu\\[4,","mu\\[5,","mu\\[6,")
+  mu_T_greps <- c("mu_T\\[1,","mu_T\\[2,","mu_T\\[3,","mu_T\\[4,","mu_T\\[5,","mu_T\\[6,")
+  ts = rbind(1:20,21:40,41:60,61:80,81:100,101:120)
   lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
   
-  for (t in 2:ncol(mu)){
-    lambda[,t] <- beta1[t] + beta2[t]*mu[,t-1] + beta3[t]*Temp[t] + yr[,year_no[t]]
-    pred.Temperature_obs_error[,t] = rnorm(nsamp, lambda[,t], tau_proc) 
-    m <- pred.Temperature_obs_error[,t] 
-    pred_obs.Temperature_obs_error[,t] = rnorm(nsamp, m, 1/sd_obs^2)}
+  for(k in 1:max(year_no)){
+    
+    mydata <- mu[,grep(mu_greps[k],colnames(mu))]
+    myTempdata <- mu_T[,grep(mu_T_greps[k],colnames(mu_T))]
+    
+    t <- ts[k,]
+    
+    for(j in 2:max(season_weeks)){
+      
+      #process model
+      
+      #temperature
+      predT.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp, 21.04,0.1)
+      if(is.na(Temps[t[j]])){Temps[t[j]] <- mean(myTempdata[,j], na.rm = TRUE)}
+
+      #Gloeo
+      lambda[,t[j]] <- beta1 + beta2*mydata[,j-1] + beta3*Temps[t[j]] + yr[,year_no[k]]
+      pred.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      
+      #data model
+      pred_obs.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Temperature_Obs_error[,t[j]],tau_obs)
+      predT_obs.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp,predT.Seasonal_Temperature_Obs_error[,t[j]],tau_T_obs)
+  
+    }
+  }
 }
 
 
 
 pred_obs= eval(parse(text = paste0('pred_obs.', model_name)))
 pred = eval(parse(text = paste0('pred.', model_name)))
+predT_obs= eval(parse(text = paste0('predT_obs.', model_name)))
+predT = eval(parse(text = paste0('predT.', model_name)))
 
 return(list(pred_obs.model = pred_obs, pred.model = pred)) 
 
