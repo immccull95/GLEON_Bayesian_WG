@@ -18,11 +18,27 @@ jags_plug_ins <- function(model_name){
   params.Seasonal_RandomWalk_Obs_error <- c("tau_proc","tau_obs")
   
 #Seasonal_Temperature_Obs_error
-  data.Seasonal_Temperature_Obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001, T_mean = 21.04, tau_proc_T = 0.1)
+  data.Seasonal_Temperature_Obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001, T_mean = 21.04, tau_T_proc = 0.1)
   variable.names.Seasonal_Temperature_Obs_error <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","tau_obs","tau_T_obs")
   variable.namesout.Seasonal_Temperature_Obs_error <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","tau_obs","tau_T_obs","mu_T")
   init.Seasonal_Temperature_Obs_error <- list(list(tau_proc=0.001, tau_yr=0.001, tau_obs = 0.1, tau_T_obs = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, tau_obs = 1,tau_T_obs = 0.1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, tau_obs = 5,tau_T_obs = 1, beta1=0.5,beta2=0.5,beta3=0.5))
   params.Seasonal_Temperature_Obs_error <- c("tau_proc","beta1", "beta2", "beta3", "tau_yr","tau_obs","tau_T_obs")
+
+#Seasonal_Airtemp_Obs_error
+  data.Seasonal_Airtemp_Obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001)
+  variable.names.Seasonal_Airtemp_Obs_error <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","tau_obs")
+  variable.namesout.Seasonal_Airtemp_Obs_error <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","tau_obs")
+  init.Seasonal_Airtemp_Obs_error <- list(list(tau_proc=0.001, tau_yr=0.001, tau_obs = 0.1,  beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, tau_obs = 1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, tau_obs = 5, beta1=0.5,beta2=0.5,beta3=0.5))
+  params.Seasonal_Airtemp_Obs_error <- c("tau_proc","beta1", "beta2", "beta3", "tau_yr","tau_obs")
+  
+  
+#Seasonal_TempQuad_Obs_error
+  data.Seasonal_TempQuad_Obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.m4=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, beta.v4=0.001,Temp=Temp, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001, T_mean = 21.04, tau_proc_T = 0.1)
+  variable.names.Seasonal_TempQuad_Obs_error <- c("tau_proc", "beta1","beta2","beta3","beta4", "tau_yr","tau_obs","tau_T_obs")
+  variable.namesout.Seasonal_TempQuad_Obs_error <- c("tau_proc", "beta1", "beta2", "beta3","beta4", "mu", "tau_yr", "yr","tau_obs","tau_T_obs","mu_T")
+  init.Seasonal_TempQuad_Obs_error <- list(list(tau_proc=0.001, tau_yr=0.001, tau_obs = 0.1, tau_T_obs = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5, beta4=-0.5), list(tau_proc=0.1, tau_yr=0.1, tau_obs = 1,tau_T_obs = 0.1, beta1=0, beta2=0, beta3=0, beta4=0), list(tau_proc=1, tau_yr=1, tau_obs = 5,tau_T_obs = 1, beta1=0.5,beta2=0.5,beta3=0.5, beta4=0.5))
+  params.Seasonal_TempQuad_Obs_error <- c("tau_proc","beta1", "beta2", "beta3","beta4", "tau_yr","tau_obs","tau_T_obs")
+  
   
   data = eval(parse(text = paste0('data.', model_name)))
   variable.names = eval(parse(text = paste0('variable.names.', model_name)))
@@ -114,6 +130,42 @@ for (t in 2:ncol(mu)){
   pred_obs.RandomYearIntercept[,t] = rpois(nsamp, m)}
 }
 
+#Seasonal_Airtemp_Obs_error
+if(model_name=="Seasonal_Airtemp_Obs_error"){
+  tau_proc = out[samp,grep("tau_proc",colnames(out))]
+  tau_obs = out[samp,grep("tau_obs",colnames(out))]
+  beta1 = out[samp,grep("beta1",colnames(out))]
+  beta2 = out[samp,grep("beta2",colnames(out))]
+  beta3 = out[samp,grep("beta3",colnames(out))]
+  tau_yr = out[samp,grep("tau_yr",colnames(out))]
+  yr_temp = out[samp,grep("yr",colnames(out))]
+  yr=yr_temp[,-1]
+  pred.Seasonal_Airtemp_Obs_error <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Seasonal_Airtemp_Obs_error <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  year_no <- c(1:6)
+  season_weeks <- c(1:20)
+  mu_greps <- c("mu\\[1,","mu\\[2,","mu\\[3,","mu\\[4,","mu\\[5,","mu\\[6,")
+  ts = rbind(1:20,21:40,41:60,61:80,81:100,101:120)
+  lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  
+  for(k in 1:max(year_no)){
+    
+    mydata <- mu[,grep(mu_greps[k],colnames(mu))]
+
+    t <- ts[k,]
+    
+    for(j in 2:max(season_weeks)){
+      
+      #process model
+      lambda[,t[j]] <- beta1 + beta2*mydata[,j-1] + beta3*Temps[t[j]] + yr[,year_no[k]]
+      pred.Seasonal_Airtemp_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      
+      #data model
+      pred_obs.Seasonal_Airtemp_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Airtemp_Obs_error[,t[j]],tau_obs)
+    }
+  }
+}
+
 #Seasonal_Temperature_obs_error
 
 if(model_name=="Seasonal_Temperature_Obs_error"){
@@ -150,7 +202,6 @@ if(model_name=="Seasonal_Temperature_Obs_error"){
       
       #temperature
       predT.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp, 21.04,0.1)
-      if(is.na(Temps[t[j]])){Temps[t[j]] <- mean(myTempdata[,j], na.rm = TRUE)}
 
       #Gloeo
       lambda[,t[j]] <- beta1 + beta2*mydata[,j-1] + beta3*Temps[t[j]] + yr[,year_no[k]]
@@ -168,8 +219,6 @@ if(model_name=="Seasonal_Temperature_Obs_error"){
 
 pred_obs= eval(parse(text = paste0('pred_obs.', model_name)))
 pred = eval(parse(text = paste0('pred.', model_name)))
-predT_obs= eval(parse(text = paste0('predT_obs.', model_name)))
-predT = eval(parse(text = paste0('predT.', model_name)))
 
 return(list(pred_obs.model = pred_obs, pred.model = pred)) 
 

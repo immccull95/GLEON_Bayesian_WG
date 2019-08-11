@@ -15,7 +15,7 @@ source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_Temperature_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Seasonal_Airtemp_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -30,7 +30,7 @@ my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/Prelim_results_10AUG19"
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
 y <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))
 
-Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_11AUG19.csv"))
+Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
 
 years <- c(2009:2014)
 year_no = as.numeric(as.factor(years))
@@ -69,9 +69,9 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/Seasonal_for_loop",
 params <- jags_plug_ins$params.model
 
 for (i in 1:length(params)){
-  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
+  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
   plot(jags.out, vars = params[i]) 
-  #dev.off()
+  dev.off()
 }
 
 #upload plot to Google Drive folder
@@ -139,7 +139,7 @@ png(file=file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep 
 par(mfrow = c(3,2), oma = c(1,1,5,1), mar = c(4,4,2,2)+0.1)
 
 #2009
-plot(times[1:20],ci[2,1:20],type='n', ylab="Gloeo count", ylim = c(min(ci[1,1:20], na.rm = TRUE),max(ci[3,1:20], na.rm = TRUE)),
+plot(times[1:20],ci[2,1:20],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,1:20], na.rm = TRUE),max(ci[3,1:20], na.rm = TRUE)),
      main="",xlab = "")
 ciEnvelope(times[1:20],obs_pi[1,1:20],obs_pi[3,1:20],col="gray")
 ciEnvelope(times[1:20],pi[1,1:20],pi[3,1:20],col="Green")
@@ -149,7 +149,7 @@ legend("topleft",legend = "2009", bty = "n")
 #points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
 
 #2010
-plot(times[21:40],ci[2,21:40],type='n', ylab="Gloeo count", ylim = c(min(ci[1,21:40], na.rm = TRUE),max(ci[3,21:40], na.rm = TRUE)),
+plot(times[21:40],ci[2,21:40],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,21:40], na.rm = TRUE),max(ci[3,21:40], na.rm = TRUE)),
      main="",xlab = "")
 ciEnvelope(times[21:40],obs_pi[1,21:40],obs_pi[3,21:40],col="gray")
 ciEnvelope(times[21:40],pi[1,21:40],pi[3,21:40],col="Green")
@@ -159,7 +159,7 @@ legend("topleft",legend = "2010", bty = "n")
 #points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
 
 #2011
-plot(times[41:60],ci[2,41:60],type='n', ylab="Gloeo count", ylim = c(min(ci[1,41:60],na.rm = TRUE),max(ci[3,41:60],na.rm = TRUE)),
+plot(times[41:60],ci[2,41:60],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,41:60],na.rm = TRUE),max(ci[3,41:60],na.rm = TRUE)),
      main="",xlab = "")
 ciEnvelope(times[41:60],obs_pi[1,41:60],obs_pi[3,41:60],col="gray")
 ciEnvelope(times[41:60],pi[1,41:60],pi[3,41:60],col="Green")
@@ -169,7 +169,7 @@ legend("topleft",legend = "2011", bty = "n")
 #points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
 
 #2012
-plot(times[61:80],ci[2,61:80],type='n', ylab="Gloeo count", ylim = c(min(ci[1,61:80]),max(ci[3,61:80])),
+plot(times[61:80],ci[2,61:80],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,61:80]),max(ci[3,61:80])),
      main="",xlab = "")
 ciEnvelope(times[61:80],obs_pi[1,61:80],obs_pi[3,61:80],col="gray")
 ciEnvelope(times[61:80],pi[1,61:80],pi[3,61:80],col="Green")
@@ -179,7 +179,7 @@ legend("topleft",legend = "2012", bty = "n")
 #points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
 
 #2013
-plot(times[81:100],ci[2,81:100],type='n', ylab="Gloeo count", ylim = c(min(ci[1,81:100]),max(ci[3,81:100])),
+plot(times[81:100],ci[2,81:100],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,81:100]),max(ci[3,81:100])),
      main="",xlab = "")
 ciEnvelope(times[81:100],obs_pi[1,81:100],obs_pi[3,81:100],col="gray")
 ciEnvelope(times[81:100],pi[1,81:100],pi[3,81:100],col="Green")
@@ -189,7 +189,7 @@ legend("topleft",legend = "2013", bty = "n")
 #points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
 
 #2014
-plot(times[101:120],ci[2,101:120],type='n', ylab="Gloeo count", ylim = c(min(ci[1,101:120]),max(ci[3,101:120])),
+plot(times[101:120],ci[2,101:120],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,101:120]),max(ci[3,101:120])),
      main="",xlab = "")
 ciEnvelope(times[101:120],obs_pi[1,101:120],obs_pi[3,101:120],col="gray")
 ciEnvelope(times[101:120],pi[1,101:120],pi[3,101:120],col="Green")
