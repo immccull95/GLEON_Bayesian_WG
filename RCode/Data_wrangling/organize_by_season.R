@@ -138,5 +138,40 @@ cont2 <- left_join(cont, dat, by = c("site","year","week"))
 
 write.csv(cont2, "./Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp-Continuous_17APR19.csv", row.names = FALSE)
 
+###########################
+#cleaning for Schmidt stability
 
+schmidt <- readRDS("~/RProjects/GLEON_Bayesian_WG/Datasets/Sunapee/Stability_metrics/sunapee_schmidt_stability.rds") %>%
+  mutate(datetime = as.POSIXct(datetime)) %>%
+  mutate(date = date(datetime))
 
+dates <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp.csv") %>%
+  filter(site == "midge") %>%
+  select(date)
+
+schmidt1 <- left_join(dates,schmidt, by = "date") %>%
+  group_by(date) %>%
+  summarize(schmidt = mean(schmidt.stability, na.rm = TRUE))
+
+schmidt1[schmidt1 < 0] <- 0
+
+ggplot(data = schmidt1, aes(x = date, y = schmidt))+
+  geom_point(size = 2)+
+  theme_bw()
+
+schmidt2 <- schmidt1 %>%
+  mutate(season_week = rep(c(1:20),times = 6),
+         year = year(date)) %>%
+  select(year, season_week, schmidt) %>%
+  spread(key = season_week, value = schmidt) %>%
+  select(-year)
+
+colnames(schmidt2) <- paste("wk", colnames(schmidt2), sep = "_")
+
+mean(schmidt1$schmidt,na.rm = TRUE)
+#309.8358
+
+1/(sd(schmidt1$schmidt,na.rm = TRUE)^2)
+#3.11e-5
+
+write.csv(schmidt2, "./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_11AUG19.csv", row.names = FALSE)

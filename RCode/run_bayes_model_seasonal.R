@@ -15,7 +15,7 @@ source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_Airtemp_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Seasonal_Schmidt_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -29,8 +29,9 @@ my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/Prelim_results_10AUG19"
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
 y <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))
-
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_11AUG19.csv"))
+
 
 years <- c(2009:2014)
 year_no = as.numeric(as.factor(years))
@@ -69,9 +70,9 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/Seasonal_for_loop",
 params <- jags_plug_ins$params.model
 
 for (i in 1:length(params)){
-  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
+  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
   plot(jags.out, vars = params[i]) 
-  dev.off()
+  #dev.off()
 }
 
 #upload plot to Google Drive folder
@@ -121,6 +122,7 @@ ci <- apply(mu,2,quantile,c(0.025,0.5,0.975))
 samp <- sample.int(nrow(out),nsamp)
 mu = out[samp,mus] 
 Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
+Schmidts=c(Schmidt[1,], Schmidt[2,], Schmidt[3,], Schmidt[4,], Schmidt[5,], Schmidt[6,])
 ys = c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,])
 
 

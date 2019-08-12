@@ -30,7 +30,13 @@ jags_plug_ins <- function(model_name){
   variable.namesout.Seasonal_Airtemp_Obs_error <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","tau_obs")
   init.Seasonal_Airtemp_Obs_error <- list(list(tau_proc=0.001, tau_yr=0.001, tau_obs = 0.1,  beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, tau_obs = 1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, tau_obs = 5, beta1=0.5,beta2=0.5,beta3=0.5))
   params.Seasonal_Airtemp_Obs_error <- c("tau_proc","beta1", "beta2", "beta3", "tau_yr","tau_obs")
-  
+
+#Seasonal_Schmidt_Obs_error
+  data.Seasonal_Schmidt_Obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Schmidt = Schmidt, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001, S_mean = 310, tau_S_proc = 0.00001)
+  variable.names.Seasonal_Schmidt_Obs_error <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","tau_obs","tau_S_obs")
+  variable.namesout.Seasonal_Schmidt_Obs_error <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","tau_obs","tau_S_obs","mu_S")
+  init.Seasonal_Schmidt_Obs_error <- list(list(tau_proc=0.001, tau_yr=0.001, tau_obs = 0.1, tau_S_obs = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, tau_obs = 1,tau_S_obs = 0.1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, tau_obs = 5,tau_S_obs = 1, beta1=0.5,beta2=0.5,beta3=0.5))
+  params.Seasonal_Schmidt_Obs_error <- c("tau_proc","beta1", "beta2", "beta3", "tau_yr","tau_obs","tau_S_obs")
   
 #Seasonal_TempQuad_Obs_error
   data.Seasonal_TempQuad_Obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.m4=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, beta.v4=0.001,Temp=Temp, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001, T_mean = 21.04, tau_proc_T = 0.1)
@@ -74,7 +80,14 @@ mus_T=c(grep("mu_T\\[1,", colnames(out)),grep("mu_T\\[2,", colnames(out)),
       grep("mu_T\\[5,", colnames(out)),grep("mu_T\\[6,", colnames(out)))
 mu_T = out[samp,mus_T] 
 
+mus_S=c(grep("mu_S\\[1,", colnames(out)),grep("mu_S\\[2,", colnames(out)),
+        grep("mu_S\\[3,", colnames(out)),grep("mu_S\\[4,", colnames(out)),
+        grep("mu_S\\[5,", colnames(out)),grep("mu_S\\[6,", colnames(out)))
+mu_S = out[samp,mus_S] 
+
 Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
+Schmidts=c(Schmidt[1,], Schmidt[2,], Schmidt[3,], Schmidt[4,], Schmidt[5,], Schmidt[6,])
+
 
 # samp <- sample.int(nrow(out),nsamp)
 # mus=grep("mu", colnames(out))
@@ -202,6 +215,7 @@ if(model_name=="Seasonal_Temperature_Obs_error"){
       
       #temperature
       predT.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp, 21.04,0.1)
+      if(is.na(Temps[t[j]])){Temps[t[j]]<- mean(predT.Seasonal_Temperature_Obs_error[,t[j]])}
 
       #Gloeo
       lambda[,t[j]] <- beta1 + beta2*mydata[,j-1] + beta3*Temps[t[j]] + yr[,year_no[k]]
@@ -211,6 +225,56 @@ if(model_name=="Seasonal_Temperature_Obs_error"){
       pred_obs.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Temperature_Obs_error[,t[j]],tau_obs)
       predT_obs.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp,predT.Seasonal_Temperature_Obs_error[,t[j]],tau_T_obs)
   
+    }
+  }
+}
+
+#Seasonal_Schmidt_Obs_error
+if(model_name=="Seasonal_Schmidt_Obs_error"){
+  tau_proc = out[samp,grep("tau_proc",colnames(out))]
+  tau_obs = out[samp,grep("tau_obs",colnames(out))]
+  beta1 = out[samp,grep("beta1",colnames(out))]
+  beta2 = out[samp,grep("beta2",colnames(out))]
+  beta3 = out[samp,grep("beta3",colnames(out))]
+  tau_yr = out[samp,grep("tau_yr",colnames(out))]
+  tau_S_obs = out[samp,grep("tau_S_obs",colnames(out))]
+  yr_temp = out[samp,grep("yr",colnames(out))]
+  yr=yr_temp[,-1]
+  pred.Seasonal_Schmidt_Obs_error <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Seasonal_Schmidt_Obs_error <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  predS.Seasonal_Schmidt_Obs_error <- matrix(NA,nrow=nsamp,ncol=ncol(mu_S))
+  predS_obs.Seasonal_Schmidt_Obs_error <- matrix(NA, nrow=nsamp, ncol=ncol(mu_S))
+  year_no <- c(1:6)
+  season_weeks <- c(1:20)
+  mu_greps <- c("mu\\[1,","mu\\[2,","mu\\[3,","mu\\[4,","mu\\[5,","mu\\[6,")
+  mu_S_greps <- c("mu_S\\[1,","mu_S\\[2,","mu_S\\[3,","mu_S\\[4,","mu_S\\[5,","mu_S\\[6,")
+  ts = rbind(1:20,21:40,41:60,61:80,81:100,101:120)
+  lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  
+  for(k in 1:max(year_no)){
+    
+    mydata <- mu[,grep(mu_greps[k],colnames(mu))]
+    mySchmidtdata <- mu_S[,grep(mu_S_greps[k],colnames(mu_S))]
+    
+    t <- ts[k,]
+    
+    for(j in 2:max(season_weeks)){
+      
+      #process model
+      
+      #temperature
+      predS.Seasonal_Schmidt_Obs_error[,t[j]] = rnorm(nsamp, 310,0.00001)
+      if(is.na(Schmidts[t[j]])){Schmidts[t[j]]<- mean(predS.Seasonal_Schmidt_Obs_error[,t[j]])}
+      
+      
+      #Gloeo
+      lambda[,t[j]] <- beta1 + beta2*mydata[,j-1] + beta3*Schmidts[t[j]] + yr[,year_no[k]]
+      pred.Seasonal_Schmidt_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      
+      #data model
+      pred_obs.Seasonal_Schmidt_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Schmidt_Obs_error[,t[j]],tau_obs)
+      predS_obs.Seasonal_Schmidt_Obs_error[,t[j]] = rnorm(nsamp,predS.Seasonal_Schmidt_Obs_error[,t[j]],tau_S_obs)
+      
     }
   }
 }
