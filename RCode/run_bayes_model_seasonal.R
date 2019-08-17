@@ -15,7 +15,7 @@ source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_Schmidt_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Seasonal_RandomWalk_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -28,15 +28,33 @@ my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/Prelim_results_10AUG19"
 
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
-y <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))
+y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))+0.003)
+
+#for watertemp_mean
+Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_11AUG19.csv"))
+Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_16AUG19.csv"))
+
+#for watertemp_min
+Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_16AUG19.csv"))
+Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_min_16AUG19.csv"))
+
+#for airtemp
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
-Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_11AUG19.csv"))
+
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_max_16AUG19.csv"))
 
 
 years <- c(2009:2014)
 year_no = as.numeric(as.factor(years))
 season_weeks = c(1:20)
 site = "Midge"
+
+#for water temp
+week_avg = colMeans(Temp_prior, na.rm = TRUE)
+week_min = colMeans(Temp_prior, na.rm = TRUE)
+
+#for Schmidt
+week_avg = colMeans(Schmidt, na.rm = TRUE)
 
 
 #3) JAGS Plug-Ins -----------------------------------------------------------------------------------------------------
@@ -53,14 +71,14 @@ j.model   <- jags.model (file = model,
 jags.out <- run.jags(model = model,
                      data = jags_plug_ins$data.model,
                      adapt =  5000, 
-                     burnin =  50000, 
+                     burnin =  100000, 
                      sample = 5000, 
                      n.chains = 3, 
                      inits=jags_plug_ins$init.model,
                      monitor = jags_plug_ins$variable.namesout.model)
 
 #5) Save and Process Output
-write.jagsfile(jags.out, file=file.path("Results/Jags_Models/Seasonal_for_loop",paste(site,paste0(model_name,'.txt'), sep = '_')), 
+write.jagsfile(jags.out, file=file.path("Results/Jags_Models/IC_test",paste(site,paste0(model_name,'.txt'), sep = '_')), 
                remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
 #this will create multiple plots if var names are different but doesn't create multiple
@@ -70,9 +88,9 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/Seasonal_for_loop",
 params <- jags_plug_ins$params.model
 
 for (i in 1:length(params)){
-  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
+  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
   plot(jags.out, vars = params[i]) 
-  #dev.off()
+  dev.off()
 }
 
 #upload plot to Google Drive folder
@@ -85,7 +103,7 @@ sum <- summary(jags.out, vars = jags_plug_ins$variable.names.model)
 DIC=dic.samples(j.model, n.iter=5000)
 
 #save results
-sink(file = file.path("Results/Jags_Models/Seasonal_for_loop",paste(site,paste0(model_name,'_param_summary.txt'), sep = '_')))
+sink(file = file.path("Results/Jags_Models/IC_test",paste(site,paste0(model_name,'_param_summary.txt'), sep = '_')))
 print("Parameter summary")
 sum
 print("DIC")
@@ -96,7 +114,7 @@ jags.out.mcmc <- as.mcmc.list(jags.out)
 out <- as.matrix(jags.out.mcmc)
 
 #Seasonal_RandomWalk_Obs_error
-saveRDS(object = DIC, file = file.path("Results/Jags_Models/Seasonal_for_loop", paste(site, paste0(model_name,'_DIC.rds'), sep = '_')))
+saveRDS(object = DIC, file = file.path("Results/Jags_Models/IC_test", paste(site, paste0(model_name,'_DIC.rds'), sep = '_')))
 
 
 #6) CI, PI, Obs PI Calculations
@@ -115,7 +133,142 @@ mus=c(grep("mu\\[1,", colnames(out)),grep("mu\\[2,", colnames(out)),
       grep("mu\\[3,", colnames(out)),grep("mu\\[4,", colnames(out)),
       grep("mu\\[5,", colnames(out)),grep("mu\\[6,", colnames(out)))
 mu = out[,mus]
-ci <- apply(mu,2,quantile,c(0.025,0.5,0.975))
+ci <- exp(apply(mu,2,quantile,c(0.025,0.5,0.975)))
+
+#intervals for temperature
+mu_Ts=c(grep("mu_T\\[1,", colnames(out)),grep("mu_T\\[2,", colnames(out)),
+        grep("mu_T\\[3,", colnames(out)),grep("mu_T\\[4,", colnames(out)),
+        grep("mu_T\\[5,", colnames(out)),grep("mu_T\\[6,", colnames(out)))
+mu_T = out[,mu_Ts] 
+T_ci <- apply(mu_T,2,quantile,c(0.025,0.5,0.975))
+
+#temperature plot
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_watertemp_CI.png'), sep = '_')), res=300, width=20, height=15, units='cm')
+par(mfrow = c(3,2), oma = c(1,1,5,1), mar = c(4,4,2,2)+0.1)
+
+#2009
+plot(times[1:20],T_ci[1,1:20],type='n', ylab="Temperature", ylim = c(min(T_ci[1,1:20], na.rm = TRUE),max(T_ci[3,1:20], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[1:20],T_ci[1,1:20],T_ci[3,1:20],col="lightBlue")
+lines(times[1:20],T_ci[2,1:20], lty = 2, lwd = 1)
+points(times[1:20],Temp[1,], pch = '+')
+legend("topleft",legend = "2009", bty = "n")
+
+#2010
+plot(times[21:40],T_ci[1,21:40],type='n', ylab="Temperature", ylim = c(min(T_ci[1,21:40], na.rm = TRUE),max(T_ci[3,21:40], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[21:40],T_ci[1,21:40],T_ci[3,21:40],col="lightBlue")
+lines(times[21:40],T_ci[2,21:40], lty = 2, lwd = 1)
+points(times[21:40],Temp[2,], pch = '+')
+legend("topleft",legend = "2010", bty = "n")
+
+#2011
+plot(times[41:60],T_ci[1,41:60],type='n', ylab="Temperature", ylim = c(min(T_ci[1,41:60], na.rm = TRUE),max(T_ci[3,41:60], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[41:60],T_ci[1,41:60],T_ci[3,41:60],col="lightBlue")
+lines(times[41:60],T_ci[2,41:60], lty = 2, lwd = 1)
+points(times[41:60],Temp[3,], pch = '+')
+legend("topleft",legend = "2011", bty = "n")
+
+#2012
+plot(times[61:80],T_ci[1,61:80],type='n', ylab="Temperature", ylim = c(min(T_ci[1,61:80], na.rm = TRUE),max(T_ci[3,61:80], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[61:80],T_ci[1,61:80],T_ci[3,61:80],col="lightBlue")
+lines(times[61:80],T_ci[2,61:80], lty = 2, lwd = 1)
+points(times[61:80],Temp[4,], pch = '+')
+legend("topleft",legend = "2012", bty = "n")
+
+#2013
+plot(times[81:100],T_ci[1,81:100],type='n', ylab="Temperature", ylim = c(min(T_ci[1,81:100], na.rm = TRUE),max(T_ci[3,81:100], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[81:100],T_ci[1,81:100],T_ci[3,81:100],col="lightBlue")
+lines(times[81:100],T_ci[2,81:100], lty = 2, lwd = 1)
+points(times[81:100],Temp[5,], pch = '+')
+legend("topleft",legend = "2013", bty = "n")
+
+#2014
+plot(times[101:120],T_ci[1,101:120],type='n', ylab="Temperature", ylim = c(min(T_ci[1,101:120], na.rm = TRUE),max(T_ci[3,101:120], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[101:120],T_ci[1,101:120],T_ci[3,101:120],col="lightBlue")
+lines(times[101:120],T_ci[2,101:120], lty = 2, lwd = 1)
+points(times[101:120],Temp[6,], pch = '+')
+legend("topleft",legend = "2014", bty = "n")
+
+dev.off()
+
+#upload plot to Google Drive folder
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_watertemp_CI.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics/Seasonal_for_loop",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
+
+
+#intervals for Schmidt
+mu_Ss=c(grep("mu_S\\[1,", colnames(out)),grep("mu_S\\[2,", colnames(out)),
+        grep("mu_S\\[3,", colnames(out)),grep("mu_S\\[4,", colnames(out)),
+        grep("mu_S\\[5,", colnames(out)),grep("mu_S\\[6,", colnames(out)))
+mu_S = out[,mu_Ss] 
+S_ci <- apply(mu_S,2,quantile,c(0.025,0.5,0.975))
+
+#temperature plot
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_Schmidt_CI.png'), sep = '_')), res=300, width=20, height=15, units='cm')
+par(mfrow = c(3,2), oma = c(1,1,5,1), mar = c(4,4,2,2)+0.1)
+
+#2009
+plot(times[1:20],S_ci[1,1:20],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,1:20], na.rm = TRUE),max(S_ci[3,1:20], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[1:20],S_ci[1,1:20],S_ci[3,1:20],col="lightBlue")
+lines(times[1:20],S_ci[2,1:20], lty = 2, lwd = 1)
+points(times[1:20],Schmidt[1,], pch = '+')
+legend("topleft",legend = "2009", bty = "n")
+
+#2010
+plot(times[21:40],S_ci[1,21:40],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,21:40], na.rm = TRUE),max(S_ci[3,21:40], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[21:40],S_ci[1,21:40],S_ci[3,21:40],col="lightBlue")
+lines(times[21:40],S_ci[2,21:40], lty = 2, lwd = 1)
+points(times[21:40],Schmidt[2,], pch = '+')
+legend("topleft",legend = "2010", bty = "n")
+
+#2011
+plot(times[41:60],S_ci[1,41:60],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,41:60], na.rm = TRUE),max(S_ci[3,41:60], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[41:60],S_ci[1,41:60],S_ci[3,41:60],col="lightBlue")
+lines(times[41:60],S_ci[2,41:60], lty = 2, lwd = 1)
+points(times[41:60],Schmidt[3,], pch = '+')
+legend("topleft",legend = "2011", bty = "n")
+
+#2012
+plot(times[61:80],S_ci[1,61:80],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,61:80], na.rm = TRUE),max(S_ci[3,61:80], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[61:80],S_ci[1,61:80],S_ci[3,61:80],col="lightBlue")
+lines(times[61:80],S_ci[2,61:80], lty = 2, lwd = 1)
+points(times[61:80],Schmidt[4,], pch = '+')
+legend("topleft",legend = "2012", bty = "n")
+
+#2013
+plot(times[81:100],S_ci[1,81:100],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,81:100], na.rm = TRUE),max(S_ci[3,81:100], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[81:100],S_ci[1,81:100],S_ci[3,81:100],col="lightBlue")
+lines(times[81:100],S_ci[2,81:100], lty = 2, lwd = 1)
+points(times[81:100],Schmidt[5,], pch = '+')
+legend("topleft",legend = "2013", bty = "n")
+
+
+#2014
+plot(times[101:120],S_ci[1,101:120],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,101:120], na.rm = TRUE),max(S_ci[3,101:120], na.rm = TRUE)),
+     main="",xlab = "")
+ciEnvelope(times[101:120],S_ci[1,101:120],S_ci[3,101:120],col="lightBlue")
+lines(times[101:120],S_ci[2,101:120], lty = 2, lwd = 1)
+points(times[101:120],Schmidt[6,], pch = '+')
+legend("topleft",legend = "2014", bty = "n")
+
+
+dev.off()
+
+#upload plot to Google Drive folder
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Schmidt_CI.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics/Seasonal_for_loop",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
+
+
 
 ## One step ahead prediction intervals
 
@@ -123,14 +276,14 @@ samp <- sample.int(nrow(out),nsamp)
 mu = out[samp,mus] 
 Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
 Schmidts=c(Schmidt[1,], Schmidt[2,], Schmidt[3,], Schmidt[4,], Schmidt[5,], Schmidt[6,])
-ys = c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,])
+ys = exp(c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,]))
 
 
 #get one-step-ahead predictions
 preds_plug_ins <- preds_plug_ins(model_name) 
 
-pi <- apply(preds_plug_ins$pred.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
-obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+pi <- exp(apply(preds_plug_ins$pred.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE))
+obs_pi <- exp(apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE))
 
 
 #7) CI, PI, Obs PI Plots
@@ -141,66 +294,66 @@ png(file=file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep 
 par(mfrow = c(3,2), oma = c(1,1,5,1), mar = c(4,4,2,2)+0.1)
 
 #2009
-plot(times[1:20],ci[2,1:20],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,1:20], na.rm = TRUE),max(ci[3,1:20], na.rm = TRUE)),
+plot(times[1:20],ci[2,1:20],type='n', ylab="Gloeo density (total per L)", ylim = c(min(obs_pi[1,1:20], na.rm = TRUE),max(obs_pi[3,1:20], na.rm = TRUE)),
      main="",xlab = "")
 ciEnvelope(times[1:20],obs_pi[1,1:20],obs_pi[3,1:20],col="gray")
 ciEnvelope(times[1:20],pi[1,1:20],pi[3,1:20],col="Green")
 ciEnvelope(times[1:20],ci[1,1:20],ci[3,1:20],col="lightBlue")
 points(times[1:20],ys[1:20],pch="+",cex=0.8)
 legend("topleft",legend = "2009", bty = "n")
-#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
 
 #2010
-plot(times[21:40],ci[2,21:40],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,21:40], na.rm = TRUE),max(ci[3,21:40], na.rm = TRUE)),
+plot(times[21:40],ci[2,21:40],type='n', ylab="Gloeo density (total per L)", ylim = c(min(obs_pi[1,21:40], na.rm = TRUE),max(obs_pi[3,21:40], na.rm = TRUE)),
      main="",xlab = "")
 ciEnvelope(times[21:40],obs_pi[1,21:40],obs_pi[3,21:40],col="gray")
 ciEnvelope(times[21:40],pi[1,21:40],pi[3,21:40],col="Green")
 ciEnvelope(times[21:40],ci[1,21:40],ci[3,21:40],col="lightBlue")
 points(times[21:40],ys[21:40],pch="+",cex=0.8)
 legend("topleft",legend = "2010", bty = "n")
-#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+points(times[21:40],obs_pi[2,21:40],pch = 5, cex = 0.8)
 
 #2011
-plot(times[41:60],ci[2,41:60],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,41:60],na.rm = TRUE),max(ci[3,41:60],na.rm = TRUE)),
+plot(times[41:60],ci[2,41:60],type='n', ylab="Gloeo density (total per L)", ylim = c(min(obs_pi[1,41:60],na.rm = TRUE),max(obs_pi[3,41:60],na.rm = TRUE)),
      main="",xlab = "")
 ciEnvelope(times[41:60],obs_pi[1,41:60],obs_pi[3,41:60],col="gray")
 ciEnvelope(times[41:60],pi[1,41:60],pi[3,41:60],col="Green")
 ciEnvelope(times[41:60],ci[1,41:60],ci[3,41:60],col="lightBlue")
 points(times[41:60],ys[41:60],pch="+",cex=0.8)
 legend("topleft",legend = "2011", bty = "n")
-#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+points(times[41:60],obs_pi[2,41:60],pch = 5, cex = 0.8)
 
 #2012
-plot(times[61:80],ci[2,61:80],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,61:80]),max(ci[3,61:80])),
+plot(times[61:80],ci[2,61:80],type='n', ylab="Gloeo density (total per L)", ylim = c(min(obs_pi[1,61:80], na.rm = TRUE),max(obs_pi[3,61:80], na.rm = TRUE)),
      main="",xlab = "")
 ciEnvelope(times[61:80],obs_pi[1,61:80],obs_pi[3,61:80],col="gray")
 ciEnvelope(times[61:80],pi[1,61:80],pi[3,61:80],col="Green")
 ciEnvelope(times[61:80],ci[1,61:80],ci[3,61:80],col="lightBlue")
 points(times[61:80],ys[61:80],pch="+",cex=0.8)
 legend("topleft",legend = "2012", bty = "n")
-#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+points(times[61:80],obs_pi[2,61:80],pch = 5, cex = 0.8)
 
 #2013
-plot(times[81:100],ci[2,81:100],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,81:100]),max(ci[3,81:100])),
+plot(times[81:100],ci[2,81:100],type='n', ylab="Gloeo density (total per L)", ylim = c(min(obs_pi[1,81:100], na.rm = TRUE),max(obs_pi[3,81:100], na.rm = TRUE)),
      main="",xlab = "")
 ciEnvelope(times[81:100],obs_pi[1,81:100],obs_pi[3,81:100],col="gray")
 ciEnvelope(times[81:100],pi[1,81:100],pi[3,81:100],col="Green")
 ciEnvelope(times[81:100],ci[1,81:100],ci[3,81:100],col="lightBlue")
 points(times[81:100],ys[81:100],pch="+",cex=0.8)
 legend("topleft",legend = "2013", bty = "n")
-#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+points(times[81:100],obs_pi[2,81:100],pch = 5, cex = 0.8)
 
 #2014
-plot(times[101:120],ci[2,101:120],type='n', ylab="Gloeo density (total per L)", ylim = c(min(ci[1,101:120]),max(ci[3,101:120])),
+plot(times[101:120],ci[2,101:120],type='n', ylab="Gloeo density (total per L)", ylim = c(min(obs_pi[1,101:120], na.rm = TRUE),max(obs_pi[3,101:120], na.rm = TRUE)),
      main="",xlab = "")
 ciEnvelope(times[101:120],obs_pi[1,101:120],obs_pi[3,101:120],col="gray")
 ciEnvelope(times[101:120],pi[1,101:120],pi[3,101:120],col="Green")
 ciEnvelope(times[101:120],ci[1,101:120],ci[3,101:120],col="lightBlue")
 points(times[101:120],ys[101:120],pch="+",cex=0.8)
 legend("topleft",legend = "2014", bty = "n")
-#points(times[1:20],obs_pi[2,1:20],pch = 5, cex = 0.8)
+points(times[101:120],obs_pi[2,101:120],pch = 5, cex = 0.8)
 
-title(main="Obs (+), Latent CI (blue), PI (green), Obs PI (grey)",outer=T) 
+title(main="Obs (+), Latent CI (blue), PI (green), Obs PI (grey), Mean Pred. (<>)",outer=T) 
 
 
 dev.off()
@@ -209,14 +362,14 @@ dev.off()
 
 #upload plot to Google Drive folder
 drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics/Seasonal_for_loop",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
 
 
 
 #8) Further Diagnostic Checks and Visualization 
 
 #y vs. preds
-
+ys = c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,])
 obs_diff= vector(mode="numeric", length=0)
 obs_quantile = vector(mode="numeric", length=0)
 obs_quantile_dm = vector(mode="numeric",length=0)
@@ -227,15 +380,15 @@ perc_ys <- ys[-c(1,21,41,61,81,101)]
 
 
 for(i in 2:ncol(mypreds)){
-  obs_diff[i]=mean(mypreds[,i])-perc_ys[i] #difference between mean of pred. values and obs for each time point
-  pred_mean[i]=mean(mypreds[,i]) #mean of pred. values at each time point
-  percentile <- ecdf(mypreds[,i]) #create function to give percentile based on distribution of pred. values at each time point
-  obs_quantile[i] <- percentile(perc_ys[i]) #get percentile of obs in pred distribution
-  percentile1 <- ecdf(mypreds_obs[,i]) #create function to give percentile of obs in distribution of pred including observation error
-  obs_quantile_dm[i] <- percentile1(perc_ys[i]) #get percentile of obs 
+  obs_diff[i]=mean(exp(mypreds[,i]))-exp(perc_ys[i]) #difference between mean of pred. values and obs for each time point
+  pred_mean[i]=mean(exp(mypreds[,i])) #mean of pred. values at each time point
+  percentile <- ecdf(exp(mypreds[,i])) #create function to give percentile based on distribution of pred. values at each time point
+  obs_quantile[i] <- percentile(exp(perc_ys[i])) #get percentile of obs in pred distribution
+  percentile1 <- ecdf(exp(mypreds_obs[,i])) #create function to give percentile of obs in distribution of pred including observation error
+  obs_quantile_dm[i] <- percentile1(exp(perc_ys[i])) #get percentile of obs 
 }
 
-sink(file = file.path("Results/Jags_Models/Seasonal_for_loop",paste(site,paste0(model_name,'_obs_pred_differences.txt'), sep = '_')))
+sink(file = file.path("Results/Jags_Models/IC_test",paste(site,paste0(model_name,'_obs_pred_differences.txt'), sep = '_')))
 
 #Mean of difference between pred and obs
 obspred_mean=mean(obs_diff, na.rm=TRUE)
@@ -269,7 +422,7 @@ hist(obs_quantile, breaks = seq(0,1,0.05),main="No obs error") #no observation e
 hist(obs_quantile_dm, breaks = seq(0,1,0.05), main="With obs error") #with observation error
 
 #plot of mean pred vs. obs
-plot(ys,pi[2,], main="Mean pred vs. obs, no obs error") #no obs error
+plot(exp(ys),pi[2,], main="Mean pred vs. obs, no obs error") #no obs error
 
 ## qqplot - plot of quantiles of data in distribution including obs error
 plot(seq(0,1,length.out = length(sort(obs_quantile_dm))),sort(obs_quantile_dm), main="QQplot",
@@ -288,11 +441,11 @@ plot(dates1, obs_quantile_dm,main = "dots = obs. quantiles w/ dm, triangles = gl
      ylab = "",xlab = "",cex.main = 0.9)
 mtext("obs. quantile", side=2, line=2.2)
 par(new = TRUE)
-plot(dates1, perc_ys, axes = FALSE, bty = "n", xlab = "", ylab = "",pch = 17, col = "red", cex = 0.8)
+plot(dates1, exp(perc_ys), axes = FALSE, bty = "n", xlab = "", ylab = "",pch = 17, col = "red", cex = 0.8)
 axis(side=4, at = pretty(perc_ys))
-mtext("gloeo counts", side=4, line=2.2)
+mtext("gloeo density", side=4, line=2.2)
 
-hist(obs_pi[2,],breaks = 20, xlim = c(-20,100), main = "Mean predicted value w/ dm")
+hist(obs_pi[2,],breaks = 20, xlim = c(0,100), main = "Mean predicted value w/ dm")
 
 dev.off()
 

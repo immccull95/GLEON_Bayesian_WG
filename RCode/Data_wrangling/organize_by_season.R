@@ -91,7 +91,7 @@ write.csv(temp_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_a
 
 #same thing for water temp
 watertemp_seasonal <- cleaned_dat1 %>%
-  filter(site == "midge") %>%
+  filter(site == "fichter") %>%
   select(year, season_week, watertemp_mean) %>%
   spread(key = season_week, value = watertemp_mean) %>%
   select(-year)
@@ -99,14 +99,14 @@ watertemp_seasonal <- cleaned_dat1 %>%
 colnames(watertemp_seasonal) <- paste("wk", colnames(watertemp_seasonal), sep = "_")
 
 watertemp_plot <- cleaned_dat1 %>%
-  filter(site == "midge") %>%
+  filter(site == "fichter") %>%
   select(year, season_week, watertemp_mean)
 
 ggplot(data = watertemp_plot, aes(x = season_week, y = watertemp_mean, group = year, colour = year))+
   geom_line(size = 1)+
   theme_bw()
 
-write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_11AUG19.csv", row.names = FALSE)
+write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_16AUG19.csv", row.names = FALSE)
 
 mean(watertemp_plot$watertemp_mean, na.rm = TRUE)
 #21.04
@@ -151,8 +151,9 @@ dates <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp.csv") %>
 
 schmidt1 <- left_join(dates,schmidt, by = "date") %>%
   group_by(date) %>%
-  summarize(schmidt = mean(schmidt.stability, na.rm = TRUE))
+  summarize(schmidt = max(schmidt.stability, na.rm = TRUE))
 
+schmidt1[schmidt1 == -Inf] <- NA
 schmidt1[schmidt1 < 0] <- 0
 
 ggplot(data = schmidt1, aes(x = date, y = schmidt))+
@@ -174,4 +175,25 @@ mean(schmidt1$schmidt,na.rm = TRUE)
 1/(sd(schmidt1$schmidt,na.rm = TRUE)^2)
 #3.11e-5
 
-write.csv(schmidt2, "./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_11AUG19.csv", row.names = FALSE)
+write.csv(schmidt2, "./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_max_16AUG19.csv", row.names = FALSE)
+
+
+#minimum water temperature
+
+watertemp_seasonal <- cleaned_dat1 %>%
+  filter(site == "fichter") %>%
+  select(year, season_week, watertemp_min) %>%
+  spread(key = season_week, value = watertemp_min) %>%
+  select(-year)
+
+colnames(watertemp_seasonal) <- paste("wk", colnames(watertemp_seasonal), sep = "_")
+
+watertemp_plot <- cleaned_dat1 %>%
+  filter(site == "fichter") %>%
+  select(year, season_week, watertemp_min)
+
+ggplot(data = watertemp_plot, aes(x = season_week, y = watertemp_min, group = year, colour = year))+
+  geom_line(size = 1)+
+  theme_bw()
+
+write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_min_16AUG19.csv", row.names = FALSE)
