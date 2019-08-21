@@ -67,7 +67,7 @@ season_check
 
 #get in shape for seasonal for-loop
 gloeo_seasonal <- cleaned_dat1 %>%
-  filter(site == "fichter") %>%
+  filter(site == "midge") %>%
   select(year, season_week, totalperL) %>%
   #mutate(totalperL = round(totalperL*141.3707)) %>%
   spread(key = season_week, value = totalperL) %>%
@@ -197,3 +197,11 @@ ggplot(data = watertemp_plot, aes(x = season_week, y = watertemp_min, group = ye
   theme_bw()
 
 write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_min_16AUG19.csv", row.names = FALSE)
+
+
+##Gloeo data for Shannon
+gl <- cleaned_dat1 %>%
+  filter(site == "midge") %>%
+  select(site, year, date, season_week, totalperL)
+
+write.csv(gl, "C:/Users/Mary Lofton/Desktop/Gloeo_dates_for_Shannon.csv",row.names = FALSE)
