@@ -7,6 +7,8 @@
 #Created 1 January 2018 - JAB
 
 #### Install R Packages ####
+install.packages("plyr")
+library(plyr)
 library(tidyverse)
 library(readxl)
 library(lubridate)
@@ -15,8 +17,9 @@ library(doBy) #included by LSB to aggregate water temp data following Bethel Ste
 install.packages("rWind")
 devtools::install_github("jabiologo/rWind")  
 library(rWind)
-### Set working directory to be the "GLEON_Bayesian_WG" folder
-setwd("~/GitHub/GLEON_Bayesian_WG") #may need to change according to the user's folder path
+
+install.packages('googledrive')
+library(googledrive)
 
 #### Read in data for all sites from Shannon weekly summary ####
 #JAB updated Shannon weekly summary to include only 1 observation per week
@@ -55,7 +58,7 @@ write_csv(midge_all,"midge_all.csv")
 write_csv(newbury_all,"newbury_all.csv")
 
 # Read in final gloeo data ####
-gloeo = read_csv("Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp.csv")
+gloeo = read_csv("Datasets/Sunapee/SummarizedData/All_Sites_Gloeo_light_wtrtemp-interp.csv")
 
 #Convert sites to factor
 sites <- c("Coffin", "Midge", "Fichter", "Newbury")
@@ -67,27 +70,47 @@ str(gloeo)
 #Updated by LSB 26-June-2018
 
 #### Read in water temp data ####
-watertemp_hourly = read_csv("Datasets/Sunapee//Level1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
+watertemp_hourly = read_csv("Datasets/Sunapee/Level1/temp_2006-2016_L1_20Oct2017.csv", col_types = cols(
   coffin = col_double(),
   fichter = col_double(),
   newbury = col_double()))
 str(watertemp_hourly)
 
-watertemp_hourly = read_csv("Datasets/Sunapee/SummarizedData/Onset_wtrtemp_60min_2006-2016_Allsites.csv", col_types = cols(
+onset_water_temp = read_csv("Datasets/Sunapee/SummarizedData/Onset_wtrtemp_60min_2006-2016_Allsites.csv", col_types = cols(
   coffin = col_double(),
   fichter = col_double(),
   newbury = col_double(),
   midge = col_double()))
 str(watertemp_hourly)
 
+watertemp_HOBO <- read_csv("Datasets/Sunapee/SummarizedData/HOBO_light_wtrtemp_10min_2009-2016_Allsites.csv", col_types = cols(
+  datetime = col_datetime(format = ""),
+  date = col_date(format = ""),
+  time = col_time(format = ""),
+  dayofyr = col_double(),
+  temp_Coffin = col_double(),
+  temp_Fichter = col_double(),
+  temp_Midge = col_double(),
+  temp_OldNewbury = col_double(),
+  light_Coffin = col_double(),
+  light_Fichter = col_double(),
+  light_Midge = col_double(),
+  light_OldNewbury = col_double()))
+
+str(watertemp_HOBO)
+
+watertemp_HOBO_day <- watertemp_HOBO %>% 
+  mutate(day = day(date))
+
 # 2009 data - readings every 30 min so filtered out to only include hourly readings
-watertemp_hourly_true <- watertemp_hourly %>% 
+onset_watertemp_hourly <- onset_water_temp %>% 
   mutate(minute = minute(datetime)) %>% 
-  filter(minute == 0)
+  filter(minute == 0) %>% 
+  select(-minute)
 
 #### calculate weekly, monthly and  annual summaries ####
 #Add in week, month and year
-temp_L1 <- watertemp_hourly_true[,1:9] %>%
+temp_L1 <-onset_watertemp_hourly %>%
   mutate(year = year(date)) %>% 
   mutate(month = month(date)) %>% 
   mutate(week = week(date)) %>%  #this way we are considering week numbers as the the number of complete seven day periods that have occurred between the date and January 1st, plus one.
@@ -96,14 +119,27 @@ temp_L1 <- watertemp_hourly_true[,1:9] %>%
 #Aggregate by week number, month, year and sampling period
 sumfun <- function(x, ...){
   c(mean=mean(x, na.rm=TRUE, ...), min=min(x, na.rm=TRUE, ...), max=max(x, na.rm=TRUE, ...), 
-    median=median(x, na.rm=TRUE, ...), obs=sum(!is.na(x)))}
+    median=median(x, na.rm=TRUE, ...),sd = sd(x, na.rm=TRUE, ...), obs=sum(!is.na(x)))}
 temp_L1 <- as.data.frame(temp_L1)
 str(temp_L1)
 
-watertemp_day <- summaryBy(coffin + fichter + newbury + midge ~ date, data=temp_L1, FUN=sumfun)
+watertemp_HOBO_day <- as.data.frame(watertemp_HOBO_day)
+str(watertemp_HOBO_day)
 
-watertemp_week <- summaryBy(coffin + fichter + newbury + midge ~ year + week, data=temp_L1, FUN=sumfun)
+onset_watertemp_day <- summaryBy(coffin + fichter + newbury + midge ~ date, data=temp_L1, FUN=sumfun)
+
+hobo_watertemp_day <- summaryBy(temp_Coffin + temp_Fichter + temp_OldNewbury + temp_Midge ~ date, data=watertemp_HOBO_day, FUN=sumfun)
+
+write_csv(watertemp_day, "Datasets/Sunapee/SummarizedData/HOBO_wtrtemp_daily_summary_2009-2016_Allsites.csv")
+
+onset_watertemp_week <- summaryBy(coffin + fichter + newbury + midge ~ year + week, data=temp_L1, FUN=sumfun)
+
 watertemp_month <- summaryBy(coffin + fichter + newbury + midge ~ year + month, data=temp_L1, FUN=sumfun)
+
+#Remove Inf and -Inf
+onset_watertemp_day <- replace(onset_watertemp_day,onset_watertemp_day == Inf|onset_watertemp_day == -Inf, NA)
+
+onset_watertemp_week <- replace(onset_watertemp_week,onset_watertemp_week == Inf|onset_watertemp_week == -Inf, NA)
 
 #drop days with less than 18 obs (75% of the data) -----
 ix=which(watertemp_day$coffin.obs <18)
@@ -234,6 +270,8 @@ write_csv(watertemp_sampling,"Datasets/Sunapee/Level1/watertemp_sampling.csv")
 #   arrange(year,site)
 # 
 # write_csv(watertemp_all_long,"watertemp_all_long.csv")  
+
+
 
 
 #### Read in light dataset ####
@@ -589,20 +627,21 @@ write.csv(light_month,"Datasets/Sunapee/SummarizedData/light_month_HOBO_aggregat
 #I plotted day of year on the x axis and total colonies per L on the y
 #colors are for the different sites and each panel represents a different year
 #the rest of the code below that is mostly formatting for a pretty figure
-ggplot(all_sites_gloeo, aes(x=dayofyr,y=totalperL,color=site))+
-  geom_line(size=1.5)+
-  scale_colour_manual(values=c("black","forestgreen","blue","orange"))+ 
+ggplot(gloeo_Midge, aes(x=week,y=log_gloeo))+
+  geom_line(size=1.5,color="green")+
+  geom_point()+
+  #scale_colour_manual(values=c("black","forestgreen","blue","orange"))+ 
   #scale_x_datetime(breaks = seq(as.POSIXct("2005-08-01"),as.POSIXct("2016-10-01"), by="1 year"),date_labels="%Y")+ #%d-%b-%y
-  scale_x_continuous(limits=c(47,300), breaks=seq(50,300, by=50))+ #%d-%b-%y
-  labs(y="Gloeotrichia Surface Abundance (colonies/L)", x="Day of Year")+
-  facet_wrap(~year,scales ="free_y")+
+  scale_x_continuous(limits=c(7,42), breaks=seq(10,40, by=5))+ #%d-%b-%y
+  labs(y="Log Gloeotrichia Surface Abundance (colonies/L)", x="Week", title = "Midge")+
+  facet_wrap(~year)+ #,scales ="free_y")+
   theme_bw(base_family = "Times")+
   theme(axis.title.x = element_text(size=24),
         axis.title.y = element_text(size=24),
         strip.text = element_text(size=24),
         axis.text.y = element_text(size=18,color="black"),
         axis.text.x = element_text(size=18,color="black"),
-        legend.title = element_text(size=20),
+        title = element_text(size=20),
         legend.text= element_text(size=18))+
   theme(panel.border=element_blank(),
         axis.line = element_line(color="black"),
@@ -613,6 +652,10 @@ ggplot(all_sites_gloeo, aes(x=dayofyr,y=totalperL,color=site))+
 
 #Saves figure as a pdf with set dimensions in the working directory folder
 ggsave("Datasets/Sunapee/Data Visualizations/All_Sites_gloeo-byyear_2005-2016.pdf",width=15, height=8.5)
+
+ggsave("~/Desktop/Midge_log_gloeo_week_2005-2016.pdf",width=11, height=8.5)
+ggsave("~/Desktop/Midge_gloeo_day_2005-2016.pdf",width=11, height=8.5)
+ggsave("~/Desktop/Midge_gloeo_week_2005-2016.pdf",width=11, height=8.5)
 
 #### All sites - facet wrap by site ####
 #This makes each site its own panel and has the different years on the x-axis
@@ -798,20 +841,51 @@ watertemp_day <- read_csv("Datasets/Sunapee/SummarizedData/watertemp_day_OnsetDa
                       col_types = cols(date = col_date()))
 
 #convert water temp day to true long format
-watertemp_day_long <- watertemp_day %>%
+onset_watertemp_day_long <- onset_watertemp_day %>%
   gather(key = "metric", value = "watertemp", -date) %>% #gather all variables except datetime
   separate(metric,into = c("site","metric")) %>% 
   mutate(year = year(date)) 
 
 #convert water temp day to partial long format to merge with gloeo
-watertemp_day_long <- watertemp_day %>%
+onset_watertemp_day_long <- onset_watertemp_day %>%
   gather(key = "metric", value = "watertemp", -date) %>% #gather all variables except datetime
   separate(metric,into = c("site","metric")) %>% 
   spread(key = metric, value = watertemp) %>% 
   arrange(site, date) %>% 
   #filter(obs > 108) %>% 
-  rename(watertemp_max = max, watertemp_mean = mean, watertemp_median = median, watertemp_min = min) %>% 
-  mutate(year = year(date)) 
+  rename(watertemp_daily_mean = mean, watertemp_daily_median = median, watertemp_daily_max = max,watertemp_daily_min = min, watertemp_daily_sd = sd,watertemp_daily_obs = obs) %>% 
+  mutate(watertemp_daily_range =watertemp_daily_max -watertemp_daily_min)  %>% 
+  mutate(watertemp_daily_cv =watertemp_daily_sd/watertemp_daily_mean)
+
+write_csv(onset_watertemp_day_long, "Datasets/Sunapee/SummarizedData/Onset_watertemp_day_long_14Aug2019.csv")
+
+onset_watertemp_day_Midge <- onset_watertemp_day_long %>% 
+  filter(site=="midge")
+
+gloeo_Midge_watertemp_day <- full_join(gloeo_Midge,onset_watertemp_day_Midge, by = "date")
+
+write_csv(gloeo_Midge_watertemp_day, "Datasets/Sunapee/SummarizedData/gloeo_Midge_watertemp.csv")
+
+#convert water temp week to partial long format to merge with gloeo
+onset_watertemp_week_long <- onset_watertemp_week %>%
+  gather(key = "metric", value = "watertemp", -c(year,week)) %>% #gather all variables except datetime
+  separate(metric,into = c("site","metric")) %>% 
+  spread(key = metric, value = watertemp) %>% 
+  arrange(site, year, week) %>% 
+  #filter(obs > 108) %>% 
+  #rename(watertemp_daily_mean = mean, watertemp_daily_median = median, watertemp_daily_max = max,watertemp_daily_min = min, watertemp_daily_sd = sd,watertemp_daily_obs = obs) %>% 
+  mutate(watertemp_weekly_range = max-min)  %>% 
+  mutate(watertemp_weekly_cv = sd/mean)
+
+write_csv(onset_watertemp_week_long, "Datasets/Sunapee/SummarizedData/Onset_watertemp_week_long_14Aug2019.csv")
+
+onset_watertemp_week_Midge <- onset_watertemp_week_long %>% 
+  filter(site=="midge")
+
+gloeo_Midge_watertemp_week <- full_join(gloeo_Midge,onset_watertemp_week_Midge, by = c("year", "week"))
+
+write_csv(gloeo_Midge_watertemp_week, "Datasets/Sunapee/SummarizedData/gloeo_Midge_watertemp_week.csv")
+
 
 # Filter by site NOTE: metric field not there anymore, so commented out (IMM)
 watertemp_day_long_site <- watertemp_day_long %>% 
@@ -935,7 +1009,7 @@ write_csv(prism_all3, "Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/prism_
 
 #Read in combined data with new headers
 
-prism_all <- read_csv("Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/prism_all_combined.csv")
+prism_all <- read_csv("Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/PRISM_met_1981_2017_sites_combined.csv")
 
 #convert to long
 
@@ -949,8 +1023,14 @@ prism_all_long <- prism_all %>%
 prism_midge_2005 <- prism_midge %>%
   mutate(year = year(Date)) %>% 
   mutate(month = month(Date)) %>% 
-  filter (year > 2004 & year < 2017) 
+  mutate(dayofmonth = day(Date)) %>% 
+  filter(year > 2004 & year < 2017) 
+
 str(prism_midge_2005)
+
+# Join Midge gloeo & Prism
+gloeo_Midge_prism <- left_join(gloeo_Midge,prism_midge_2005,by=c("year", "month","dayofmonth"))
+
 
 # Seasons 
 install.packages("zoo")
@@ -1191,16 +1271,24 @@ buoy_wind_2007_2016 <- buoy_wind %>%
 wind_sp_summary <- buoy_wind_2007_2016 %>% 
   select(date,WindSp_ms, AveWindSp_ms, MaxWindSp_ms) %>% 
   group_by(date) %>% 
-  summarize_all(funs(mean, median, min, max, sd), na.rm=T)
+  summarize_all(funs(mean, median, min, max, sd), na.rm=T) %>% 
+  mutate(WindSp_ms_cv = WindSp_ms_sd/WindSp_ms_mean) %>% 
+  mutate(AveWindSp_ms_cv = AveWindSp_ms_sd/AveWindSp_ms_mean) %>% 
+  mutate(MaxWindSp_ms_cv = MaxWindSp_ms_sd/MaxWindSp_ms_mean) %>% 
+  mutate(year = year(date)) #%>% 
+  #mutate(week = week(date))
 
 x <- wind_sp_summary
 wind_sp_summary <- replace(x,x == Inf|x == -Inf, NA)
 
 write_csv(wind_sp_summary, "Datasets/Sunapee/SummarizedData/wind_sp_summary.csv")
 
-ggplot(wind_sp_summary, aes(x = date, y = WindSp_ms_mean)) +
-  geom_line(size = 1)+
+ggplot(wind_sp_summary, aes(x = week, y = WindSp_ms_mean)) +
+  geom_line(size = 1,col="blue")+
   labs(title = "Buoy Avg Daily Wind Speed Instaneous Readings (m/s)",y = "Mean Daily Wind Speed (m/s)") +
+  geom_point(aes(x = week, y = AveWindSp_ms_mean), col="red")+
+  #geom_abline(slope = 1, intercept = 0, size=2, linetype =2)+ #1:1 line
+  #ylim(0,10)+
   theme_bw(base_family = "Times")+
   theme(plot.title = element_text(size=24),
         axis.title.x = element_text(size=24),
@@ -1213,22 +1301,165 @@ ggplot(wind_sp_summary, aes(x = date, y = WindSp_ms_mean)) +
         axis.line = element_line(color="black"),
         plot.background = element_blank(),
         panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank())
+        panel.grid.minor = element_blank())+
+  facet_wrap(~year)
 
 ggsave("Buoy_Mean_Daily_WindSpeed.pdf",width=15, height=8.5)
 ggsave("Buoy_Mean_Daily_WindSpeed_Instant.pdf",width=15, height=8.5)
 
-# Wind direction 
-install.packages("raster")
-library(raster)
-avg_wind_dir <- buoy_wind_2007_2016[100951:491622,5]
-rmax <- rasterFromXYZ(avg_wind_dir)  
-acol <- colorRampPalette(c("white", "blue", "darkblue"))  
-plot(rmax, col=acol(1000), main= "Maximum wind speed reported",  
-     xlab="Longitude", ylab="Lattitude")  
+# Correlations with log gloeo vs. wind speed ####
+wind_sp_summary <- read_csv("Datasets/Sunapee/SummarizedData/wind_sp_summary.csv", guess_max = 2000)
 
-library(rworldmap)  
-lines(getMap(resolution = "high"), lwd=2)  
+gloeo_Midge_wind_sp <- left_join(gloeo_Midge_watertemp_day,wind_sp_summary,by=c("date","year"))
+
+summary(gloeo_Midge_wind_sp)
+
+gloeo_Midge_noNA <- gloeo_Midge_wind_sp %>% 
+  filter(MaxWindSp_ms_max!="NA")
+
+# Real 1 week lag
+gloeo_Midge_1week_lag <- gloeo_Midge_wind_sp %>% 
+  mutate(date_1weeklag = date - dweeks(1)) %>% 
+  select(date, totalperL, log_gloeo, date_1weeklag)
+
+
+wind_sp_summary_lag <- wind_sp_summary %>% 
+  #filter(site=="midge") %>% 
+  rename(date_1weeklag = date)
+
+#Join with 1 week lag date
+gloeo_Midge_wind_sp_1week_lag <- left_join(gloeo_Midge_1week_lag, wind_sp_summary_lag,by = "date_1weeklag")
+
+gloeo_Midge_noNA <- gloeo_Midge_wind_sp_1week_lag %>% 
+  filter(WindSp_ms_max!="NA") %>% 
+  filter(totalperL != 0)
+
+lm_labels <- function(dat) {
+  mod <- lm(log_gloeo ~ MaxWindSp_ms_max, data = dat)
+  formula <- sprintf("italic(y) == %.2f %+.2f * italic(x)",
+                     round(coef(mod)[1],2), round(coef(mod)[2],2))
+  r <- cor(dat$MaxWindSp_ms_max, dat$log_gloeo)
+  r2 <- sprintf("italic(R^2) == %.2f", r^2)
+  data.frame(formula = formula, r2 = r2, stringsAsFactors = F)
+}
+
+
+labels <- ddply(gloeo_Midge_noNA, "year", lm_labels)
+labels
+
+ggplot(gloeo_Midge_noNA, aes(x=MaxWindSp_ms_max,y=log_gloeo))+ #,color=factor(month)))+
+  geom_point(size=4) +
+  #geom_abline(slope = 1.09, intercept = -1.19, size=1, linetype=1)+ #best fit line
+  #geom_abline(slope = 1, intercept = 0, size=2, linetype =2)+ #1:1 line
+  geom_smooth(method = "lm")+ #, se = FALSE)+
+  #geom_smooth(method = "loess")+ #, se = FALSE)+
+  labs(y="Log Gloeo (colonies/L)", x="1 week Lag Max Daily Max Wind Speed",color="Month",title = "Midge")+
+  #xlim(19,27)+
+  #ylim(19,27)+
+  geom_text(x = 4, y=2, aes(label = formula), data = labels, parse = T, hjust = 0)+
+  geom_text(x = 5, y=1.5, aes(label = r2), data = labels, parse = T, hjust = 0)+
+  #geom_text(x = 19, y= 22.5, aes(label = formula), data = labels, parse = T, hjust = 0)+
+  #geom_text(x = 19, y= 22, aes(label = r2), data = labels, parse = T, hjust = 0)+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=18),
+        axis.title.y = element_text(size=18),
+        legend.title = element_text(size=18),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=18,color="black"),
+        strip.text = element_text(size=18,color="black"))+
+  theme(panel.border=element_blank(),
+        axis.line = element_line(color="black"),
+        plot.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  facet_wrap(~year)
+
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_InstWindSp_Mean.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_InstWindSp_Median.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_InstWindSp_CV.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_AveWindSp_Mean.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_AveWindSp_Min.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_AveWindSp_CV.pdf", width = 11, height = 8.5)
+
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_LagMaxWindSp_Max.pdf", width = 11, height = 8.5)
+
+
+# Wind direction ####
+#wind direction is reported by direction in which it originates - i.e. westerly wind blows from west to east
+# 0 or 360 = N, 90 = E, 180 = S, 270 = W
+
+wind_direction_summary <- buoy_wind_2007_2016 %>% 
+  select(date,WindDir_deg, AveWindDir_deg, MaxWindDir_deg) %>% 
+  group_by(date) %>% 
+  summarize_all(funs(mean, median, min, max, sd), na.rm=T) %>% 
+  #mutate(WindSp_ms_cv = WindSp_ms_sd/WindSp_ms_mean) %>% 
+  #mutate(AveWindSp_ms_cv = AveWindSp_ms_sd/AveWindSp_ms_mean) %>% 
+  #mutate(MaxWindSp_ms_cv = MaxWindSp_ms_sd/MaxWindSp_ms_mean) %>% 
+  mutate(year = year(date)) #%>% 
+#mutate(week = week(date))
+
+x <- wind_direction_summary
+wind_direction_summary <- replace(x,x == Inf|x == -Inf, NA)
+
+write_csv(wind_direction_summary, "Datasets/Sunapee/SummarizedData/wind_direction_summary.csv")
+
+# Wind direction packages
+
+install.packages("openair")
+library(openair)
+
+
+#Instantaneous wind dir & speed
+inst_buoy_wind_2007_2016_noNA <- buoy_wind_2007_2016 %>% 
+  filter(WindSp_ms !="NA") %>% 
+  filter(WindDir_deg!="NA") %>% 
+  filter(month %in% c(5,6,7,8,9,10))
+
+summary(inst_buoy_wind_2007_2016_noNA)
+which.max(inst_buoy_wind_2007_2016_noNA$WindSp_ms)  #Feb 2011 crazy high value
+
+windRose(inst_buoy_wind_2007_2016_noNA, ws = "WindSp_ms", wd = "WindDir_deg", type = "year",paddle = F , breaks = c(0,2,4,6,8,10))
+
+windRose(inst_buoy_wind_2007_2016_noNA, ws = "WindSp_ms", wd = "WindDir_deg", type = "month",paddle = F , breaks = c(0,2,4,6,8,10))
+
+quartz.save("~/Desktop/Gloeo Plots/Sunapee_Inst_WindDir_Summer_2009-2014.jpeg",type="jpeg", width=11, height=8.5)
+
+#Ave wind dir & speed
+ave_buoy_wind_2007_2016_noNA <- buoy_wind_2007_2016 %>% 
+  filter(AveWindSp_ms !="NA") %>% 
+  filter(AveWindDir_deg!="NA") %>% 
+  filter(month %in% c(5,6,7,8,9,10))
+
+#different breaks for wind speed by year
+windRose(ave_buoy_wind_2007_2016_noNA, ws = "AveWindSp_ms", wd = "AveWindDir_deg", breaks = c(0,2,4,6,8,10), type = "year",paddle = T, width = 2)
+quartz.save("~/Desktop/Gloeo Plots/Sunapee_Ave_WindDir_Summer_2009-2016.jpeg",type="jpeg", width=11, height=8.5)
+
+# by month
+windRose(ave_buoy_wind_2007_2016_noNA, ws = "AveWindSp_ms", wd = "AveWindDir_deg", breaks = c(0,2,4,6,8,10), type = "month",paddle = F) #T, width = 2)
+
+quartz.save("~/Desktop/Gloeo Plots/Sunapee_Ave_WindDir_Summer_2009-2016-month.jpeg",type="jpeg", width=11, height=8.5)
+
+
+# Filter for specific year - 2013, big bloom
+buoy_wind_2013_noNA <- buoy_wind_2007_2016 %>% 
+  #filter(WindSp_ms !="NA") %>% 
+  #filter(WindDir_deg!="NA") %>% 
+  mutate(day = day(datetime)) %>% 
+  filter(location=="loon") %>% 
+  filter(month %in% c(5,6,7,8,9,10)) %>% 
+  filter(year == 2013) %>% 
+  filter(month==9)
+
+days <- c(1:30)
+buoy_wind_2013_noNA$day <- as.factor(buoy_wind_2013_noNA$day)
+str(buoy_wind_2013_noNA)
+
+sum(is.na(buoy_wind_2013_noNA))
+
+windRose(buoy_wind_2013_noNA, ws = "AveWindSp_ms", wd = "AveWindDir_deg", breaks = c(0,2,4,6,8,10), type = "day",paddle = T, width = 2)
+
+quartz.save("~/Desktop/Gloeo Plots/Sunapee_Ave_WindDir_2013-day.jpeg",type="jpeg", width=11, height=8.5)
 
 
 # Data exploration for light vs. total & daily diff gloeo ####
@@ -1275,3 +1506,547 @@ ggplot(gloeo_site, aes(x=AveWindSp_ms_mean,y=totalperL, color=factor(year)))+
 hist(gloeo$totalperL)
 hist(gloeo_site$totalperL)
 
+
+
+# Read in buoy water temp data for regressions with Onset Data ####
+setwd("~/Google Drive/GLEON_Bayesian_WG/Sunapee_buoydata/tempstring_data")
+buoy_water_temp <- read_csv("2007-2017_fulltemprecord_L1-JB.csv")
+onset_water_temp <- read_csv("Datasets/Sunapee/SummarizedData/Onset_wtrtemp_60min_2006-2016_Allsites.csv",col_types = cols(
+  coffin = col_double(),
+  fichter = col_double(),
+  newbury = col_double()))
+
+onset_day_summary <- read_csv("Datasets/Sunapee/SummarizedData/watertemp_day_OnsetData_aggregation.csv")
+
+
+gloeo_wtr <- read_csv("all_data_NA.csv", col_types = cols(
+  site = col_factor(levels = c("coffin","fichter","midge","newbury")),
+  date = col_date(format = ""),
+  year = col_double(),
+  month = col_double(),
+  dayofmonth = col_double(),
+  dayofyr = col_double(),
+  coloniesperL = col_double(),
+  filbundperL = col_double(),
+  totalperL = col_double(),
+  totalperL_diff = col_double(),
+  week = col_double(),
+  light_sum = col_double(),
+  watertemp_mean = col_double(),
+  watertemp_min = col_double(),
+  watertemp_max = col_double(),
+  watertemp_median = col_double(),
+  ysi_readings = col_double(),
+  buoy_interp = col_double(),
+  daylength = col_double()))
+
+str(gloeo_wtr)
+
+
+buoy <- read_csv("buoy_daily.csv", col_types = cols(
+  site = col_factor(levels = c("coffin","fichter","midge","newbury")),
+  date = col_date(format = ""),
+  watertemp_mean = col_double(),
+  watertemp_min = col_double(),
+  watertemp_max = col_double(),
+  watertemp_median = col_double()))
+
+#Convert onset data to long with site column
+onset_water_temp_long <- onset_water_temp %>% 
+  gather(key="site",value="onset_wtr_temp",c(coffin,fichter,newbury,midge))
+
+#Midge subset 2005-2017
+#Year = 2008
+#Month = 
+
+onset_day_summary <- onset_water_temp_long %>% 
+  mutate(month = month(datetime)) %>%
+  mutate(day = day(datetime)) %>% 
+  mutate(hour = hour(datetime)) %>% 
+  group_by(year,month,day,hour) %>% 
+  summarize_all(funs(mean,min,max,median), na.rm = T)
+
+#2008:June 17 13:00 - Sep 16 23:00
+#2010: May 27 14:00 - sep 22 9:00
+#2011: June 2 7:00 - Sep 22 8:00
+#2012: May 24 13:00 - Sep 27 8:00
+
+
+buoy <- buoy_water_temp %>% 
+  mutate(year = year(datetime)) %>% 
+  mutate(month = month(datetime)) %>%
+  mutate(day = day(datetime)) %>% 
+  mutate(hour = hour(datetime)) %>% 
+  #filter(location=="loon") %>% 
+  filter(year == 2016) #%>% 
+  #filter(month %in% c(3,4,5,6,7,8,9,10))
+
+sum(is.na(buoy$TempC_1p5m))
+
+#Hourly summary of buoy water temp at 0.5 m, 1 m, 1.5 m
+buoy_hourly <- buoy %>% 
+  select(year,month,day,hour,TempC_1p5m) %>% 
+  group_by(year,month,day,hour) %>% 
+  summarize_all(funs(mean, median), na.rm = T)
+  #filter(datetime_mean > "2008-06-17 08:25:00") %>% 
+  #filter(datetime_mean < "2009-09-21 06:25:00")
+  #filter(datetime_mean > "2010-05-27 09:25:00") %>% 
+  #filter(datetime_mean < "2010-09-22 06:25:00")
+  #filter(datetime_mean > "2011-06-02 03:25:00") %>% 
+  #filter(datetime_mean < "2011-09-22 05:25:00")
+  #filter(datetime_mean > "2012-05-24 08:25:00") %>% 
+  #filter(datetime_mean < "2012-09-27 05:25:00")
+
+buoy_daily <- buoy %>% 
+  select(year,month,day,TempC_1p5m) %>% 
+  group_by(year,month,day) %>% 
+  summarize_all(funs(mean,min,max,median), na.rm = T)
+
+buoy_daily_final <- replace(buoy_daily,buoy_daily == Inf|buoy_daily == -Inf, NA)
+
+write.csv(buoy_daily_final, "~/Desktop/buoy_daily_final.csv",row.names = F)
+
+# Join buoy and onset datasets
+buoy_onset_join <- left_join(buoy_hourly,onset,by=c("year", "month","day", "hour"))
+onset_buoy_all <- left_join(onset,buoy_hourly,by=c("year", "month","day", "hour"))
+
+onset_buoy <- onset_buoy_all %>% 
+  select(-c(datetime_mean,datetime_median)) %>% 
+  #select(-c(datetime_mean,datetime_median,TempC_1p5m_mean,TempC_1p5m_median)) %>% 
+  #filter(site=="coffin") %>% 
+  filter(month == 9)
+
+#2008 remove NA
+onset_buoy <- na.omit(onset_buoy)
+
+fit1 <- lm(onset_wtr_temp ~ TempC_1p5m_mean, data = onset_buoy_filter)
+summary(fit1)
+#equation: onset = buoy*0.961 + 0.95, r2=0.879 #all months
+#equation: onset = buoy*0.853 + 2.97, r2=0.405 #just June
+
+# Linear model function to text annotation ####
+lm_labels <- function(dat) {
+  mod <- lm(onset_wtr_temp ~ TempC_1p5m_mean, data = dat)
+  formula <- sprintf("italic(y) == %.2f %+.2f * italic(x)",
+                     round(coef(mod)[1],2), round(coef(mod)[2],2))
+  r <- cor(dat$TempC_1p5m_mean, dat$onset_wtr_temp)
+  r2 <- sprintf("italic(R^2) == %.2f", r^2)
+  data.frame(formula = formula, r2 = r2, stringsAsFactors = F)
+}
+
+library(plyr)
+labels <- ddply(onset_buoy, "site", lm_labels)
+labels
+
+ggplot(onset_buoy, aes(x=TempC_1p5m_mean,y=onset_wtr_temp))+ #,color=factor(month)))+
+  geom_point(size=4) +
+  #geom_abline(slope = 1.09, intercept = -1.19, size=1, linetype=1)+ #best fit line
+  geom_abline(slope = 1, intercept = 0, size=2, linetype =2)+ #1:1 line
+  geom_smooth(method = "lm")+ #, se = FALSE)+
+  labs(y="Onset Logger Water Temp (°C)", x="Hourly Mean Buoy 1.5 m Water Temp (°C)",color="Month",title = "May 2012")+
+  #xlim(19,27)+
+  #ylim(19,27)+
+  #geom_text(x = 20.5, y=17.5, aes(label = formula), data = labels, parse = T, hjust = 0)+
+  #geom_text(x = 20.5, y=17, aes(label = r2), data = labels, parse = T, hjust = 0)+
+  geom_text(x = 22, y= 19, aes(label = formula), data = labels, parse = T, hjust = 0)+
+  geom_text(x = 22, y= 18.5, aes(label = r2), data = labels, parse = T, hjust = 0)+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=18),
+        axis.title.y = element_text(size=18),
+        legend.title = element_text(size=18),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=18,color="black"),
+        strip.text = element_text(size=18,color="black"))+
+  theme(panel.border=element_blank(),
+        axis.line = element_line(color="black"),
+        plot.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  facet_wrap(~site)
+
+ggsave("All_June_2008.pdf", width = 11, height = 8.5)
+ggsave("All_Sep_2008.pdf", width = 11, height = 8.5)
+ggsave("All_Sep_2009.pdf", width = 11, height = 8.5)
+ggsave("All_May_2010.pdf", width = 11, height = 8.5)
+ggsave("All_Sep_2010.pdf", width = 11, height = 8.5)
+ggsave("All_June_2011.pdf", width = 11, height = 8.5)
+ggsave("All_Sep_2011.pdf", width = 11, height = 8.5)
+ggsave("All_May_2012.pdf", width = 11, height = 8.5)
+ggsave("All_Sep_2012.pdf", width = 11, height = 8.5)
+ggsave("All_May_2013.pdf", width = 11, height = 8.5)
+ggsave("All_Sep_2013.pdf", width = 11, height = 8.5)
+ggsave("All_June_2014.pdf", width = 11, height = 8.5)
+ggsave("All_Sep_2014.pdf", width = 11, height = 8.5)
+ggsave("All_June_2015.pdf", width = 11, height = 8.5)
+ggsave("All_Sep_2015.pdf", width = 11, height = 8.5)
+ggsave("All_June_2016.pdf", width = 11, height = 8.5)
+ggsave("All_Sep_2016.pdf", width = 11, height = 8.5)
+ggsave("All_June-Sep_2016.pdf", width = 11, height = 8.5)
+
+# Test interp with June vs. all months ####
+onset_buoy_filter_interp <- buoy_onset_join %>% 
+  mutate(coffin_onset_interp =  -0.66 +1.03*TempC_1p5m_mean) %>% 
+  mutate(fichter_onset_interp = 0.35 +0.98 *TempC_1p5m_mean) %>% 
+  mutate(midge_onset_interp = 0.30 +1.00 *TempC_1p5m_mean) %>% 
+  mutate(newbury_onset_interp = -1.46 +1.07 *TempC_1p5m_mean) %>% 
+  select(year,month,day,coffin_onset_interp,fichter_onset_interp,midge_onset_interp,newbury_onset_interp) %>%
+  group_by(year,month,day) %>% 
+  summarize_all(funs(mean,min,max,median), na.rm = T) %>% 
+  select(year,month,day,starts_with("coffin"),starts_with("fichter"),starts_with("midge"),starts_with("newbury")) %>% 
+  filter(month==10 & day %in% c(5))
+
+# Schmidt and Gloeo correlations ####
+
+# Read in schmidt data
+sunapee_schmidt_stability <- readRDS("~/Documents/Gloeo Bayesian Modeling/GLEON_Bayesian_WG/Datasets/Sunapee/Stability_metrics/sunapee_schmidt_stability.rds")
+
+sunapee_schmidt_stability_2015_summary <- sunapee_schmidt_stability[-c(1:6),] %>% 
+  mutate(date = date(datetime)) %>% 
+  mutate(year = year(datetime)) %>% 
+  filter(year==2017) %>% 
+  select(-year) %>% 
+  #mutate(month = month(datetime)) %>% 
+  #mutate(day = day(datetime)) %>% 
+  #mutate(hour = hour(datetime)) %>% 
+  group_by(date) %>% 
+  summarize_all(funs(mean, max,min, median, sd), na.rm = T) %>% 
+  select(-c(starts_with("datetime_")))
+
+sunapee_schmidt_stability_2015_summary <- replace(sunapee_schmidt_stability_daily_summary,sunapee_schmidt_stability_2015_summary == Inf|sunapee_schmidt_stability_daily_summary == -Inf, NA)
+
+write_csv(sunapee_schmidt_stability_2015_summary, "~/Desktop/sunapee_schmidt_stability_2015_summary.csv") #Fix Sep 6th & 15 min data holes
+
+
+#drop days with less than 75% of the data = 144 obs/day * 0.75 = 108 for 10 min data, 15 min data in 2014-2016,  -----
+sumfun <- function(x, ...){
+  c(mean=mean(x, na.rm=TRUE, ...),max=max(x, na.rm=TRUE, ...), min=min(x, na.rm=TRUE, ...), 
+    median=median(x, na.rm=TRUE, ...), sd=sd(x, na.rm=TRUE, ...), obs=sum(!is.na(x)))}
+sunapee_schmidt_stability.df  <- as.data.frame(sunapee_schmidt_stability_daily_summary)
+str(sunapee_schmidt_stability.df)
+
+schmidt_day <- summaryBy(schmidt.stability ~ date, data=sunapee_schmidt_stability.df, FUN=sumfun)
+
+schmidt_day_v2 <- replace(schmidt_day,schmidt_day == Inf|schmidt_day == -Inf, NA)
+
+ix=which(schmidt_day_v2$schmidt.stability.obs <108)
+for (i in c('schmidt.stability.mean', 'schmidt.stability.max', 'schmidt.stability.min', 'schmidt.stability.median', 'schmidt.stability.sd'))
+  {schmidt_day_v2[ix,i]=NA}
+
+sum(is.na(sunapee_schmidt_stability_daily_summary))
+
+gloeo_day <- gloeo %>% 
+  mutate(day = day(date))
+
+gloeo_schmidt <- left_join(gloeo,schmidt_day_v2,by=c("date"))
+
+gloeo_schmidt_Midge <- gloeo_schmidt %>% 
+  filter(site=="Midge") %>% 
+  #filter(year>2006) %>% 
+  #filter(month==8) %>% 
+  mutate(log_gloeo = log10(totalperL+.0036)) %>% 
+  mutate(schmidt.stability_range = schmidt.stability.max - schmidt.stability.min) %>% 
+  mutate(schmidt.stability_CV = schmidt.stability.sd/schmidt.stability.mean) 
+
+write_csv(gloeo_schmidt_Midge, "~/Desktop/gloeo_schmidt_Midge_v2.csv") #Fix Sep 6th & 15 min data holes
+
+write_csv(schmidt_day_v2, "~/Desktop/schmidt_day_v2.csv")
+
+gloeo_schmidt_Midge <- read_csv("Datasets/Sunapee/SummarizedData/gloeo_schmidt_Midge_14Aug2019.csv")
+
+gloeo_schmidt_Midge_1weeklag <- read_csv("Datasets/Sunapee/SummarizedData/gloeo_schmidt_Midge_final-1weeklag.csv")
+
+str(gloeo_schmidt_Midge_1weeklag)
+
+# calculate week to week difference in schmidt ####
+gloeo_schmidt_Midge_subset <- gloeo_schmidt_Midge %>% 
+  select(date,log_gloeo,starts_with("schmidt")) %>% 
+  filter(schmidt.stability.max!="NA")
+  
+write_csv(gloeo_schmidt_Midge_subset, "~/Desktop/gloeo_schmidt_Midge_subset.csv")
+gloeo_schmidt_Midge_subset <- read_csv("Datasets/Sunapee/SummarizedData/gloeo_schmidt_Midge_subset.csv")
+  
+schmidt_mean_diff <- vector("double", nrow(gloeo_schmidt_Midge_subset))  # 1. output
+schmidt_max_diff <- vector("double", nrow(gloeo_schmidt_Midge_subset))  # 1. output
+schmidt_min_diff <- vector("double", nrow(gloeo_schmidt_Midge_subset))  # 1. output
+
+for (i in 1:nrow(gloeo_schmidt_Midge_subset)) {
+  schmidt_mean_diff[i+1] <- gloeo_schmidt_Midge_subset$schmidt.stability.mean[i+1] - gloeo_schmidt_Midge_subset$schmidt.stability.mean[i]
+  schmidt_max_diff[i+1] <- gloeo_schmidt_Midge_subset$schmidt.stability.max[i+1] - gloeo_schmidt_Midge_subset$schmidt.stability.max[i]
+  schmidt_min_diff[i+1] <- gloeo_schmidt_Midge_subset$schmidt.stability.min[i+1] - gloeo_schmidt_Midge_subset$schmidt.stability.min[i]
+  schmidt_output <- data.frame(schmidt.stability_mean_diff = schmidt_mean_diff, schmidt.stability_max_diff = schmidt_max_diff, schmidt.stability_min_diff = schmidt_min_diff)
+}
+
+write_csv(schmidt_output, "~/Desktop/schmidt_output.csv")
+
+# schmidt plots ####
+gloeo_schmidt_Midge_noNA <- gloeo_schmidt_Midge_1weeklag %>% 
+  filter(schmidt.stability.max!="NA")
+
+gloeo_schmidt_Midge_noNA <- gloeo_schmidt_Midge_subset %>% 
+  mutate(year = year(date)) %>% 
+  mutate(month = month(date)) %>% 
+  filter(schmidt.stability_max_diff!="NA")
+  
+str(gloeo_schmidt_Midge_noNA)
+
+lm_labels <- function(dat) {
+  mod <- lm(log_gloeo ~ schmidt.stability_CV, data = dat)
+  formula <- sprintf("italic(y) == %.2f %+.2f * italic(x)",
+                     round(coef(mod)[1],2), round(coef(mod)[2],2))
+  r <- cor(dat$log_gloeo, dat$schmidt.stability_CV)
+  r2 <- sprintf("italic(R^2) == %.2f", r^2)
+  data.frame(formula = formula, r2 = r2, stringsAsFactors = F)
+}
+
+library(plyr)
+labels <- ddply(gloeo_schmidt_Midge_noNA, "year", lm_labels)
+labels
+
+
+ggplot(gloeo_schmidt_Midge_noNA, aes(x=schmidt.stability_range,y=log_gloeo))+ #,color=month))+ #,color=factor(month)))+ #Added 1/2 *detection limit (1/140) to log
+  geom_point(size=4) +
+  #geom_abline(slope = 1.09, intercept = -1.19, size=1, linetype=1)+ #best fit line
+  #geom_abline(slope = 1, intercept = 0, size=2, linetype =2)+ #1:1 line
+  geom_smooth(method = "lm")+ #, se = FALSE)+
+  #geom_smooth(method = "loess")+ #, se = FALSE)+
+  labs(y="Log Gloeo (colonies/L)", x="1 week LAG RANGE Schmidt Stability",color="Month",title = "Midge")+
+  scale_color_gradient(limits=c(5,10), low = "blue",high = "red")+
+  #xlim(-1,1)+
+  #ylim(19,27)+
+  geom_text(x = 300, y=-2.75, aes(label = formula), data = labels, parse = T, hjust = 0)+
+  geom_text(x = 400, y=-2, aes(label = r2), data = labels, parse = T, hjust = 0)+
+  #geom_text(x = 19, y= 22.5, aes(label = formula), data = labels, parse = T, hjust = 0)+
+  #geom_text(x = 19, y= 22, aes(label = r2), data = labels, parse = T, hjust = 0)+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=18),
+        axis.title.y = element_text(size=18),
+        legend.title = element_text(size=18),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=18,color="black"),
+        strip.text = element_text(size=18,color="black"))+
+  theme(panel.border=element_blank(),
+        axis.line = element_line(color="black"),
+        plot.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  facet_wrap(~year)
+
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_MaxSchmidt_Midge-month.jpeg", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_MinSchmidt_Midge.jpeg", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_RangeSchmidt_Midge.jpeg", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_MeanSchmidt_Midge.jpeg", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_SDSchmidt_Midge.jpeg", width = 11, height = 8.5)
+
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Diff_MaxSchmidt_Midge-month.jpeg", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Diff_MinSchmidt_Midge.jpeg", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Diff_MeanSchmidt_Midge.jpeg", width = 11, height = 8.5)
+
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_MaxSchmidt_Midge-1weeklag.jpeg", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_MinSchmidt_Midge-1weeklag.jpeg", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_MeanSchmidt_Midge-1weeklag.jpeg", width = 11, height = 8.5)
+
+
+data_cal_month <- data %>%
+  mutate(month=month(date)) %>% 
+  mutate(dayofmonth=day(date)) %>% 
+  mutate(week=week(date)) %>% 
+  mutate(dayofyr = yday(date))
+
+View(data_cal_month)
+
+write.csv(data_cal_month,"~/Desktop/all_data_NA.csv")
+
+# Test for water temp lags ####
+
+# Final Midge gloeo + water temp data with SD and onset interp added
+gloeo_Midge_watertemp_day <- read_csv("Datasets/Sunapee/SummarizedData/gloeo_Midge_watertemp_day_14Aug2019.csv")
+
+#1 week lag
+gloeo_Midge_1week = read_csv("Datasets/Sunapee/SummarizedData/gloeo_Midge_watertemp_day-1weeklag_14Aug2019.csv")
+
+# Real 1 week lag
+gloeo_Midge_1week_lag <- gloeo_Midge_watertemp_day %>% 
+  mutate(date_1weeklag = date - dweeks(1)) %>% 
+  select(date, log_gloeo, date_1weeklag)
+
+onset_watertemp_day <-  read_csv("Datasets/Sunapee/SummarizedData/Onset_watertemp_day_long_14Aug2019.csv")
+
+onset_watertemp_day_Midge <- onset_watertemp_day %>% 
+  filter(site=="midge") %>% 
+  rename(date_1weeklag = date)
+
+#Join water temp with 1 week lag date
+join_gloeo_Midge_1week_lag <- left_join(gloeo_Midge_1week_lag, onset_watertemp_day_Midge,by = "date_1weeklag")
+
+write_csv(join_gloeo_Midge_1week_lag, "Datasets/Sunapee/SummarizedData/join_gloeo_Midge_1week_lag-real.csv")
+
+
+join_gloeo_Midge_1week_lag_yr <- join_gloeo_Midge_1week_lag %>% 
+  mutate(year = year(date))
+
+# Weekly summary water temp data ###
+gloeo_Midge_watertemp_week <- read_csv("Datasets/Sunapee/SummarizedData/gloeo_Midge_watertemp_week.csv")
+
+# filter out weeks with less than 75% obs, 126
+gloeo_Midge_watertemp_week <- gloeo_Midge_watertemp_week %>% 
+  filter(watertemp_weekly_obs > 125)
+
+
+# calculate week to week difference in water temp - mean,min, max ####
+wtr_mean_diff <- vector("double", nrow(gloeo_Midge_watertemp_day))  # 1. output
+wtr_max_diff <- vector("double", nrow(gloeo_Midge_watertemp_day))  # 1. output
+wtr_min_diff <- vector("double", nrow(gloeo_Midge_watertemp_day))  # 1. output
+
+for (i in 1:nrow(gloeo_Midge_watertemp_day)) {
+  wtr_mean_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_mean_interp[i+1] - gloeo_Midge_watertemp_day$watertemp_mean_interp[i]
+  wtr_max_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_max_interp[i+1] - gloeo_Midge_watertemp_day$watertemp_max_interp[i]
+  wtr_min_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_min_interp[i+1] - gloeo_Midge_watertemp_day$watertemp_min_interp[i]
+  wtr_diff_output <- data.frame(date = gloeo_Midge_watertemp_day$date,log_gloeo = gloeo_Midge_watertemp_day$log_gloeo, wtr_mean_diff = wtr_mean_diff[-230], wtr_max_diff = wtr_max_diff[-230], wtr_min_diff = wtr_min_diff[-230])
+}
+
+write_csv(wtr_diff_output, "~/Desktop/wtr_diff_output.csv")
+wtr_diff_output = read_csv("Datasets/Sunapee/SummarizedData/wtr_diff_output.csv")
+
+# Water Temp Plots ####
+#Remove missing values for lm function
+gloeo_Midge_noNA <- gloeo_Midge_watertemp_day %>% 
+  filter(watertemp_daily_min!="NA")
+
+gloeo_Midge_noNA <- gloeo_Midge_1week %>% 
+  filter(watertemp_daily_sd!="NA")
+
+gloeo_Midge_noNA <- wtr_diff_output %>% 
+  mutate(year = year(date)) %>% 
+  filter(wtr_mean_diff!="NA")
+
+lm_labels <- function(dat) {
+  mod <- lm(log_gloeo ~ watertemp_daily_sd, data = dat)
+  formula <- sprintf("italic(y) == %.2f %+.2f * italic(x)",
+                     round(coef(mod)[1],2), round(coef(mod)[2],2))
+  r <- cor(dat$log_gloeo, dat$watertemp_daily_sd)
+  r2 <- sprintf("italic(R^2) == %.2f", r^2)
+  data.frame(formula = formula, r2 = r2, stringsAsFactors = F)
+}
+
+labels <- ddply(gloeo_Midge_noNA, "year", lm_labels)
+labels
+
+ggplot(gloeo_Midge_noNA, aes(x=watertemp_daily_sd,y=log_gloeo))+ #,color=factor(month)))+
+  geom_point(size=4) +
+  #geom_abline(slope = 1.09, intercept = -1.19, size=1, linetype=1)+ #best fit line
+  #geom_abline(slope = 1, intercept = 0, size=2, linetype =2)+ #1:1 line
+  geom_smooth(method = "lm")+ #, se = FALSE)+
+  #geom_smooth(method = "loess")+ #, se = FALSE)+
+  labs(y="Log Gloeo (colonies/L)", x="Weekly SD Water Temp",color="Month",title = "Midge")+
+  scale_color_gradient(limits=c(5,10), low = "blue",high = "red")+
+  #xlim(19,27)+
+  #ylim(0,20)+
+  geom_text(x = 20, y=-2, aes(label = formula), data = labels, parse = T, hjust = 0)+
+  geom_text(x = 20, y=-2.75, aes(label = r2), data = labels, parse = T, hjust = 0)+
+  #geom_text(x = 1, y= -3, aes(label = formula), data = labels, parse = T, hjust = 0)+
+  #geom_text(x = 3, y= -3.75, aes(label = r2), data = labels, parse = T, hjust = 0)+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=18),
+        axis.title.y = element_text(size=18),
+        legend.title = element_text(size=18),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=18,color="black"),
+        strip.text = element_text(size=18,color="black"))+
+  theme(panel.border=element_blank(),
+        axis.line = element_line(color="black"),
+        plot.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  facet_wrap(~year)
+
+# Daily Plots
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Mean_Wtr_Temp.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Median_Wtr_Temp.pdf", width = 11, height = 8.5) #worse than mean
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Min_Wtr_Temp-month.pdf", width = 11, height = 8.5)#best
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Max_Wtr_Temp.pdf", width = 11, height = 8.5)
+
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Mean_Wtr_Temp-1week-lag_real.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Min_Wtr_Temp-1week-lag-real.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Max_Wtr_Temp-1week-lag.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_SD_Wtr_Temp-1week-lag.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Range_Wtr_Temp-1week-lag.pdf", width = 11, height = 8.5)
+
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Mean_Wtr_Temp-1week-Diff.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Min_Wtr_Temp-1week-Diff.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Max_Wtr_Temp-1week-Diff.pdf", width = 11, height = 8.5)
+
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Sum_PAR.pdf", width = 11, height = 8.5)
+
+#weekly plots
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Mean_Wtr_Temp-week.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Median_Wtr_Temp-week.pdf", width = 11, height = 8.5) #worse than mean
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Min_Wtr_Temp-week.pdf", width = 11, height = 8.5)#best
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Max_Wtr_Temp-week.pdf", width = 11, height = 8.5)
+
+
+
+# Air temp vs. gloeo ####
+
+prism_midge <- read_csv("Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/PRISM_met_1981_2017_midge.csv", skip = 10)
+
+# Subset for 2005-2016
+prism_midge_2005 <- prism_midge %>% #[1:13514,]
+  mutate(year = year(Date)) %>% 
+  #mutate(month = month(Date)) %>% 
+  #mutate(dayofmonth = day(Date)) %>%
+  rename(date = Date) %>% 
+  filter(year > 2004 & year < 2017) 
+
+gloeo_Midge_prism <- left_join(gloeo_Midge_watertemp_day,prism_midge_2005,by=c("date","year"))
+
+
+lm_labels <- function(dat) {
+  mod <- lm(log_gloeo ~ airtemp_max_degrees_C, data = dat)
+  formula <- sprintf("italic(y) == %.2f %+.2f * italic(x)",
+                     round(coef(mod)[1],2), round(coef(mod)[2],2))
+  r <- cor(dat$airtemp_max_degrees_C, dat$log_gloeo)
+  r2 <- sprintf("italic(R^2) == %.2f", r^2)
+  data.frame(formula = formula, r2 = r2, stringsAsFactors = F)
+}
+
+sp <- cor(gloeo_Midge_prism$airtemp_max_degrees_C, gloeo_Midge_prism$log_gloeo, method = "pearson")
+sp
+sp^2
+
+labels <- ddply(gloeo_Midge_prism, "year", lm_labels)
+labels
+
+ggplot(gloeo_Midge_prism, aes(x=airtemp_max_degrees_C,y=log_gloeo))+ #,color=factor(month)))+
+  geom_point(size=4) +
+  #geom_abline(slope = 1.09, intercept = -1.19, size=1, linetype=1)+ #best fit line
+  #geom_abline(slope = 1, intercept = 0, size=2, linetype =2)+ #1:1 line
+  geom_smooth(method = "lm")+ #, se = FALSE)+
+  #geom_smooth(method = "loess")+ #, se = FALSE)+
+  labs(y="Log Gloeo (colonies/L)", x="Max Air Temp (°C)",color="Month",title = "Midge")+
+  #xlim(19,27)+
+  #ylim(19,27)+
+  geom_text(x = 20, y=-2.75, aes(label = formula), data = labels, parse = T, hjust = 0)+
+  geom_text(x = 25, y=-3.25, aes(label = r2), data = labels, parse = T, hjust = 0)+
+  #geom_text(x = 19, y= 22.5, aes(label = formula), data = labels, parse = T, hjust = 0)+
+  #geom_text(x = 19, y= 22, aes(label = r2), data = labels, parse = T, hjust = 0)+
+  theme_bw(base_family = "Times")+
+  theme(plot.title = element_text(size=24),
+        axis.title.x = element_text(size=18),
+        axis.title.y = element_text(size=18),
+        legend.title = element_text(size=18),
+        axis.text = element_text(size=18,color="black"),
+        legend.text = element_text(size=18,color="black"),
+        strip.text = element_text(size=18,color="black"))+
+  theme(panel.border=element_blank(),
+        axis.line = element_line(color="black"),
+        plot.background = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank())+
+  facet_wrap(~year)
+
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Min_Air_Temp.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Mean_Air_Temp.pdf", width = 11, height = 8.5)
+ggsave("~/Desktop/Gloeo Plots/LogGloeo_Max_Air_Temp.pdf", width = 11, height = 8.5)
