@@ -15,7 +15,7 @@ source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_RandomWalk_RandomYear' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Seasonal_Airtemp_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
