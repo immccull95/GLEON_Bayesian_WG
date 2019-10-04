@@ -18,7 +18,7 @@ model{
     
     #process model for Gloeo
     mu[k,j]~dnorm(lambda[k,j],tau_proc) 
-    lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*Schmidt[k,j-1] 
+    lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*(Schmidt[k,j] - Schmidt[k,j-1]) 
 
   }
     

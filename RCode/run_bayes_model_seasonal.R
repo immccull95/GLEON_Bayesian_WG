@@ -15,7 +15,7 @@ source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Schmidt_Temp' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Seasonal_AR_Schmidt_Diff' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -139,140 +139,6 @@ mus=c(grep("mu\\[1,", colnames(out)),grep("mu\\[2,", colnames(out)),
       grep("mu\\[5,", colnames(out)),grep("mu\\[6,", colnames(out)))
 mu = out[,mus]
 ci <- exp(apply(mu,2,quantile,c(0.025,0.5,0.975)))
-
-#intervals for temperature
-mu_Ts=c(grep("mu_T\\[1,", colnames(out)),grep("mu_T\\[2,", colnames(out)),
-        grep("mu_T\\[3,", colnames(out)),grep("mu_T\\[4,", colnames(out)),
-        grep("mu_T\\[5,", colnames(out)),grep("mu_T\\[6,", colnames(out)))
-mu_T = out[,mu_Ts] 
-T_ci <- apply(mu_T,2,quantile,c(0.025,0.5,0.975))
-
-#temperature plot
-png(file=file.path(my_directory,paste(site,paste0(model_name,'_watertemp_CI.png'), sep = '_')), res=300, width=20, height=15, units='cm')
-par(mfrow = c(3,2), oma = c(1,1,5,1), mar = c(4,4,2,2)+0.1)
-
-#2009
-plot(times[1:20],T_ci[1,1:20],type='n', ylab="Temperature", ylim = c(min(T_ci[1,1:20], na.rm = TRUE),max(T_ci[3,1:20], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[1:20],T_ci[1,1:20],T_ci[3,1:20],col="lightBlue")
-lines(times[1:20],T_ci[2,1:20], lty = 2, lwd = 1)
-points(times[1:20],Temp[1,], pch = '+')
-legend("topleft",legend = "2009", bty = "n")
-
-#2010
-plot(times[21:40],T_ci[1,21:40],type='n', ylab="Temperature", ylim = c(min(T_ci[1,21:40], na.rm = TRUE),max(T_ci[3,21:40], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[21:40],T_ci[1,21:40],T_ci[3,21:40],col="lightBlue")
-lines(times[21:40],T_ci[2,21:40], lty = 2, lwd = 1)
-points(times[21:40],Temp[2,], pch = '+')
-legend("topleft",legend = "2010", bty = "n")
-
-#2011
-plot(times[41:60],T_ci[1,41:60],type='n', ylab="Temperature", ylim = c(min(T_ci[1,41:60], na.rm = TRUE),max(T_ci[3,41:60], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[41:60],T_ci[1,41:60],T_ci[3,41:60],col="lightBlue")
-lines(times[41:60],T_ci[2,41:60], lty = 2, lwd = 1)
-points(times[41:60],Temp[3,], pch = '+')
-legend("topleft",legend = "2011", bty = "n")
-
-#2012
-plot(times[61:80],T_ci[1,61:80],type='n', ylab="Temperature", ylim = c(min(T_ci[1,61:80], na.rm = TRUE),max(T_ci[3,61:80], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[61:80],T_ci[1,61:80],T_ci[3,61:80],col="lightBlue")
-lines(times[61:80],T_ci[2,61:80], lty = 2, lwd = 1)
-points(times[61:80],Temp[4,], pch = '+')
-legend("topleft",legend = "2012", bty = "n")
-
-#2013
-plot(times[81:100],T_ci[1,81:100],type='n', ylab="Temperature", ylim = c(min(T_ci[1,81:100], na.rm = TRUE),max(T_ci[3,81:100], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[81:100],T_ci[1,81:100],T_ci[3,81:100],col="lightBlue")
-lines(times[81:100],T_ci[2,81:100], lty = 2, lwd = 1)
-points(times[81:100],Temp[5,], pch = '+')
-legend("topleft",legend = "2013", bty = "n")
-
-#2014
-plot(times[101:120],T_ci[1,101:120],type='n', ylab="Temperature", ylim = c(min(T_ci[1,101:120], na.rm = TRUE),max(T_ci[3,101:120], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[101:120],T_ci[1,101:120],T_ci[3,101:120],col="lightBlue")
-lines(times[101:120],T_ci[2,101:120], lty = 2, lwd = 1)
-points(times[101:120],Temp[6,], pch = '+')
-legend("topleft",legend = "2014", bty = "n")
-
-dev.off()
-
-#upload plot to Google Drive folder
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_watertemp_CI.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics/Seasonal_for_loop",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
-
-
-#intervals for Schmidt
-mu_Ss=c(grep("mu_S\\[1,", colnames(out)),grep("mu_S\\[2,", colnames(out)),
-        grep("mu_S\\[3,", colnames(out)),grep("mu_S\\[4,", colnames(out)),
-        grep("mu_S\\[5,", colnames(out)),grep("mu_S\\[6,", colnames(out)))
-mu_S = out[,mu_Ss] 
-S_ci <- apply(mu_S,2,quantile,c(0.025,0.5,0.975))
-
-#temperature plot
-png(file=file.path(my_directory,paste(site,paste0(model_name,'_Schmidt_CI.png'), sep = '_')), res=300, width=20, height=15, units='cm')
-par(mfrow = c(3,2), oma = c(1,1,5,1), mar = c(4,4,2,2)+0.1)
-
-#2009
-plot(times[1:20],S_ci[1,1:20],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,1:20], na.rm = TRUE),max(S_ci[3,1:20], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[1:20],S_ci[1,1:20],S_ci[3,1:20],col="lightBlue")
-lines(times[1:20],S_ci[2,1:20], lty = 2, lwd = 1)
-points(times[1:20],Schmidt[1,], pch = '+')
-legend("topleft",legend = "2009", bty = "n")
-
-#2010
-plot(times[21:40],S_ci[1,21:40],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,21:40], na.rm = TRUE),max(S_ci[3,21:40], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[21:40],S_ci[1,21:40],S_ci[3,21:40],col="lightBlue")
-lines(times[21:40],S_ci[2,21:40], lty = 2, lwd = 1)
-points(times[21:40],Schmidt[2,], pch = '+')
-legend("topleft",legend = "2010", bty = "n")
-
-#2011
-plot(times[41:60],S_ci[1,41:60],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,41:60], na.rm = TRUE),max(S_ci[3,41:60], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[41:60],S_ci[1,41:60],S_ci[3,41:60],col="lightBlue")
-lines(times[41:60],S_ci[2,41:60], lty = 2, lwd = 1)
-points(times[41:60],Schmidt[3,], pch = '+')
-legend("topleft",legend = "2011", bty = "n")
-
-#2012
-plot(times[61:80],S_ci[1,61:80],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,61:80], na.rm = TRUE),max(S_ci[3,61:80], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[61:80],S_ci[1,61:80],S_ci[3,61:80],col="lightBlue")
-lines(times[61:80],S_ci[2,61:80], lty = 2, lwd = 1)
-points(times[61:80],Schmidt[4,], pch = '+')
-legend("topleft",legend = "2012", bty = "n")
-
-#2013
-plot(times[81:100],S_ci[1,81:100],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,81:100], na.rm = TRUE),max(S_ci[3,81:100], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[81:100],S_ci[1,81:100],S_ci[3,81:100],col="lightBlue")
-lines(times[81:100],S_ci[2,81:100], lty = 2, lwd = 1)
-points(times[81:100],Schmidt[5,], pch = '+')
-legend("topleft",legend = "2013", bty = "n")
-
-
-#2014
-plot(times[101:120],S_ci[1,101:120],type='n', ylab="Schmidt stability", ylim = c(min(S_ci[1,101:120], na.rm = TRUE),max(S_ci[3,101:120], na.rm = TRUE)),
-     main="",xlab = "")
-ciEnvelope(times[101:120],S_ci[1,101:120],S_ci[3,101:120],col="lightBlue")
-lines(times[101:120],S_ci[2,101:120], lty = 2, lwd = 1)
-points(times[101:120],Schmidt[6,], pch = '+')
-legend("topleft",legend = "2014", bty = "n")
-
-
-dev.off()
-
-#upload plot to Google Drive folder
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Schmidt_CI.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics/Seasonal_for_loop",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
-
 
 
 ## One step ahead prediction intervals
