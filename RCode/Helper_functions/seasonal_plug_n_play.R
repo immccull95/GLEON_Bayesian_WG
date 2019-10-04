@@ -41,11 +41,11 @@ jags_plug_ins <- function(model_name){
   
   
 #Seasonal_Temperature_Obs_error
-  data.Seasonal_Temperature_Obs_error <- list(y=y, year_no = year_no,week_avg = week_avg, beta.m1=0,  beta.m2=0, beta.v1=0.001, beta.v2=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84, x_T_ic = 14, tau_T_ic = 100)
-  variable.names.Seasonal_Temperature_Obs_error <- c("tau_proc", "beta1","beta2",  "tau_obs","tau_T_obs","tau_T_proc")
-  variable.namesout.Seasonal_Temperature_Obs_error <- c("tau_proc", "beta1", "beta2",  "mu", "tau_obs","tau_T_obs","mu_T", "tau_T_proc")
-  init.Seasonal_Temperature_Obs_error <- list(list(tau_proc=0.001, tau_obs = 0.1, tau_T_obs = 0.01, tau_T_proc = 0.01, beta1=-0.5, beta2=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_T_obs = 0.1,tau_T_proc = 0.1, beta1=0, beta2=0), list(tau_proc=1, tau_obs = 5,tau_T_obs = 1,tau_T_proc = 1, beta1=0.5,beta2=0.5))
-  params.Seasonal_Temperature_Obs_error <- c("tau_proc","beta1", "beta2","tau_obs","tau_T_obs","tau_T_proc")
+  data.Seasonal_Temperature_Obs_error <- list(y=y, year_no = year_no,week_avg = week_avg, beta.m1=0,  beta.m2=0, beta.v1=0.001, beta.v2=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84) #x_T_ic = 14, tau_T_ic = 100)
+  variable.names.Seasonal_Temperature_Obs_error <- c("tau_proc", "beta1","beta2",  "tau_obs","tau_T_proc")
+  variable.namesout.Seasonal_Temperature_Obs_error <- c("tau_proc", "beta1", "beta2",  "mu", "tau_obs", "tau_T_proc")
+  init.Seasonal_Temperature_Obs_error <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_T_proc = 0.01, beta1=-0.5, beta2=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_T_proc = 0.1, beta1=0, beta2=0), list(tau_proc=1, tau_obs = 5,tau_T_proc = 1, beta1=0.5,beta2=0.5))
+  params.Seasonal_Temperature_Obs_error <- c("tau_proc","beta1", "beta2","tau_obs","tau_T_proc")
   
 #Seasonal_AR_Temperature
   data.Seasonal_AR_Temperature <- list(y=y, year_no = year_no,week_avg = week_avg, beta.m1=0,  beta.m2=0,beta.m3=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84, x_T_ic = 14, tau_T_ic = 100)
@@ -159,7 +159,7 @@ mu_S = out[samp,mus_S]
 
 Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
 Schmidts=c(Schmidt[1,], Schmidt[2,], Schmidt[3,], Schmidt[4,], Schmidt[5,], Schmidt[6,])
-
+week_avg = week_avg
 # samp <- sample.int(nrow(out),nsamp)
 # mus=grep("mu", colnames(out))
 # mu = out[samp,mus] 
@@ -298,7 +298,6 @@ if(model_name=="Seasonal_AR"){
 if(model_name=="Seasonal_Temperature_Obs_error"){
   tau_proc = out[samp,grep("tau_proc",colnames(out))]
   tau_obs = out[samp,grep("tau_obs",colnames(out))]
-  tau_T_obs = out[samp,grep("tau_T_obs",colnames(out))]
   tau_T_proc = out[samp,grep("tau_T_proc",colnames(out))]
   beta1 = out[samp,grep("beta1",colnames(out))]
   beta2 = out[samp,grep("beta2",colnames(out))]
@@ -307,7 +306,6 @@ if(model_name=="Seasonal_Temperature_Obs_error"){
   year_no <- c(1:6)
   season_weeks <- c(1:20)
   mu_greps <- c("mu\\[1,","mu\\[2,","mu\\[3,","mu\\[4,","mu\\[5,","mu\\[6,")
-  mu_T_greps <- c("mu_T\\[1,","mu_T\\[2,","mu_T\\[3,","mu_T\\[4,","mu_T\\[5,","mu_T\\[6,")
   ts = rbind(1:20,21:40,41:60,61:80,81:100,101:120)
   lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
   Tempz = Temp
@@ -315,7 +313,7 @@ if(model_name=="Seasonal_Temperature_Obs_error"){
   for(k in 1:max(year_no)){
     
     mydata <- mu[,grep(mu_greps[k],colnames(mu))]
-    myTempdata <- mu_T[,grep(mu_T_greps[k],colnames(mu_T))]
+    #myTempdata <- mu_T[,grep(mu_T_greps[k],colnames(mu_T))]
 
     t <- ts[k,]
     
@@ -323,7 +321,7 @@ if(model_name=="Seasonal_Temperature_Obs_error"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*myTempdata[t[j]]}
+      if(is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*rnorm(nsamp,week_avg[j],tau_T_proc)}
       else{lambda[,t[j]] <- beta1 + beta2*Tempz[k,j] }
       
       pred.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
