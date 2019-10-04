@@ -25,7 +25,6 @@ model{
     #Loops through items in seasonal for-loop and defines initial conditions
     yr[k] ~ dnorm(0,tau_yr)
     mu[k,1] ~ dnorm(x_ic,tau_ic) #keep in mind you'll need to index like a matrix 
-    lambda[k,1]~ dnorm(x_ic, tau_ic)
     Temp[k,1]~dnorm(T_mean,tau_T_obs) #replace with n=1 for Temp
   
   }
