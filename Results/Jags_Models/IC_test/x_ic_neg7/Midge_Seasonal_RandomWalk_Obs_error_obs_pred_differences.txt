@@ -1,0 +1,8 @@
+[1] "Mean of difference between pred and obs"
+[1] -0.6228299
+[1] "Mean quantile of obs in distribution of pred"
+[1] 0.5555255
+[1] "Mean quantile of obs in distribution of pred including observation error"
+[1] 0.5501021
+[1] "Percent of time we are predicting negative Gloeo"
+[1] 0
