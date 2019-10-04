@@ -15,8 +15,8 @@ source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_RandomWalk_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
-model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
+model_name = 'Seasonal_AR' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model=paste0("RCode/Jags_Models/GLEON_poster/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
 #Edit nsamp to reflect a subset of total number of samples
@@ -24,7 +24,7 @@ nsamp = 1500
 
 #My local directory - use as a temporary file repository for plot files before uploading
 #to Google Drive for the team to see :)
-my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/Prelim_results_10AUG19"
+my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results"
 
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
@@ -78,7 +78,7 @@ jags.out <- run.jags(model = model,
                      monitor = jags_plug_ins$variable.namesout.model)
 
 #5) Save and Process Output
-write.jagsfile(jags.out, file=file.path("Results/Jags_Models/IC_test",paste(site,paste0(model_name,'.txt'), sep = '_')), 
+write.jagsfile(jags.out, file=file.path("Results/Jags_Models",paste(site,paste0(model_name,'.txt'), sep = '_')), 
                remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
 #this will create multiple plots if var names are different but doesn't create multiple
@@ -103,7 +103,7 @@ sum <- summary(jags.out, vars = jags_plug_ins$variable.names.model)
 DIC=dic.samples(j.model, n.iter=5000)
 
 #save results
-sink(file = file.path("Results/Jags_Models/IC_test",paste(site,paste0(model_name,'_param_summary.txt'), sep = '_')))
+sink(file = file.path("Results/Jags_Models",paste(site,paste0(model_name,'_param_summary.txt'), sep = '_')))
 print("Parameter summary")
 sum
 print("DIC")

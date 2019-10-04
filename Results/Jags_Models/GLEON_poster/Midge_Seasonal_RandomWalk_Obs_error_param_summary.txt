@@ -1,0 +1,11 @@
+[1] "Parameter summary"
+           Lower95    Median   Upper95      Mean        SD Mode
+tau_proc 0.3736629 0.5951178 0.8994658 0.6125501 0.1396055   NA
+tau_obs  0.9620431 1.5146396 2.1540963 1.5424147 0.3139707   NA
+               MCerr MC%ofSD SSeff      AC.10      psrf
+tau_proc 0.002673468     1.9  2727 0.03508291 0.9999361
+tau_obs  0.006153941     2.0  2603 0.03128915 1.0002661
+[1] "DIC"
+Mean deviance:  294.2 
+penalty 75.23 
+Penalized deviance: 369.5 
