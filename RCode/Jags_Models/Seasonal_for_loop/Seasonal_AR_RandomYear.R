@@ -15,10 +15,8 @@ model{
     
     #process model for Gloeo
     mu[k,j]~dnorm(lambda[k,j],tau_proc) 
-    lambda[k,j] <- beta1 + beta2*mu[k,j-1] + beta3*Temp[k,j] + yr[year_no[k]]
+    lambda[k,j] <- beta1 + beta2*mu[k,j-1] + yr[year_no[k]]
     
-    #process model for temperature
-    Temp[k,j]~dnorm(T_mean,tau_T_proc) #this is really obs error
   }
     
     #Loops through items in seasonal for-loop and defines initial conditions
@@ -30,9 +28,7 @@ model{
   tau_proc ~ dgamma(a_proc,r_proc)
   beta1 ~ dnorm(beta.m1,beta.v1) 
   beta2 ~ dnorm(beta.m2,beta.v2) 
-  beta3 ~ dnorm(beta.m3,beta.v3) 
   tau_yr ~ dgamma(0.01,0.01)
   tau_obs ~ dgamma(a_obs,r_obs)
-  tau_T_proc ~ dgamma(0.01, 0.01) 
-  
+
 }
