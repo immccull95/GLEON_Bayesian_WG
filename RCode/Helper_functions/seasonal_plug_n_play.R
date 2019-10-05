@@ -75,7 +75,7 @@ jags_plug_ins <- function(model_name){
   params.Seasonal_AR_Temp_Diff <- c("tau_proc","beta1", "beta2", "beta3","tau_obs","tau_T_proc")
   
 #Seasonal_Temperature_RandomYear_Obs_error
-  data.Seasonal_Temperature_RandomYear_Obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001)
+  data.Seasonal_Temperature_RandomYear_Obs_error <- list(y=y, year_no = year_no,week_avg = week_avg, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001)
   variable.names.Seasonal_Temperature_RandomYear_Obs_error <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","tau_obs","tau_T_proc")
   variable.namesout.Seasonal_Temperature_RandomYear_Obs_error <- c("tau_proc", "beta1", "beta2", "beta3", "mu", "tau_yr", "yr","tau_obs","tau_T_proc")
   init.Seasonal_Temperature_RandomYear_Obs_error <- list(list(tau_proc=0.001, tau_yr=0.001, tau_obs = 0.1, tau_T_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1, tau_yr=0.1, tau_obs = 1,tau_T_proc = 0.1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_yr=1, tau_obs = 5,tau_T_proc = 1, beta1=0.5,beta2=0.5,beta3=0.5))

@@ -18,7 +18,7 @@ model{
     lambda[k,j] <- beta1 + beta2*mu[k,j-1] + beta3*Temp[k,j] + yr[year_no[k]]
     
     #process model for temperature
-    Temp[k,j]~dnorm(T_mean,tau_T_proc) #this is really obs error
+    Temp[k,j]~dnorm(week_avg[j],tau_T_proc) #this is really obs error
   }
     
     #Loops through items in seasonal for-loop and defines initial conditions
