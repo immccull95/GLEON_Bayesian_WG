@@ -186,10 +186,10 @@ if(model_name=="Seasonal_RandomWalk"){
     for(j in 2:max(season_weeks)){
       
       #process model
-      pred.Seasonal_RandomWalk[,t[j]] = rnorm(nsamp,mydata[,j-1],tau_proc)
+      pred.Seasonal_RandomWalk[,t[j]] = rnorm(nsamp,mydata[,j-1],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_RandomWalk[,t[j]] = rnorm(nsamp,pred.Seasonal_RandomWalk[,t[j]],tau_obs)
+      pred_obs.Seasonal_RandomWalk[,t[j]] = rnorm(nsamp,pred.Seasonal_RandomWalk[,t[j]],sqrt(1/tau_obs))
       
     }
   }
@@ -217,10 +217,10 @@ for(k in 1:max(year_no)){
   for(j in 2:max(season_weeks)){
     
     #process model
-    pred.Seasonal_RandomWalk_Obs_error[,t[j]] = rnorm(nsamp,mydata[,j-1],tau_proc)
+    pred.Seasonal_RandomWalk_Obs_error[,t[j]] = rnorm(nsamp,mydata[,j-1],sqrt(1/tau_proc))
     
     #data model
-    pred_obs.Seasonal_RandomWalk_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_RandomWalk_Obs_error[,t[j]],tau_obs)
+    pred_obs.Seasonal_RandomWalk_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_RandomWalk_Obs_error[,t[j]],sqrt(1/tau_obs))
     
   }
  }
@@ -231,7 +231,6 @@ for(k in 1:max(year_no)){
 if(model_name=="Seasonal_RandomWalk_RandomYear"){
   tau_proc = out[samp,grep("tau_proc",colnames(out))]
   tau_obs = out[samp,grep("tau_obs",colnames(out))]
-  tau_yr = out[samp,grep("tau_yr",colnames(out))]
   pred.Seasonal_RandomWalk_RandomYear <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
   pred_obs.Seasonal_RandomWalk_RandomYear <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
   x<- matrix(NA, nrow=nsamp, ncol=ncol(mu))
@@ -252,10 +251,10 @@ if(model_name=="Seasonal_RandomWalk_RandomYear"){
       
       #process model
       x[,j] <- mydata[,j-1] + yr[,year_no[k]]
-      pred.Seasonal_RandomWalk_RandomYear[,t[j]] = rnorm(nsamp,x[,j],tau_proc)
+      pred.Seasonal_RandomWalk_RandomYear[,t[j]] = rnorm(nsamp,x[,j],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_RandomWalk_RandomYear[,t[j]] = rnorm(nsamp,pred.Seasonal_RandomWalk_RandomYear[,t[j]],tau_obs)
+      pred_obs.Seasonal_RandomWalk_RandomYear[,t[j]] = rnorm(nsamp,pred.Seasonal_RandomWalk_RandomYear[,t[j]],sqrt(1/tau_obs))
       
     }
   }
@@ -265,7 +264,6 @@ if(model_name=="Seasonal_RandomWalk_RandomYear"){
 if(model_name=="Seasonal_AR"){
   tau_proc = out[samp,grep("tau_proc",colnames(out))]
   tau_obs = out[samp,grep("tau_obs",colnames(out))]
-  tau_yr = out[samp,grep("tau_yr",colnames(out))]
   beta1 = out[samp,grep("beta1",colnames(out))]
   beta2 = out[samp,grep("beta2",colnames(out))]
   pred.Seasonal_AR <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
@@ -286,10 +284,10 @@ if(model_name=="Seasonal_AR"){
       
       #process model
       lambda[,t[j]] <- beta1 + beta2*mydata[,j-1] 
-      pred.Seasonal_AR[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_AR[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR[,t[j]] = rnorm(nsamp,pred.Seasonal_AR[,t[j]],tau_obs)
+      pred_obs.Seasonal_AR[,t[j]] = rnorm(nsamp,pred.Seasonal_AR[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -320,10 +318,10 @@ if(model_name=="Seasonal_AR_RandomYear"){
       
       #process model
       lambda[,t[j]] <- beta1 + beta2*mydata[,j-1] + yr[,year_no[k]]
-      pred.Seasonal_AR_RandomYear[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_AR_RandomYear[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_RandomYear[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_RandomYear[,t[j]],tau_obs)
+      pred_obs.Seasonal_AR_RandomYear[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_RandomYear[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -356,13 +354,13 @@ if(model_name=="Seasonal_Temperature_Obs_error"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*rnorm(nsamp,week_avg[j],tau_T_proc)}
+      if(is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*rnorm(nsamp,week_avg[j],sqrt(1/tau_T_proc))}
       else{lambda[,t[j]] <- beta1 + beta2*Tempz[k,j] }
       
-      pred.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Temperature_Obs_error[,t[j]],tau_obs)
+      pred_obs.Seasonal_Temperature_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Temperature_Obs_error[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -394,13 +392,13 @@ if(model_name=="Seasonal_AR_Temperature"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j],tau_T_proc)}
+      if(is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j],sqrt(1/tau_T_proc))}
       else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j] }
       
-      pred.Seasonal_AR_Temperature[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_AR_Temperature[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_Temperature[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Temperature[,t[j]],tau_obs)
+      pred_obs.Seasonal_AR_Temperature[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Temperature[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -432,13 +430,13 @@ if(model_name=="Seasonal_AR_Temp_Lag"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Tempz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j-1],tau_T_proc)}
+      if(is.na(Tempz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j-1],sqrt(1/tau_T_proc))}
       else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j-1] }
       
-      pred.Seasonal_AR_Temp_Lag[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_AR_Temp_Lag[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_Temp_Lag[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Temp_Lag[,t[j]],tau_obs)
+      pred_obs.Seasonal_AR_Temp_Lag[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Temp_Lag[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -470,16 +468,16 @@ if(model_name=="Seasonal_AR_Temp_Diff"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Tempz[k,j]) & !is.na(Tempz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_avg[j],tau_T_proc) - Tempz[k,j-1])}
-      else if(!is.na(Tempz[k,j]) & is.na(Tempz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(Tempz[k,j]  - rnorm(nsamp,week_avg[j-1],tau_T_proc))}
-      else if(is.na(Tempz[k,j]) & is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_avg[j],tau_T_proc) - rnorm(nsamp,week_avg[j-1],tau_T_proc))}
+      if(is.na(Tempz[k,j]) & !is.na(Tempz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_avg[j],sqrt(1/tau_T_proc)) - Tempz[k,j-1])}
+      else if(!is.na(Tempz[k,j]) & is.na(Tempz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(Tempz[k,j]  - rnorm(nsamp,week_avg[j-1],sqrt(1/tau_T_proc)))}
+      else if(is.na(Tempz[k,j]) & is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_avg[j],sqrt(1/tau_T_proc)) - rnorm(nsamp,week_avg[j-1],sqrt(1/tau_T_proc)))}
       else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(Tempz[k,j] - Tempz[k,j-1]) }
       
       
-      pred.Seasonal_AR_Temp_Diff[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_AR_Temp_Diff[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_Temp_Diff[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Temp_Diff[,t[j]],tau_obs)
+      pred_obs.Seasonal_AR_Temp_Diff[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Temp_Diff[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -510,13 +508,13 @@ if(model_name=="Seasonal_Schmidt_Obs_error"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Schmidtz[k,j])){lambda[,t[j]] <- beta1 + beta2*rnorm(nsamp,week_avg[j],tau_S_proc)}
+      if(is.na(Schmidtz[k,j])){lambda[,t[j]] <- beta1 + beta2*rnorm(nsamp,week_avg[j],sqrt(1/tau_S_proc))}
       else{lambda[,t[j]] <- beta1 + beta2*Schmidtz[k,j] }
       
-      pred.Seasonal_Schmidt_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_Schmidt_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_Schmidt_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Schmidt_Obs_error[,t[j]],tau_obs)
+      pred_obs.Seasonal_Schmidt_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Schmidt_Obs_error[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -548,13 +546,13 @@ if(model_name=="Seasonal_AR_Schmidt"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Schmidtz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j],tau_S_proc)}
+      if(is.na(Schmidtz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j],sqrt(1/tau_S_proc))}
       else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Schmidtz[k,j] }
       
-      pred.Seasonal_AR_Schmidt[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_AR_Schmidt[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_Schmidt[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Schmidt[,t[j]],tau_obs)
+      pred_obs.Seasonal_AR_Schmidt[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Schmidt[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -589,15 +587,15 @@ if(model_name=="Seasonal_AR_Schmidt_Temp"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Schmidtz[k,j]) & !is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg_S[j],tau_S_proc) + beta4*Tempz[k,j]}
-      else if(!is.na(Schmidtz[k,j]) & is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Schmidtz[k,j] + beta4*rnorm(nsamp,week_avg_T[j],tau_T_proc)}
-      else if(is.na(Schmidtz[k,j]) & is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg_S[j],tau_S_proc) + beta4*rnorm(nsamp,week_avg_T[j],tau_T_proc)}
+      if(is.na(Schmidtz[k,j]) & !is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg_S[j],sqrt(1/tau_S_proc)) + beta4*Tempz[k,j]}
+      else if(!is.na(Schmidtz[k,j]) & is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Schmidtz[k,j] + beta4*rnorm(nsamp,week_avg_T[j],sqrt(1/tau_T_proc))}
+      else if(is.na(Schmidtz[k,j]) & is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg_S[j],sqrt(1/tau_S_proc)) + beta4*rnorm(nsamp,week_avg_T[j],sqrt(1/tau_T_proc))}
       else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Schmidtz[k,j] + beta4*Tempz[k,j] }
       
-      pred.Seasonal_AR_Schmidt_Temp[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_AR_Schmidt_Temp[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_Schmidt_Temp[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Schmidt_Temp[,t[j]],tau_obs)
+      pred_obs.Seasonal_AR_Schmidt_Temp[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Schmidt_Temp[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -629,13 +627,13 @@ if(model_name=="Seasonal_AR_Schmidt_Lag"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Schmidtz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j],tau_S_proc)}
+      if(is.na(Schmidtz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j],sqrt(1/tau_S_proc))}
       else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Schmidtz[k,j-1] }
       
-      pred.Seasonal_AR_Schmidt_Lag[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_AR_Schmidt_Lag[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_Schmidt_Lag[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Schmidt_Lag[,t[j]],tau_obs)
+      pred_obs.Seasonal_AR_Schmidt_Lag[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Schmidt_Lag[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -667,15 +665,15 @@ if(model_name=="Seasonal_AR_Schmidt_Diff"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Schmidtz[k,j]) & !is.na(Schmidtz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_avg[j],tau_S_proc) - Schmidtz[k,j-1])}
-      else if(!is.na(Schmidtz[k,j]) & is.na(Schmidtz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(Schmidtz[k,j]  - rnorm(nsamp,week_avg[j-1],tau_S_proc))}
-      else if(is.na(Schmidtz[k,j]) & is.na(Schmidtz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_avg[j],tau_S_proc) - rnorm(nsamp,week_avg[j-1],tau_S_proc))}
+      if(is.na(Schmidtz[k,j]) & !is.na(Schmidtz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_avg[j],sqrt(1/tau_S_proc)) - Schmidtz[k,j-1])}
+      else if(!is.na(Schmidtz[k,j]) & is.na(Schmidtz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(Schmidtz[k,j]  - rnorm(nsamp,week_avg[j-1],sqrt(1/tau_S_proc)))}
+      else if(is.na(Schmidtz[k,j]) & is.na(Schmidtz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_avg[j],sqrt(1/tau_S_proc)) - rnorm(nsamp,week_avg[j-1],sqrt(1/tau_S_proc)))}
       else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(Schmidtz[k,j] - Schmidtz[k,j-1]) }
       
-      pred.Seasonal_AR_Schmidt_Diff[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_AR_Schmidt_Diff[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_Schmidt_Diff[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Schmidt_Diff[,t[j]],tau_obs)
+      pred_obs.Seasonal_AR_Schmidt_Diff[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Schmidt_Diff[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -704,10 +702,10 @@ if(model_name=="Seasonal_Airtemp_Obs_error"){
       
       #process model
       lambda[,t[j]] <- beta1 + beta2*Temp[k,j]
-      pred.Seasonal_Airtemp_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_Airtemp_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_Airtemp_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Airtemp_Obs_error[,t[j]],tau_obs)
+      pred_obs.Seasonal_Airtemp_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Airtemp_Obs_error[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -737,10 +735,10 @@ if(model_name=="Seasonal_AR_Airtemp"){
       
       #process model
       lambda[,t[j]] <- beta1 + beta2*mydata[,j-1] + beta3*Temp[k,j]
-      pred.Seasonal_AR_Airtemp[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_AR_Airtemp[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_Airtemp[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Airtemp[,t[j]],tau_obs)
+      pred_obs.Seasonal_AR_Airtemp[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Airtemp[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
@@ -776,14 +774,14 @@ if(model_name=="Seasonal_Temperature_RandomYear_Obs_error"){
     for(j in 2:max(season_weeks)){
       
       #process model
-      if(is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j],tau_T_proc) + yr[,year_no[k]]}
+      if(is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j],sqrt(1/tau_T_proc)) + yr[,year_no[k]]}
       else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j]+ yr[,year_no[k]] }
       
       #Gloeo
-      pred.Seasonal_Temperature_RandomYear_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      pred.Seasonal_Temperature_RandomYear_Obs_error[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_Temperature_RandomYear_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Temperature_RandomYear_Obs_error[,t[j]],tau_obs)
+      pred_obs.Seasonal_Temperature_RandomYear_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Temperature_RandomYear_Obs_error[,t[j]],sqrt(1/tau_obs))
 
     }
   }

@@ -13,11 +13,12 @@ library(runjags)
 library(moments)
 library(geosphere)
 library(googledrive)
-source('RCode/helper_functions/seasonal_plug_n_play.R')
+source('RCode/Helper_functions/seasonal_plug_n_play.R')
+source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-start_date = '2007-01-01' # in YYYY-MM-DD format; 1st 
+start_date = '2009-01-01' # in YYYY-MM-DD format; 1st 
 end_date = '2015-12-31' # Excluding 2016-2017 to use as sample data
 site = c('midge') # options are midge, coffin, newbury, or fichter 
 model_timestep = 7 # model timestep in days if filling in dates
@@ -25,7 +26,7 @@ fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's
 forecast = TRUE # T/F for returing forecast time period or not 
 forecast_end_date = '2016-12-31' 
 
-model_name = 'Seasonal_RandomWalk' #pick a model name
+model_name = 'Seasonal_RandomWalk_Obs_error' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -38,6 +39,8 @@ my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncerta
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
 y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))+0.003)
+forecast_y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)
+forecast_y <- forecast_y[7:8,]
 
 #for watertemp_mean
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_11AUG19.csv"))
@@ -51,6 +54,7 @@ Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_we
 
 
 years <- c(2009:2014)
+forecast_years <- c(2015:2016)
 year_no = as.numeric(as.factor(years))
 season_weeks = c(1:20)
 site = "Midge"
@@ -91,99 +95,91 @@ jags.out <- run.jags(model = model,
 jags.out.mcmc <- as.mcmc.list(jags.out)
 out <- as.matrix(jags.out.mcmc)
 
-# DIC=dic.samples(j.model, n.iter=5000)
-# DIC
-
-
 #6) CI, PI, Obs PI Calculations
 
-times <- as.Date(as.character(dat$cal$date))
-time.rng = c(1,length(times)) ## adjust to zoom in and out
-time.rng = c(534,563)
+dat <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp_forecast.csv") %>%
+  filter(site == "midge")
+
+cal_dat <- dat %>% filter(year(date) %in% c(2009:2014))
+forecast_dat <- dat %>% filter(year(date) %in% c(2015:2016))
+
+times <- as.Date(as.character(cal_dat$date))
+forecast_times <- as.Date(as.character(forecast_dat$date))
 ciEnvelope <- function(x,ylo,yhi,...){
   polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
                                       ylo[1])), border = NA,...) 
 }
 
-mus=grep("mu", colnames(out))
-mu = exp(out[,mus])
-ci <- apply(exp(out[,mus]),2,quantile,c(0.025,0.5,0.975))
-preds_plug_ins <- preds_plug_ins(model_name = model_name)
-pi <- apply(exp(preds_plug_ins$pred.model),2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
-obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+mus=c(grep("mu\\[1,", colnames(out)),grep("mu\\[2,", colnames(out)),
+      grep("mu\\[3,", colnames(out)),grep("mu\\[4,", colnames(out)),
+      grep("mu\\[5,", colnames(out)),grep("mu\\[6,", colnames(out)))
+ci <- exp(apply(mu,2,quantile,c(0.025,0.5,0.975)))
 
 
-#7) CI, PI, Obs PI Plots
+## One step ahead prediction intervals
 
-#Obs vs. Latent
-plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log="y", ylab="observed Gloeo colonies",xlim=times[time.rng], main="Obs, Latent CI")
-ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
-points(times,y,pch="+",cex=0.5)
+samp <- sample.int(nrow(out),nsamp)
+mu = out[samp,mus] 
+Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
+Schmidts=c(Schmidt[1,], Schmidt[2,], Schmidt[3,], Schmidt[4,], Schmidt[5,], Schmidt[6,])
+ys = exp(c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,]))
+forecast_ys = exp(c(forecast_y[1,],forecast_y[2,]))
 
-#CI, PI, Obs PI
-plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log = "y", ylab="Gloeo count",xlim=times[time.rng], main="Obs, Latent CI (blue), PI (green), Obs PI (grey)")
-ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
-ciEnvelope(times,pi[1,],pi[3,],col="Green")
-ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
-points(times,y,pch="+",cex=0.5)
+
+#get one-step-ahead predictions
+preds_plug_ins <- preds_plug_ins(model_name) 
+
+pi <- exp(apply(preds_plug_ins$pred.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE))
+obs_pi <- exp(apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE))
+
+
+#7) CI, PI, Obs PI Plot
+forecast_plot(cal_years = c(2009:2014), 
+              forecast_years = NA, #either provide a vector or NA
+              is.forecast.ci = "n")
 
 ## Forward Simulation
 
-### settings
-Nmc = 1000         ## set number of Monte Carlo draws
-N.cols <- c("black","red","green","blue","orange") ## set colors
-ylim = range(ci+0.01, na.rm = TRUE)
-trans <- 0.8       ## set transparancy
-cal_time = as.Date(as.character(dat$cal$date))
-forecast_time = as.Date(as.character(dat$forecast$date))
-all_time = c(cal_time, forecast_time)
+######## deterministic prediction #######
+##Set up forecast
+settings.det <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+                 Nmc = 1,
+                 IC = cbind(-5,-5))
 
-plot.run <- function(){
-  plot(all_time, all_time, type='n', ylim=ylim, ylab="Gloeo count", log = 'y')
-  axis(2)
-  ecoforecastR::ciEnvelope(cal_time, ci[1,], ci[3,], col="lightBlue")
-  lines(cal_time, ci[2,], col="purple")
-  points(cal_time, ci[2,])
-}
+params.det <- list(tau_obs = 0,
+                   tau_proc = 0)
 
-#ci <- apply(exp(out[ ,mus]), 2, quantile, c(0.025,0.5,0.975))
-plot.run()
+#Run forecast
+det.prediction <- forecast_gloeo(model_name = model_name,
+                           params = params.det,
+                           settings = settings.det)
 
-
-#setting up deterministic forecast function for random walk 
-# IC = initial conditions from end of calibration period 
-# N_out = number of time steps to forecast 
-# tau_add = process error (defaults to zero) 
-# n = number of monte carlo sims 
-forecast <- function(IC, N_out = N_out, tau_add = 0, n = Nmc){
-  out <- matrix(NA, n, N_out) # setting up output 
-  gloeo_prev <- IC
-  for(i in 1:N_out){
-    out[,i] <- rnorm(n, gloeo_prev, tau_add) # predict next step 
-    gloeo_prev <- out[,i] # update IC 
-  }
-  return(out)
-}
-
-## deterministic predictions 
-N_out = nrow(dat$forecast) # length of forecast time points 
-IC = out[,mus]
-
-det.prediction <- forecast(IC = mean(IC[,N]), # last column of cal is the initial condition for forecast 
-                            N_out = N_out,
-                            tau_add = 0,
-                            n = 1)
-
-## Plot run
-plot.run()
-lines(forecast_time, exp(det.prediction), col="purple", lwd=3)
-
+## Plot
+forecast_plot(cal_years = c(2009:2014), 
+              forecast_years = c(2015:2016), 
+              is.forecast.ci  = "n") #choose from "y" or "n"
 
 ######## initial condition uncertainty #######
-# sample rows from previous analysis
-prow = sample.int(nrow(out),Nmc,replace=TRUE)
 
-gloeo.I <- forecast_gloeo(IC = IC[prow, N],
+# set up IC: sample rows from previous analysis
+Nmc = 1000
+IC = cbind(rnorm(1000,-5,sqrt(1/100)),rnorm(1000,-5,sqrt(1/100)))
+
+##Set up forecast
+settings.IC <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+                     Nmc = Nmc,
+                     IC = IC)
+
+params.IC <- list(tau_obs = 0,
+                   tau_proc = 0)
+
+
+#Run forecast
+forecast.IC <- forecast_gloeo(model_name = model_name,
+                                 params = params.IC,
+                                 settings = settings.IC)
+
+forecast.IC <- forecast_gloeo(IC = IC[prow, length(ys)],
                       N_out = N_out,
                       tau_add = 0,
                       n = Nmc)
