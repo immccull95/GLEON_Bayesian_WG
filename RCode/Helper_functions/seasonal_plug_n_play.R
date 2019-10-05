@@ -61,6 +61,13 @@ jags_plug_ins <- function(model_name){
   init.Seasonal_AR_Temp_Lag <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_T_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_T_proc = 0.1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_obs = 5,tau_T_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5))
   params.Seasonal_AR_Temp_Lag <- c("tau_proc","beta1", "beta2", "beta3","tau_obs","tau_T_proc")
   
+#Seasonal_AR_Temp_Diff
+  data.Seasonal_AR_Temp_Diff <- list(y=y, year_no = year_no,week_avg = week_avg, beta.m1=0,  beta.m2=0,beta.m3=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84)
+  variable.names.Seasonal_AR_Temp_Diff <- c("tau_proc", "beta1","beta2", "beta3", "tau_obs","tau_T_proc")
+  variable.namesout.Seasonal_AR_Temp_Diff <- c("tau_proc", "beta1", "beta2","beta3",  "mu", "tau_obs", "tau_T_proc")
+  init.Seasonal_AR_Temp_Diff <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_T_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_T_proc = 0.1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_obs = 5,tau_T_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5))
+  params.Seasonal_AR_Temp_Diff <- c("tau_proc","beta1", "beta2", "beta3","tau_obs","tau_T_proc")
+  
 #Seasonal_Temperature_RandomYear_Obs_error
   data.Seasonal_Temperature_RandomYear_Obs_error <- list(y=y, year_no = year_no, beta.m1=0, beta.m2=0, beta.m3=0,beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Temp=Temp, season_weeks=season_weeks,x_ic=0.1,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 0.001, r_obs = 0.001, T_mean = 21.04)
   variable.names.Seasonal_Temperature_RandomYear_Obs_error <- c("tau_proc", "beta1","beta2","beta3", "tau_yr","tau_obs","tau_T_obs")
@@ -391,6 +398,47 @@ if(model_name=="Seasonal_AR_Temp_Lag"){
       
       #data model
       pred_obs.Seasonal_AR_Temp_Lag[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Temp_Lag[,t[j]],tau_obs)
+    }
+  }
+}
+
+#Seasonal_AR_Temp_Diff
+if(model_name=="Seasonal_AR_Temp_Diff"){
+  tau_proc = out[samp,grep("tau_proc",colnames(out))]
+  tau_obs = out[samp,grep("tau_obs",colnames(out))]
+  tau_T_proc = out[samp,grep("tau_T_proc",colnames(out))]
+  beta1 = out[samp,grep("beta1",colnames(out))]
+  beta2 = out[samp,grep("beta2",colnames(out))]
+  beta3 = out[samp,grep("beta3",colnames(out))]
+  pred.Seasonal_AR_Temp_Diff <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Seasonal_AR_Temp_Diff <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  year_no <- c(1:6)
+  season_weeks <- c(1:20)
+  mu_greps <- c("mu\\[1,","mu\\[2,","mu\\[3,","mu\\[4,","mu\\[5,","mu\\[6,")
+  ts = rbind(1:20,21:40,41:60,61:80,81:100,101:120)
+  lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  Tempz = Temp
+  
+  for(k in 1:max(year_no)){
+    
+    mydata <- mu[,grep(mu_greps[k],colnames(mu))]
+    
+    t <- ts[k,]
+    
+    for(j in 2:max(season_weeks)){
+      
+      #process model
+      #filling Temp NAs
+      if(is.na(Tempz[k,j]) & !is.na(Tempz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_avg[j],tau_T_proc) - Tempz[k,j-1])}
+      else if(!is.na(Tempz[k,j]) & is.na(Tempz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(Tempz[k,j]  - rnorm(nsamp,week_avg[j-1],tau_T_proc))}
+      else if(is.na(Tempz[k,j]) & is.na(Tempz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_avg[j],tau_T_proc) - rnorm(nsamp,week_avg[j-1],tau_T_proc))}
+      else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(Tempz[k,j] - Tempz[k,j-1]) }
+      
+      
+      pred.Seasonal_AR_Temp_Diff[,t[j]] = rnorm(nsamp,lambda[,t[j]],tau_proc)
+      
+      #data model
+      pred_obs.Seasonal_AR_Temp_Diff[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Temp_Diff[,t[j]],tau_obs)
     }
   }
 }
