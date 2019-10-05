@@ -15,7 +15,7 @@ source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Schmidt_Diff' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Seasonal_RandomWalk_Obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -34,13 +34,10 @@ y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_wee
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_11AUG19.csv"))
 Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_16AUG19.csv"))
 
-#for watertemp_min
-Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_16AUG19.csv"))
-Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_min_16AUG19.csv"))
-
 #for airtemp
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
 
+#for Schmidt
 Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_11AUG19.csv"))
 
 
@@ -51,7 +48,6 @@ site = "Midge"
 
 #for water temp
 week_avg = colMeans(Temp_prior, na.rm = TRUE)
-week_min = colMeans(Temp_prior, na.rm = TRUE)
 
 #for Schmidt
 week_avg = colMeans(Schmidt, na.rm = TRUE)
@@ -98,11 +94,7 @@ for (i in 1:length(params)){
   dev.off()
 }
 
-#upload plot to Google Drive folder
-for (i in 1:length(params)){
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics/Seasonal_for_loop",paste(site,paste0(model_name,'_Convergence_',params[i],'.png'), sep = '_')))
-}
+
 #need to view this to get parameter estimates for model comparison Excel file
 sum <- summary(jags.out, vars = jags_plug_ins$variable.names.model)
 DIC=dic.samples(j.model, n.iter=5000)
@@ -229,14 +221,6 @@ title(main="Obs (+), Latent CI (blue), PI (green), Obs PI (grey), Mean Pred. (<>
 
 dev.off()
 
-
-
-#upload plot to Google Drive folder
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics/Seasonal_for_loop",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
-
-
-
 #8) Further Diagnostic Checks and Visualization 
 
 #y vs. preds
@@ -320,7 +304,4 @@ hist(obs_pi[2,],breaks = 20, xlim = c(0,100), main = "Mean predicted value w/ dm
 
 dev.off()
 
-#once again, upload plot to Google Drive folder
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_Diagnostics.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics/Seasonal_for_loop",paste(site,paste0(model_name,'_Diagnostics.png'), sep = '_')))
 
