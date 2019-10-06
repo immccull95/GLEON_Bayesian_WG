@@ -17,22 +17,49 @@ forecast_gloeo <- function(model_name, params, settings){
   for(k in 1:length(forecast_years)){
     gloeo_prev <- IC[,k]
     t <- ts[k,]
+    
+    #populate first week of season with IC
+    if(k == 1){proc.model[,1] <- IC[,k]
+    out[,1] <- IC[,k]} else {
+      proc.model[,21] <- IC[,k]
+      out[,21] <- IC[,k]
+    }
+    
     for(j in 2:max(season_weeks)){
-      #populate first week of season with IC
-      proc.model[,t[j-1]] <- IC[,k]
-      out[,t[j-1]] <- IC[,k]
       #process model
-      proc.model[,t[j]] = rnorm(Nmc,gloeo_prev,params$tau_proc)
+      proc.model[,t[j]] = rnorm(Nmc,gloeo_prev,params$sd_proc)
       #data model
-      out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$tau_obs)
+      out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
       #update IC
       gloeo_prev <- out[,t[j]] # update IC 
+    }}}
+  
+  if(model_name == "Seasonal_RandomWalk_Obs_error"){
+    
+    for(k in 1:length(forecast_years)){
+      gloeo_prev <- IC[,k]
+      t <- ts[k,]
+      
+      #populate first week of season with IC
+      if(k == 1){proc.model[,1] <- IC[,k]
+      out[,1] <- IC[,k]} else {
+        proc.model[,21] <- IC[,k]
+        out[,21] <- IC[,k]
+      }
+      
+      for(j in 2:max(season_weeks)){
+        #process model
+        proc.model[,t[j]] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+        #data model
+        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,t[j]] # update IC 
       }}}
   
   return(out)
 }
 
-forecast_plot <- function(cal_years, forecast_years, is.forecast.ci){
+forecast_plot <- function(cal_years, forecast_years, is.forecast.ci, forecast.ci){
   
   rows <- (length(cal_years) + length(forecast_years))/2
   ps = rbind(1:20,21:40,41:60,61:80,81:100,101:120)
@@ -40,6 +67,8 @@ forecast_plot <- function(cal_years, forecast_years, is.forecast.ci){
   ci = ci
   pi = pi
   obs_pi = obs_pi
+  N.cols <- c("black","red","green","blue","orange")
+  trans <- 0.8       ## set transparancy
   
   par(mfrow = c(rows,2), oma = c(1,1,5,1), mar = c(3,3,1,0)+0.1,
       mgp = c(2,0.5,0))
@@ -61,11 +90,15 @@ forecast_plot <- function(cal_years, forecast_years, is.forecast.ci){
   for (l in 1:length(forecast_years)){
     
     if(is.forecast.ci == "y"){
-      lims <- c(min(forecast.ci[1,qs[l,]], na.rm = TRUE),max(forecast.ci[3,qs[l,]], na.rm = TRUE))} 
+      if(max(forecast.ci[3,qs[l,]], na.rm = TRUE) > max(forecast_ys, na.rm = TRUE)){
+      forecast.ci <- forecast.ci
+      lims <- c(min(forecast.ci[1,qs[l,]], na.rm = TRUE),max(forecast.ci[3,qs[l,]], na.rm = TRUE))}
+      else{lims <- range(forecast_ys, na.rm = TRUE)}} 
     else {lims <- range(forecast_ys, na.rm = TRUE)}
     
     plot(forecast_times[qs[l,]],forecast_ys[qs[l,]],type='n', ylab="Gloeo (tot./L)", ylim = lims,
          main="",xlab = "")
+    if(is.forecast.ci == "y"){ciEnvelope(forecast_times[qs[l,]],forecast.ci[1,qs[l,]],forecast.ci[3,qs[l,]],col = "plum1")}
     lines(forecast_times[qs[l,]], exp(det.prediction[qs[l,]]), col="purple", lwd=2)
     points(forecast_times[qs[l,]],forecast_ys[qs[l,]],pch="+",cex=0.8)
     legend("topleft",legend = cal_years[l], bty = "n")

@@ -17,16 +17,7 @@ source('RCode/Helper_functions/seasonal_plug_n_play.R')
 source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
-
-start_date = '2009-01-01' # in YYYY-MM-DD format; 1st 
-end_date = '2015-12-31' # Excluding 2016-2017 to use as sample data
-site = c('midge') # options are midge, coffin, newbury, or fichter 
-model_timestep = 7 # model timestep in days if filling in dates
-fill_dates = TRUE  # T/F for filling in dates w/o observations with NA's 
-forecast = TRUE # T/F for returing forecast time period or not 
-forecast_end_date = '2016-12-31' 
-
-model_name = 'Seasonal_RandomWalk_Obs_error' #pick a model name
+model_name = 'Seasonal_RandomWalk' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -113,6 +104,7 @@ ciEnvelope <- function(x,ylo,yhi,...){
 mus=c(grep("mu\\[1,", colnames(out)),grep("mu\\[2,", colnames(out)),
       grep("mu\\[3,", colnames(out)),grep("mu\\[4,", colnames(out)),
       grep("mu\\[5,", colnames(out)),grep("mu\\[6,", colnames(out)))
+mu = out[,mus]
 ci <- exp(apply(mu,2,quantile,c(0.025,0.5,0.975)))
 
 
@@ -146,8 +138,8 @@ settings.det <- list(N_out = 40, #length of forecast time points (2 years x 20 w
                  Nmc = 1,
                  IC = cbind(-5,-5))
 
-params.det <- list(tau_obs = 0,
-                   tau_proc = 0)
+params.det <- list(sd_obs = 0, #note these are SDs, not taus!!
+                   sd_proc = 0)
 
 #Run forecast
 det.prediction <- forecast_gloeo(model_name = model_name,
@@ -163,15 +155,15 @@ forecast_plot(cal_years = c(2009:2014),
 
 # set up IC: sample rows from previous analysis
 Nmc = 1000
-IC = cbind(rnorm(1000,-5,sqrt(1/100)),rnorm(1000,-5,sqrt(1/100)))
+IC = cbind(rnorm(Nmc,-5,sqrt(1/100)),rnorm(Nmc,-5,sqrt(1/100)))
 
 ##Set up forecast
 settings.IC <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
                      Nmc = Nmc,
                      IC = IC)
 
-params.IC <- list(tau_obs = 0,
-                   tau_proc = 0)
+params.IC <- list(sd_obs = 0,
+                   sd_proc = 0)
 
 
 #Run forecast
@@ -179,16 +171,17 @@ forecast.IC <- forecast_gloeo(model_name = model_name,
                                  params = params.IC,
                                  settings = settings.IC)
 
-forecast.IC <- forecast_gloeo(IC = IC[prow, length(ys)],
-                      N_out = N_out,
-                      tau_add = 0,
-                      n = Nmc)
-gloeo.I.ci = apply(exp(gloeo.I), 2, quantile, c(0.025,0.5,0.975))
+## Plot
+forecast.ci.IC = apply(exp(forecast.IC), 2, quantile, c(0.025,0.5,0.975))
 
-## Plot run
-plot.run()
-ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
-lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
+forecast_plot(cal_years = c(2009:2014), 
+              forecast_years = c(2015:2016), 
+              is.forecast.ci  = "y",
+              forecast.ci = forecast.ci.IC) #choose from "y" or "n"
+
+#just a couple of checks to make sure this is behaving as expected
+hist(exp(IC[,1]))
+hist(exp(forecast.IC[,40]))
 
 ###### parameter uncertainty #######
 # we don't have this for random walk 
@@ -197,49 +190,77 @@ lines(forecast_time, gloeo.I.ci[2,], lwd=0.5)
 # we don't have this for random walk 
 
 ###### process uncertainty ######### 
-tau_add_mc <- 1/sqrt(out[prow,"tau_add"])  ## convert from precision to standard deviation
+prow = sample.int(nrow(out),Nmc,replace=TRUE)
+sd_proc <- 1/sqrt(out[prow,"tau_proc"])  ## convert from precision to standard deviation
 
-gloeo.IP <- forecast_gloeo(IC = IC[prow, N],
-                          N_out = N_out,
-                          tau_add = tau_add_mc,
-                          n = Nmc)
-gloeo.IP.ci = apply(exp(gloeo.IP), 2, quantile, c(0.025,0.5,0.975))
+##Set up forecast
+settings.IC.P <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+                    Nmc = Nmc,
+                    IC = IC)
 
-## Plot run
-png(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=15, height=10, units='cm')
-plot.run()
-ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = col.alpha(N.cols[4], trans))
-ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = col.alpha(N.cols[1], trans))
-lines(forecast_time, exp(gloeo.det), col="purple", lwd=3)
-dev.off()
+params.IC.P <- list(sd_obs = 0,
+                  sd_proc = sd_proc)
 
-#plot to show total uncertainty for poster
-png(file=file.path(my_directory,paste(site,paste0(model_name,'_tot_uncert.png'), sep = '_')), res=300, width=15, height=10, units='cm')
-plot.run()
-ecoforecastR::ciEnvelope(forecast_time, gloeo.IP.ci[1,], gloeo.IP.ci[3,], col = "thistle1")
-ecoforecastR::ciEnvelope(forecast_time, gloeo.I.ci[1,], gloeo.I.ci[3,], col = "thistle1")
-lines(forecast_time, exp(gloeo.det), col="purple", lwd=3)
-dev.off()
 
-#upload to Drive
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_forecast.png'), sep = '_')))
+#Run forecast
+forecast.IC.P <- forecast_gloeo(model_name = model_name,
+                              params = params.IC.P,
+                              settings = settings.IC.P)
 
+## Plot
+forecast.ci.IC.P = apply(exp(forecast.IC.P), 2, quantile, c(0.025,0.5,0.975))
+
+forecast_plot(cal_years = c(2009:2014), 
+              forecast_years = c(2015:2016), 
+              is.forecast.ci  = "y",
+              forecast.ci = forecast.ci.IC.P) #choose from "y" or "n"
+
+#just a couple of checks to make sure this is behaving as expected
+hist(exp(forecast.IC.P[,10]))
+
+
+###### observation uncertainty ######### 
+sd_obs <- 1/sqrt(out[prow,"tau_obs"])  ## convert from precision to standard deviation
+
+##Set up forecast
+settings.IC.P.O <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+                      Nmc = Nmc,
+                      IC = IC)
+
+params.IC.P.O <- list(sd_obs = sd_obs,
+                    sd_proc = sd_proc)
+
+
+#Run forecast
+forecast.IC.P.O <- forecast_gloeo(model_name = model_name,
+                                params = params.IC.P.O,
+                                settings = settings.IC.P.O)
+
+## Plot
+forecast.ci.IC.P.O = apply(exp(forecast.IC.P.O), 2, quantile, c(0.025,0.5,0.975))
+
+forecast_plot(cal_years = c(2009:2014), 
+              forecast_years = c(2015:2016), 
+              is.forecast.ci  = "y",
+              forecast.ci = forecast.ci.IC.P.O) #choose from "y" or "n"
 
 ### calculation of variances
-varI     <- apply(gloeo.I,2,var)
-varIP    <- apply(gloeo.IP,2,var)
-varMat   <- rbind(varI,varIP)
-V.pred.rel <- apply(varMat[,],2,function(x) {x/max(x)})
+var.IC     <- apply(forecast.IC,2,var)
+var.IC.P    <- apply(forecast.IC.P,2,var)
+var.IC.P.O   <- apply(forecast.IC.P.O,2,var)
+varMat   <- rbind(var.IC,var.IC.P,var.IC.P.O)
+V.pred.rel.2015 <- apply(varMat[,1:20],2,function(x) {x/max(x)})
+V.pred.rel.2016 <- apply(varMat[,21:40],2,function(x) {x/max(x)})
+V.pred.rel <- (V.pred.rel.2015 + V.pred.rel.2016) / 2
 
 
 ## stacked area plot
+N.cols <- c("black","red","green","blue","orange") ## set colors
 png(file=file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')), res=300, width=15, height=10, units='cm')
-plot(forecast_time, V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="2016")
-ciEnvelope(forecast_time, rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
-ciEnvelope(forecast_time, V.pred.rel[1,], V.pred.rel[2,], col = N.cols[4])
-legend("topleft", legend=c("Initial Cond","Process"), col=N.cols[c(1,4)], lty=1, lwd=5, bg = 'white')
+plot(forecast_times[1:20], V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season")
+ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
+ciEnvelope(forecast_times[1:20], V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
+ciEnvelope(forecast_times[1:20], V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
+legend("bottomright", legend=c("Initial Cond","Process","Observation"), col=N.cols[1:3], lty=1, lwd=3, bg = 'white', cex = 0.8)
 dev.off()
 
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')),
-             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_var_part.png'), sep = '_')))
