@@ -7,6 +7,7 @@
 #   The data used for this example are from summer weekly(ish) Gloetrichia echinulata (Gloeo.) sampling at 4 locations in Lake Sunapee, NH. The data are provided by Kathryn Cottingham, and should not be used without permission outside this workshop.
 
 library(tidyverse)
+library(lubridate)
 library(readxl)
 library(rjags)
 library(runjags)
@@ -17,7 +18,8 @@ source('RCode/Helper_functions/seasonal_plug_n_play.R')
 source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
-model_name = 'Seasonal_RandomWalk' #pick a model name
+
+model_name = 'Seasonal_AR_Temperature' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -107,7 +109,6 @@ mus=c(grep("mu\\[1,", colnames(out)),grep("mu\\[2,", colnames(out)),
 mu = out[,mus]
 ci <- exp(apply(mu,2,quantile,c(0.025,0.5,0.975)))
 
-
 ## One step ahead prediction intervals
 
 samp <- sample.int(nrow(out),nsamp)
@@ -131,20 +132,23 @@ forecast_plot(cal_years = c(2009:2014),
               is.forecast.ci = "n")
 
 ## Forward Simulation
+prow = sample.int(nrow(out),1000,replace=TRUE)
+
 
 ######## deterministic prediction #######
 ##Set up forecast
 settings.det <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
-                 Nmc = 1,
-                 IC = cbind(-5,-5))
+                 Nmc = 1, #number of Monte Carlo draws
+                 IC = cbind(-5,-5)) #set initial conditions (will be the same for every model)
 
-params.det <- list(sd_obs = 0, #note these are SDs, not taus!!
-                   sd_proc = 0)
+#MUST BE EDITED TO REFLECT CORRECT PARAMS FOR MODEL
+params.det <- get_params(model_name = model_name, 
+                         forecast_type = "det") #choose from det, IC, IC.P, IC.P.O, IC.P.O.R, IC.P.O.Pa, IC.P.O.Pa.D, IC.P.O.R.Pa.D
 
 #Run forecast
 det.prediction <- forecast_gloeo(model_name = model_name,
-                           params = params.det,
-                           settings = settings.det)
+                           params = params.det, #list of params necessary to run that model
+                           settings = settings.det) #list of settings including N_out, Nmc, and IC
 
 ## Plot
 forecast_plot(cal_years = c(2009:2014), 
@@ -162,8 +166,8 @@ settings.IC <- list(N_out = 40, #length of forecast time points (2 years x 20 we
                      Nmc = Nmc,
                      IC = IC)
 
-params.IC <- list(sd_obs = 0,
-                   sd_proc = 0)
+params.IC <- get_params(model_name = model_name,
+                        forecast_type = "IC")
 
 
 #Run forecast
@@ -180,27 +184,20 @@ forecast_plot(cal_years = c(2009:2014),
               forecast.ci = forecast.ci.IC) #choose from "y" or "n"
 
 #just a couple of checks to make sure this is behaving as expected
+dev.off(dev.list()["RStudioGD"])
 hist(exp(IC[,1]))
 hist(exp(forecast.IC[,40]))
 
-###### parameter uncertainty #######
-# we don't have this for random walk 
-
-###### driver uncertainty ########## 
-# we don't have this for random walk 
 
 ###### process uncertainty ######### 
-prow = sample.int(nrow(out),Nmc,replace=TRUE)
-sd_proc <- 1/sqrt(out[prow,"tau_proc"])  ## convert from precision to standard deviation
 
 ##Set up forecast
 settings.IC.P <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
                     Nmc = Nmc,
                     IC = IC)
 
-params.IC.P <- list(sd_obs = 0,
-                  sd_proc = sd_proc)
-
+params.IC.P <- get_params(model_name = model_name,
+                          forecast_type = "IC.P")
 
 #Run forecast
 forecast.IC.P <- forecast_gloeo(model_name = model_name,
@@ -220,15 +217,14 @@ hist(exp(forecast.IC.P[,10]))
 
 
 ###### observation uncertainty ######### 
-sd_obs <- 1/sqrt(out[prow,"tau_obs"])  ## convert from precision to standard deviation
 
 ##Set up forecast
 settings.IC.P.O <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
                       Nmc = Nmc,
                       IC = IC)
 
-params.IC.P.O <- list(sd_obs = sd_obs,
-                    sd_proc = sd_proc)
+params.IC.P.O <- get_params(model_name = model_name,
+                            forecast_type = "IC.P.O")
 
 
 #Run forecast
@@ -241,26 +237,96 @@ forecast.ci.IC.P.O = apply(exp(forecast.IC.P.O), 2, quantile, c(0.025,0.5,0.975)
 
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
-              is.forecast.ci  = "y",
-              forecast.ci = forecast.ci.IC.P.O) #choose from "y" or "n"
+              is.forecast.ci  = "y", #choose from "y" or "n"
+              forecast.ci = forecast.ci.IC.P.O)
+
+
+###### random effect uncertainty #######
+#MOST MODELS DO NOT HAVE THIS!!
+
+##Set up forecast
+settings.IC.P.O.R <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+                        Nmc = Nmc,
+                        IC = IC)
+
+params.IC.P.O.R <- get_params(model_name = model_name,
+                            forecast_type = "IC.P.O.R")
+
+
+#Run forecast
+forecast.IC.P.O.R <- forecast_gloeo(model_name = model_name,
+                                  params = params.IC.P.O.R,
+                                  settings = settings.IC.P.O.R)
+
+## Plot
+forecast.ci.IC.P.O.R = apply(exp(forecast.IC.P.O.R), 2, quantile, c(0.025,0.5,0.975))
+
+forecast_plot(cal_years = c(2009:2014), 
+              forecast_years = c(2015:2016), 
+              is.forecast.ci  = "y", #choose from "y" or "n"
+              forecast.ci = forecast.ci.IC.P.O.R)
+
+
+###### parameter uncertainty #######
+
+##Set up forecast
+settings.IC.P.O.Pa <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+                          Nmc = Nmc,
+                          IC = IC)
+
+params.IC.P.O.Pa <- get_params(model_name = model_name,
+                              forecast_type = "IC.P.O.Pa")
+
+
+#Run forecast
+forecast.IC.P.O.Pa <- forecast_gloeo(model_name = model_name,
+                                    params = params.IC.P.O.Pa,
+                                    settings = settings.IC.P.O.Pa)
+
+## Plot
+forecast.ci.IC.P.O.Pa = apply(exp(forecast.IC.P.O.Pa), 2, quantile, c(0.025,0.5,0.975))
+
+forecast_plot(cal_years = c(2009:2014), 
+              forecast_years = c(2015:2016), 
+              is.forecast.ci  = "y", #choose from "y" or "n"
+              forecast.ci = forecast.ci.IC.P.O.Pa)
+
+
+###### driver uncertainty ########## 
+
+##Set up forecast
+settings.IC.P.O.Pa.D <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+                           Nmc = Nmc,
+                           IC = IC)
+
+params.IC.P.O.Pa.D <- get_params(model_name = model_name,
+                               forecast_type = "IC.P.O.Pa.D")
+
+
+#Run forecast
+forecast.IC.P.O.Pa.D <- forecast_gloeo(model_name = model_name,
+                                     params = params.IC.P.O.Pa.D,
+                                     settings = settings.IC.P.O.Pa.D)
+
+## Plot
+forecast.ci.IC.P.O.Pa.D = apply(exp(forecast.IC.P.O.Pa.D), 2, quantile, c(0.025,0.5,0.975))
+
+forecast_plot(cal_years = c(2009:2014), 
+              forecast_years = c(2015:2016), 
+              is.forecast.ci  = "y", #choose from "y" or "n"
+              forecast.ci = forecast.ci.IC.P.O.Pa.D)
+
+
 
 ### calculation of variances
-var.IC     <- apply(forecast.IC,2,var)
-var.IC.P    <- apply(forecast.IC.P,2,var)
-var.IC.P.O   <- apply(forecast.IC.P.O,2,var)
-varMat   <- rbind(var.IC,var.IC.P,var.IC.P.O)
-V.pred.rel.2015 <- apply(varMat[,1:20],2,function(x) {x/max(x)})
-V.pred.rel.2016 <- apply(varMat[,21:40],2,function(x) {x/max(x)})
-V.pred.rel <- (V.pred.rel.2015 + V.pred.rel.2016) / 2
+varMat   <- make_varMat(model_name = model_name)
 
+#plot variances
+dev.off(dev.list()["RStudioGD"])
+plot_varMat(model_name = model_name)
 
-## stacked area plot
-N.cols <- c("black","red","green","blue","orange") ## set colors
+## write stacked area plot to file
 png(file=file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')), res=300, width=15, height=10, units='cm')
-plot(forecast_times[1:20], V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season")
-ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
-ciEnvelope(forecast_times[1:20], V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
-ciEnvelope(forecast_times[1:20], V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
-legend("bottomright", legend=c("Initial Cond","Process","Observation"), col=N.cols[1:3], lty=1, lwd=3, bg = 'white', cex = 0.8)
+plot_varMat(model_name = model_name)
 dev.off()
 
