@@ -43,9 +43,11 @@ wnd_file <- 'Sunapee_buoydata/met_data/2007-2017_wind_L1.csv'
 
 sunapee_wnd <- google_drive_get(file = wnd_file) %>%
   read.csv(., stringsAsFactors = F) %>% as_tibble() %>% 
-  mutate(datetime = as.POSIXct(datetime, tz = 'GMT')) %>% 
-  rename(wnd = WindSp_ms,
-         wnd_dir = AveWindDir_deg)
+  mutate(datetime = as.POSIXct(datetime, tz = 'GMT'),
+         wnd = case_when(!is.na(WindSp_ms) ~ WindSp_ms,
+                         is.na(WindSp_ms) & !is.na(AveWindSp_ms) ~ AveWindSp_ms,
+                         TRUE ~ WindSp_ms)) %>%
+  rename(wnd_dir = AveWindDir_deg)
 
 # loading gloeo data to see min and max days of sampling to help guide filtering of DOY for stability metrics 
 gloeo_obs = read.csv('Datasets/Sunapee/SummarizedData/All_Sites_Gloeo.csv', stringsAsFactors = F) %>% 
@@ -66,8 +68,8 @@ wtr_data <- sunapee_buoy %>%
   dplyr::filter(location == 'loon') %>% 
   select(datetime, starts_with('wtr'))
 
-wnd_data <- left_join(stability_data, dplyr::filter(dplyr::select(sunapee_wnd, datetime, wnd, wnd_dir, location), location == 'loon'), by = 'datetime') %>% 
-  select(datetime, wnd, wnd_dir)
+wnd_data <- left_join(wtr_data, dplyr::filter(dplyr::select(sunapee_wnd, datetime, wnd, wnd_dir, location), location == 'loon'), by = 'datetime') %>% 
+  select(datetime, wnd)
 wnd.height = 1.7
 
 # U* is the water friction velocity (m s^-1) due to wind stress 
@@ -115,8 +117,8 @@ for (i in 1:n) {
 }
 output = data.frame(datetime = rLakeAnalyzer:::get.datetime(wtr), uStar = uStar)
 
-# windows()
-# plot(output$uStar~output$datetime, type = 'l')
+windows()
+plot(output$uStar~output$datetime, type = 'l')
 
 saveRDS(output, 'Datasets/Sunapee/wind_energy/sunapee_uStar_instantaneous.rds')
 
