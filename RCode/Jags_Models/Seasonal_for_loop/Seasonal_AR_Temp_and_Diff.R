@@ -7,8 +7,8 @@ model{
     #run this on logged data
     y[k,j] ~ dnorm(mu[k,j],tau_obs)
     
-    #observation model for stability
-    #Schmidt[k,j]~dnorm(mu_S[k,j],tau_S_obs)
+    #observation model for temperature
+    #Temp[k,j]~dnorm(mu_T[k,j],tau_T_obs)
     
   }
   
@@ -18,25 +18,26 @@ model{
     
     #process model for Gloeo
     mu[k,j]~dnorm(lambda[k,j],tau_proc) 
-    lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*Schmidt[k,j] 
+    lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*Temp[k,j] + beta4*(Temp[k,j] - Temp[k,j-1])
     
     #process model for temperature
-    Schmidt[k,j]~dnorm(week_avg[j],tau_S_proc)
+    Temp[k,j]~dnorm(week_avg[j],tau_T_proc)
 
   }
     
     #Loops through items in seasonal for-loop and defines initial conditions
     mu[k,1] ~ dnorm(x_ic,tau_ic) #keep in mind you'll need to index like a matrix 
-    #mu_S[k,1]~dnorm(x_S_ic,tau_S_ic) 
+    #mu_T[k,1]~dnorm(x_T_ic,tau_T_ic) 
   
   }
   #### Priors
   tau_proc ~ dgamma(a_proc,r_proc)
   beta1 ~ dnorm(beta.m1,beta.v1) 
   beta2 ~ dnorm(beta.m2,beta.v2) 
-  beta3 ~ dnorm(beta.m3,beta.v3) 
+  beta3 ~ dnorm(beta.m3,beta.v3)
+  beta4 ~ dnorm(beta.m4,beta.v4) 
   tau_obs ~ dgamma(a_obs,r_obs)
-  #tau_S_obs ~ dgamma(0.01, 0.01) 
-  tau_S_proc ~ dgamma(0.24, 300)
+  #tau_T_obs ~ dgamma(0.01, 0.01) 
+  tau_T_proc ~ dgamma(1.27, 1.25)
   
 }
