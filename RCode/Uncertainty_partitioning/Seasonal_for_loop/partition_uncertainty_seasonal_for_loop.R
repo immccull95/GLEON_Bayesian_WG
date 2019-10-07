@@ -19,7 +19,7 @@ source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR' #pick a model name
+model_name = 'Seasonal_AR_Schmidt_and_Diff' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -235,7 +235,7 @@ forecast.IC.P.O <- forecast_gloeo(model_name = model_name,
 ## Plot
 forecast.ci.IC.P.O = apply(exp(forecast.IC.P.O), 2, quantile, c(0.025,0.5,0.975))
 
-tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=15, height=40, units='cm')
+tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
               is.forecast.ci  = "y", #choose from "y" or "n"
@@ -315,11 +315,12 @@ forecast.IC.P.O.Pa.D <- forecast_gloeo(model_name = model_name,
 ## Plot
 forecast.ci.IC.P.O.Pa.D = apply(exp(forecast.IC.P.O.Pa.D), 2, quantile, c(0.025,0.5,0.975))
 
+tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
               is.forecast.ci  = "y", #choose from "y" or "n"
               forecast.ci = forecast.ci.IC.P.O.Pa.D)
-
+dev.off()
 
 
 ### calculation of variances
