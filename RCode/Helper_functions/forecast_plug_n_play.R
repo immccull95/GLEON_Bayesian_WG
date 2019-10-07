@@ -272,18 +272,18 @@ forecast_plot <- function(cal_years, forecast_years, is.forecast.ci, forecast.ci
   N.cols <- c("black","red","green","blue","orange")
   trans <- 0.8       ## set transparancy
   
-  par(mfrow = c(rows,2), oma = c(1,1,5,1), mar = c(3,3,1,0)+0.1,
-      mgp = c(2,0.5,0))
+  par(mfrow = c(rows,2), oma = c(1,1,5,1), mar = c(4,6,1,0)+0.1,
+      mgp = c(3,0.75,0))
   
   for (i in 1:length(cal_years)){
     
-  plot(times[ps[i,]],ci[2,ps[i,]],type='n', ylab="Gloeo (tot./L)", ylim = c(min(obs_pi[1,ps[i,]], na.rm = TRUE),max(obs_pi[3,ps[i,]], na.rm = TRUE)),
-       main="",xlab = "")
+  plot(times[ps[i,]],ci[2,ps[i,]],type='n', ylab="Gloeo (colonies/L)", ylim = c(min(obs_pi[1,ps[i,]], na.rm = TRUE),max(obs_pi[3,ps[i,]], na.rm = TRUE)),
+       main="",xlab = "", cex.lab = 3, cex.axis = 2.5)
   ciEnvelope(times[ps[i,]],obs_pi[1,ps[i,]],obs_pi[3,ps[i,]],col="gray")
-  ciEnvelope(times[ps[i,]],pi[1,ps[i,]],pi[3,ps[i,]],col="Green")
+  ciEnvelope(times[ps[i,]],pi[1,ps[i,]],pi[3,ps[i,]],col="yellow")
   ciEnvelope(times[ps[i,]],ci[1,ps[i,]],ci[3,ps[i,]],col="lightBlue")
-  points(times[ps[i,]],ys[ps[i,]],pch="+",cex=0.8)
-  legend("topleft",legend = cal_years[i], bty = "n")
+  points(times[ps[i,]],ys[ps[i,]],pch="+",cex=2)
+  legend("topleft",legend = cal_years[i], bty = "n", cex = 3)
 
   }
   
@@ -298,16 +298,16 @@ forecast_plot <- function(cal_years, forecast_years, is.forecast.ci, forecast.ci
       else{lims <- range(forecast_ys, na.rm = TRUE)}} 
     else {lims <- range(forecast_ys, na.rm = TRUE)}
     
-    plot(forecast_times[qs[l,]],forecast_ys[qs[l,]],type='n', ylab="Gloeo (tot./L)", ylim = lims,
-         main="",xlab = "")
+    plot(forecast_times[qs[l,]],forecast_ys[qs[l,]],type='n', ylab="Gloeo (colonies/L)", ylim = lims,
+         main="",xlab = "", cex.lab = 3, cex.axis = 2.5)
     if(is.forecast.ci == "y"){ciEnvelope(forecast_times[qs[l,]],forecast.ci[1,qs[l,]],forecast.ci[3,qs[l,]],col = "plum1")}
-    lines(forecast_times[qs[l,]], exp(det.prediction[qs[l,]]), col="purple", lwd=2)
-    points(forecast_times[qs[l,]],forecast_ys[qs[l,]],pch="+",cex=0.8)
-    legend("topleft",legend = cal_years[l], bty = "n")
+    lines(forecast_times[qs[l,]], exp(det.prediction[qs[l,]]), col="purple", lwd=5)
+    points(forecast_times[qs[l,]],forecast_ys[qs[l,]],pch="+",cex=2)
+    legend("topleft",legend = forecast_years[l], bty = "n", cex = 3)
 
   }}
   
-  title(main="Obs (+), Latent CI (blue), PI (green), Obs PI (grey), Mean Pred. (<>)",outer=T) 
+  #title(main="Obs (+), Latent CI (blue), PI (green), Obs PI (grey), Mean Pred. (<>)",outer=T, cex = 3) 
   
 }
 
@@ -361,6 +361,7 @@ plot_varMat <- function(model_name){
     ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
     ciEnvelope(forecast_times[1:20], V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
     ciEnvelope(forecast_times[1:20], V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
+    ciEnvelope(forecast_times[1:20], V.pred.rel[3,], rep(1,20), col = N.cols[3])
     legend("bottomright", legend=c("Initial Cond","Process","Observation"), col=N.cols[1:3], lty=1, lwd=3, bg = 'white', cex = 0.8)
   }
   
@@ -371,6 +372,7 @@ plot_varMat <- function(model_name){
     ciEnvelope(forecast_times[1:20], V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
     ciEnvelope(forecast_times[1:20], V.pred.rel[3,], V.pred.rel[4,], col = N.cols[4])
     ciEnvelope(forecast_times[1:20], V.pred.rel[4,], V.pred.rel[5,], col = N.cols[5])
+    ciEnvelope(forecast_times[1:20], V.pred.rel[5,], rep(1,20), col = N.cols[5])
     legend("bottomright", legend=c("Initial Cond","Process","Observation","Parameter","Driver"), col=N.cols[1:5], lty=1, lwd=3, bg = 'white', cex = 0.8)
   }
   
@@ -380,6 +382,7 @@ plot_varMat <- function(model_name){
     ciEnvelope(forecast_times[1:20], V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
     ciEnvelope(forecast_times[1:20], V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
     ciEnvelope(forecast_times[1:20], V.pred.rel[3,], V.pred.rel[4,], col = N.cols[6])
+    ciEnvelope(forecast_times[1:20], V.pred.rel[4,], rep(1,20), col = N.cols[6])
     legend("bottomright", legend=c("Initial Cond","Process","Observation","Random Effects"), col=c(N.cols[1:3],N.cols[6]), lty=1, lwd=3, bg = 'white', cex = 0.8)
   }
   
@@ -389,13 +392,37 @@ plot_varMat <- function(model_name){
     ciEnvelope(forecast_times[1:20], V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
     ciEnvelope(forecast_times[1:20], V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
     ciEnvelope(forecast_times[1:20], V.pred.rel[3,], V.pred.rel[4,], col = N.cols[4])
+    ciEnvelope(forecast_times[1:20], V.pred.rel[4,], rep(1,20), col = N.cols[4])
     legend("bottomright", legend=c("Initial Cond","Process","Observation","Parameter"), col=N.cols[1:4], lty=1, lwd=3, bg = 'white', cex = 0.8)
   }
   
   return(V.pred.rel)
 }
 
-plot_forecast_only <- function(model_name){
-  N.cols <- c("black","red","green","blue","orange","yellow") ## set colors
-  
-}
+# plot_forecast_only <- function(model_name, forecast_years, forecast.ci){
+#   
+#   qs = rbind(1:20,21:40)
+#   par(mfrow = c(3,1), oma = c(1,1,5,1), mar = c(3,3,1,0)+0.1,
+#       mgp = c(2,0.5,0))
+#   
+#   for (l in 1:length(forecast_years)){
+#     
+#     
+#       if(max(forecast.ci[3,qs[l,]], na.rm = TRUE) > max(forecast_ys, na.rm = TRUE)){
+#         forecast.ci <- forecast.ci
+#         lims <- c(min(forecast.ci[1,qs[l,]], na.rm = TRUE),max(forecast.ci[3,qs[l,]], na.rm = TRUE))}
+#       else{lims <- range(forecast_ys, na.rm = TRUE)} 
+#     
+#     plot(forecast_times[qs[l,]],forecast_ys[qs[l,]],type='n', ylab="Gloeo (tot./L)", ylim = lims,
+#          main="",xlab = "")
+#     ciEnvelope(forecast_times[qs[l,]],forecast.ci[1,qs[l,]],forecast.ci[3,qs[l,]],col = "plum1")
+#     lines(forecast_times[qs[l,]], exp(det.prediction[qs[l,]]), col="purple", lwd=2)
+#     points(forecast_times[qs[l,]],forecast_ys[qs[l,]],pch="+",cex=0.8)
+#     legend("topleft",legend = forecast_years[l], bty = "n")
+#     
+#   }
+#   
+#   plot_varMat(model_name = model_name)
+#   
+#   
+# }
