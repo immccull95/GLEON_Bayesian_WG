@@ -1,0 +1,40 @@
+<<<<<<< HEAD
+##Readme file for tracking progress of different models
+##Last updated: 02-25-2019 by Whitney Beck 
+                06-12-2019 by Mary Lofton
+
+ChangepointTempExp.R - not functional, waiting on water temperature data calibrations
+
+Exponential.R - functional, but unsure if "lambda" should be "log(lamdba)"; included on EFI poster
+
+Exponential_RandomYear - functional; included on EFI poster
+
+Logistic.R - blows up when you try to run it (likely going to values too large for rjags to handle); planning to change to a Ricker model as recommended by Leah Johnson at VT
+
+RandomYearIntercept.R - functional, changed original workshop code so x[i] is a function of mu[i-1] not x[i-1]; MEL: confused by this because code still has x[i] as function of x[i-1] and that seems right to me, actually
+
+RandomYear.R - functional, changed original January Cary code so x[i] is a function of mu[i-1] not x[i-1]; MEL: confused by this because code still has x[i] as function of x[i-1] and that seems right to me, actually
+included on EFI poster
+
+ChangepointDOY.R - Shannon code from January Cary workshop
+
+DayLengthQuad - functional; included on EFI poster; 01JUL19 added random year effect
+
+DayLength.R - functional; included on EFI poster; 01JUL19 added random year effect
+
+RandomWalk.R - functional; included on EFI poster
+
+RandomWalkOOS.R - not functional, beginning of code for model selection based on out of sample data
+
+DayLengthOOS.R - not functional, beginning of code for model selection based on out of sample data
+
+Temperature.R - functional, working with air temperature data right now because can't have missing values for water temperature; included on EFI poster
+added random year effect 12JUN19
+
+TempQuad.R - not functional because of missing data; ready to go once buoy data used to calculate missing sensor data; included on EFI poster; 01JUL19 added random year effect
+
+TempExp.R - not functional because of missing data; ready to go once buoy data used to calculate missing sensor data
+
+RandomWalkZip.R - functional 
+
+>>>>>>> 6e51d4e99965b1ebfc6474b8ad9b7e0cd3c70545

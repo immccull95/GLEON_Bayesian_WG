@@ -23,7 +23,7 @@ site = c('midge') # options are midge, coffin, newbury, or fichter
 model_timestep = 7 # model timestep in days if filling in dates
 fill_dates = FALSE  # T/F for filling in dates w/o observations with NA's 
 
-model_name = 'TempQuad' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Temperature_obs_error' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/NEFI/Jags_Models/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -41,6 +41,7 @@ dat = plug_n_play_data(start_date = start_date,
                        sites = site,
                        model_timestep = model_timestep,
                        fill_dates = fill_dates)
+#dat <- dat %>% filter(!is.na(totalperL))
 
 ##look at response variable 
 y<-round(dat$totalperL*141.3707) #converting colonies per Liter to count data: volume of 2, ~1 m net tows
@@ -51,6 +52,7 @@ range(y, na.rm = T)
 Temp = dat$TOBS
 DL = dat$daylength
 year_no = as.numeric(as.factor(dat$year))
+season_weeks = length(c(min(dat$season_week):max(dat$season_week)))
 
 
 #3) JAGS Plug-Ins -----------------------------------------------------------------------------------------------------
@@ -66,9 +68,9 @@ j.model   <- jags.model (file = model,
 
 jags.out <- run.jags(model = model,
                      data = jags_plug_ins$data.model,
-                     adapt =  2000, 
-                     burnin =  500, 
-                     sample = 2500, 
+                     adapt =  10000, 
+                     burnin =  5000, 
+                     sample = 5000, 
                      n.chains = 3, 
                      inits=jags_plug_ins$init.model,
                      monitor = jags_plug_ins$variable.namesout.model)
@@ -82,12 +84,12 @@ write.jagsfile(jags.out, file=file.path("Results/Jags_Models/",paste(site,paste0
 #plots for vars with same names, i.e., betas, so have created a quick hack to fix that
 
 #ok, you have to edit this vector to include the actual names of the parameters in your model :(
-vars <- c("tau_add","beta[1]","beta[2]","beta[3]","beta[4]")
+vars <- c("tau_proc","beta1", "beta2", "beta3", "tau_yr","sd_obs")
 
 for (i in 1:length(vars)){
-  png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
+  #png(file=file.path(my_directory,paste(site,paste0(model_name,'_Convergence_',vars[i],'.png'), sep = '_')))
   plot(jags.out, vars = vars[i]) 
-  dev.off()
+  #dev.off()
 }
 
 #upload plot to Google Drive folder
@@ -111,23 +113,55 @@ saveRDS(object = DIC, file = file.path("Results/Jags_Models/", paste(site, paste
 #6) CI, PI, Obs PI Calculations
 
 times <- as.Date(as.character(dat$date))
-time.rng = c(1,length(times)) ## adjust to zoom in and out
+time.rng = c(79,98) ## adjust to zoom in and out
 ciEnvelope <- function(x,ylo,yhi,...){
   polygon(cbind(c(x, rev(x), x[1]), c(ylo, rev(yhi),
                                       ylo[1])), border = NA,...) 
 }
 
 mus=grep("mu", colnames(out))
-mu = exp(out[,mus])
-ci <- apply(mu,2,quantile,c(0.025,0.5,0.975))
+mu = out[,mus]
+ci <- apply(mu,2,quantile,c(0.1,0.5,0.9))
 preds_plug_ins <- preds_plug_ins(model_name = model_name)
-pi <- apply(exp(preds_plug_ins$pred.model),2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
-obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+pi <- apply(preds_plug_ins$pred.model,2,quantile,c(0.1,0.5,0.9), na.rm=TRUE)
+obs_pi <- apply(preds_plug_ins$pred_obs.model,2,quantile,c(0.1,0.5,0.9), na.rm=TRUE)
 
 
 #7) CI, PI, Obs PI Plots
 
 png(file=file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')), res=300, width=15, height=20, units='cm')
+par(mfrow=c(2,1))
+
+#Obs vs. Latent
+plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log="y", ylab="observed Gloeo colonies",xlim=times[time.rng], main="Obs, Latent CI")
+ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
+points(times,y,pch="+",cex=0.5)
+
+#CI, PI, Obs PI
+plot(times,ci[2,],type='n', ylab="Gloeo count",xlim=times[time.rng], main="Obs, Latent CI (blue), PI (green), Obs PI (grey)")
+ciEnvelope(times,obs_pi[1,],obs_pi[3,],col="gray")
+ciEnvelope(times,pi[1,],pi[3,],col="Green")
+ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
+points(times,y,pch="+",cex=0.8)
+points(times,obs_pi[2,],pch = 5, cex = 0.8)
+
+plot(times,ci[2,],type='n',ylim=range(y+.01,na.rm=TRUE), log = "y", ylab="Gloeo count",xlim=times[time.rng], main="Obs, Latent CI (blue), PI (green), Obs PI (grey)")
+ciEnvelope(times,obs_pi[1,]+0.0001,obs_pi[3,],col="gray")
+ciEnvelope(times,pi[1,],pi[3,],col="Green")
+ciEnvelope(times,ci[1,],ci[3,],col="lightBlue")
+points(times,y,pch="+",cex=0.5)
+
+
+dev.off()
+
+#upload plot to Google Drive folder
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')),
+             path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
+
+#same but for a single year (2010)
+time.rng = c(182,216)
+
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_CI_PI_2010.png'), sep = '_')), res=300, width=15, height=20, units='cm')
 par(mfrow=c(2,1))
 
 #Obs vs. Latent
@@ -146,8 +180,9 @@ points(times,y,pch="+",cex=0.5)
 dev.off()
 
 #upload plot to Google Drive folder
-drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')),
+drive_upload(file.path(my_directory,paste(site,paste0(model_name,'_CI_PI_2010.png'), sep = '_')),
              path = file.path("./GLEON_Bayesian_WG/Model_diagnostics",paste(site,paste0(model_name,'_CI_PI.png'), sep = '_')))
+
 
 #8) Further Diagnostic Checks and Visualization 
 

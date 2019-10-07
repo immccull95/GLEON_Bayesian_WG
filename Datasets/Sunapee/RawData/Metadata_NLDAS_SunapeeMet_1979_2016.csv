@@ -1,0 +1,13 @@
+Dataset from Nicole Ward,,,
+Sent to JAB 9 April 2019,,,
+Data from NLDAS-2 forcing file A: https://ldas.gsfc.nasa.gov/nldas/v2/forcing,,,
+Details of those metrics are described in this and the linked pages (we use forcing file A): https://ldas.gsfc.nasa.gov/nldas/NLDAS2forcing.php,,,
+,,,
+datetime,YYYY-mm-dd hh:mm:ss in EST,Hourly data from 1 January 1979-31 December 2016,
+ShortWaveRad_Wperm2,Surface downward Short wave radiation ,Watts per square meter,
+LongWaveRad_Wperm2,Surface downward Long wave radiation,Watts per square meter,
+AirTemp_degC,Air Temperature,Degrees Celsius,
+RelHum,Relative Humidity,Percent??,
+WindSpeed_mpersec,Modeled Hourly Average Wind Speed,Meters per second,"Wind speed data = (10m aboveground zonal wind speed ^2 + 10 m above ground meridional wind speed ^2). 
+ "
+Rain,Hourly total precipitation,Kilograms per square meter?,
