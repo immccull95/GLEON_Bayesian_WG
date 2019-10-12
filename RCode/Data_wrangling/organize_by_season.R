@@ -414,3 +414,73 @@ week_var_var = var(1/apply(prec_final3,2,var),na.rm = TRUE)
 
 write.csv(prec_final3, "./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_summed_precip_10OCT19.csv", row.names = FALSE)
 
+
+
+
+#############################BUOY PAR DATA########################
+par <- read_csv("./Datasets/Sunapee/RawData/Sunapee buoy data/met_data/2007-2017_PAR_L1.csv") %>%
+  filter(location == "loon") %>%
+  mutate(Date = date(datetime)) %>%
+  group_by(Date)%>%
+  summarize(daily_mean_PAR_umolm2s = mean(PAR_umolm2s, na.rm = TRUE))
+head(par)
+
+sampling_dates1 <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp.csv") %>%
+  mutate(Date = ymd(date)) %>%
+  select(Date) 
+sampling_dates2 <- unique(sampling_dates1)
+sampling_dates <- sampling_dates2[-38,1] %>%
+  add_column(sampling_time = 1:120)
+
+check <- left_join(par, sampling_dates) 
+
+
+for(i in 1:nrow(check)){
+  if(!is.na(check$sampling_time[i])){
+    check$sampling_time[c((i-6):(i-1))] <- rep(check$sampling_time[i],6)
+  }
+}
+
+final <- subset(check, !is.na(sampling_time))
+colnames(final)[3]<-"sampling_time_temp"
+final2 <- left_join(final, sampling_dates, by = "Date")
+
+#because there are uneven numbers of days between sampling dates sometimes,
+#going to do manual editing of file to be sure numbers line up
+write.csv(final2,"./Datasets/Sunapee/SummarizedData/midge_weekly_PAR_temp.csv",row.names = FALSE)
+
+parr <- read_csv("./Datasets/Sunapee/SummarizedData/midge_weekly_PAR_temp.csv") %>%
+  select(-sampling_time) %>%
+  rename(sampling_time = sampling_time_temp) %>%
+  group_by(sampling_time)%>%
+  summarize(weekly_mean_PAR_umolm2s = mean(daily_mean_PAR_umolm2s, na.rm = TRUE))
+
+par_final <- left_join(sampling_dates,parr,by = 'sampling_time') %>%
+  mutate(weekly_mean_PAR_umolm2s = ifelse(weekly_mean_PAR_umolm2s=="NaN",NA,weekly_mean_PAR_umolm2s))
+
+par_final2 <- par_final %>%
+  mutate(season_week = rep(c(1:20),times = 6)) %>%
+  mutate(sampling_year = ifelse(sampling_time %in% c(1:20),2009,
+                                ifelse(sampling_time %in% c(21:40),2010,
+                                       ifelse(sampling_time %in% c(41:60),2011,
+                                              ifelse(sampling_time %in% c(61:80),2012,
+                                                     ifelse(sampling_time %in% c(81:100),2013,2014)))))) %>%
+  select(season_week, weekly_mean_PAR_umolm2s, sampling_year) 
+
+ggplot(data = par_final2, aes(x = season_week,y= weekly_mean_PAR_umolm2s,col = as.factor(sampling_year)))+
+  geom_line(size = 1)+
+  theme_bw()
+
+par_final3 <- par_final2 %>%
+  spread(key = season_week, value = weekly_mean_PAR_umolm2s) %>%
+  select(-sampling_year)
+
+colnames(par_final3) <- paste("wk", colnames(par_final3), sep = "_")
+week_avg = colMeans(par_final3, na.rm = TRUE)
+week_var_mean = mean(1/apply(par_final3,2,var, na.rm = TRUE),na.rm = TRUE)
+week_var_var = var(1/apply(par_final3,2,var, na.rm = TRUE),na.rm = TRUE)
+
+
+write.csv(par_final3, "./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_mean_buoyPAR_12OCT19.csv", row.names = FALSE)
+
+apply(par_final3,2,var, na.rm = TRUE)
