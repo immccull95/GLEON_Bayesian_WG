@@ -347,3 +347,70 @@ mean(schmidt1$schmidt,na.rm = TRUE)
 #3.11e-5
 
 write.csv(schmidt2, "./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_forecast_05OCT19.csv", row.names = FALSE)
+
+
+##precip
+precip <- read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/gloeo_Midge_airtemp_precip.csv")
+raw_precip <- read_csv("./Datasets/Sunapee/RawData/weather/PRISM_ppttempdata/PRISM_met_1981_2017_midge.csv", skip = 10)
+sampling_dates1 <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp.csv") %>%
+  mutate(Date = ymd(date)) %>%
+  select(Date) 
+sampling_dates2 <- unique(sampling_dates1)
+sampling_dates <- sampling_dates2[-38,1] %>%
+  add_column(sampling_time = 1:120)
+head(sampling_dates)
+head(raw_precip)
+
+check <- left_join(raw_precip, sampling_dates) 
+
+
+for(i in 1:nrow(check)){
+if(!is.na(check$sampling_time[i])){
+  check$sampling_time[c((i-6):(i-1))] <- rep(check$sampling_time[i],6)
+}
+}
+
+final <- subset(check, !is.na(sampling_time))
+colnames(final)[6]<-"sampling_time_temp"
+final2 <- left_join(final, sampling_dates, by = "Date")
+
+#because there are uneven numbers of days between sampling dates sometimes,
+#going to do manual editing of file to be sure numbers line up
+write.csv(final2,"./Datasets/Sunapee/SummarizedData/midge_weekly_precip_temp.csv",row.names = FALSE)
+821/120
+120*7
+
+#read back in edited file
+prec <- read_csv("./Datasets/Sunapee/SummarizedData/midge_weekly_precip_temp.csv") %>%
+  select(-sampling_time) %>%
+  rename(sampling_time = sampling_time_temp) %>%
+  group_by(sampling_time)%>%
+  summarize(ppt_weekly_sum_mm = sum(ppt_mm))
+
+prec_final <- left_join(prec,sampling_dates,by = 'sampling_time')
+
+prec_final2 <- prec_final %>%
+  mutate(season_week = rep(c(1:20),times = 6)) %>%
+  mutate(sampling_year = ifelse(sampling_time %in% c(1:20),2009,
+                                ifelse(sampling_time %in% c(21:40),2010,
+                                       ifelse(sampling_time %in% c(41:60),2011,
+                                              ifelse(sampling_time %in% c(61:80),2012,
+                                                     ifelse(sampling_time %in% c(81:100),2013,2014)))))) %>%
+  select(season_week, ppt_weekly_sum_mm, sampling_year) 
+
+ggplot(data = prec_final2, aes(x = season_week,y= ppt_weekly_sum_mm,col = as.factor(sampling_year)))+
+  geom_line(size = 1)+
+  theme_bw()
+
+prec_final3 <- prec_final2 %>%
+  spread(key = season_week, value = ppt_weekly_sum_mm) %>%
+  select(-sampling_year)
+
+colnames(prec_final3) <- paste("wk", colnames(prec_final3), sep = "_")
+week_avg = colMeans(prec_final3, na.rm = TRUE)
+week_var_mean = mean(1/apply(prec_final3,2,var),na.rm = TRUE)
+week_var_var = var(1/apply(prec_final3,2,var),na.rm = TRUE)
+
+
+write.csv(prec_final3, "./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_summed_precip_10OCT19.csv", row.names = FALSE)
+

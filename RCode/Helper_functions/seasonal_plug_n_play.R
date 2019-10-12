@@ -145,6 +145,13 @@ jags_plug_ins <- function(model_name){
   init.Seasonal_AR_Schmidt_Temp <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_S_proc = 0.01,tau_T_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5, beta4=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_S_proc = 0.1,tau_T_proc = 0.1, beta1=0, beta2=0, beta3=0, beta4=0), list(tau_proc=1, tau_obs = 5,tau_S_proc = 1,tau_T_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5, beta4=0.5))
   params.Seasonal_AR_Schmidt_Temp <- c("tau_proc","beta1", "beta2", "beta3","beta4","tau_obs","tau_S_proc", "tau_T_proc")
   
+#Seasonal_AR_Ppt
+  data.Seasonal_AR_Ppt <- list(y=y, year_no = year_no, beta.m1=0,  beta.m2=0,beta.m3=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Ppt=Ppt, season_weeks=season_weeks,week_avg = week_avg,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84)
+  variable.names.Seasonal_AR_Ppt <- c("tau_proc", "beta1","beta2", "beta3", "tau_obs", "tau_P_proc")
+  variable.namesout.Seasonal_AR_Ppt <- c("tau_proc", "beta1", "beta2","beta3",  "mu", "tau_obs", "tau_P_proc")
+  init.Seasonal_AR_Ppt <- list(list(tau_proc=0.001, tau_obs = 0.1, tau_P_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1,  tau_obs = 1, tau_P_proc = 0.1,beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_P_proc = 1,tau_obs = 5, beta1=0.5,beta2=0.5, beta3=0.5))
+  params.Seasonal_AR_Ppt <- c("tau_proc","beta1", "beta2", "beta3","tau_obs", "tau_P_proc")
+  
   data = eval(parse(text = paste0('data.', model_name)))
   variable.names = eval(parse(text = paste0('variable.names.', model_name)))
   variable.namesout = eval(parse(text = paste0('variable.namesout.', model_name)))
@@ -880,6 +887,45 @@ if(model_name=="Seasonal_Temperature_RandomYear_Obs_error"){
       #data model
       pred_obs.Seasonal_Temperature_RandomYear_Obs_error[,t[j]] = rnorm(nsamp,pred.Seasonal_Temperature_RandomYear_Obs_error[,t[j]],sqrt(1/tau_obs))
 
+    }
+  }
+}
+
+#Seasonal_AR_Ppt
+if(model_name=="Seasonal_AR_Ppt"){
+  tau_proc = out[samp,grep("tau_proc",colnames(out))]
+  tau_obs = out[samp,grep("tau_obs",colnames(out))]
+  tau_P_proc = out[samp,grep("tau_P_proc",colnames(out))]
+  beta1 = out[samp,grep("beta1",colnames(out))]
+  beta2 = out[samp,grep("beta2",colnames(out))]
+  beta3 = out[samp,grep("beta3",colnames(out))]
+  pred.Seasonal_AR_Ppt <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Seasonal_AR_Ppt <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  year_no <- c(1:6)
+  season_weeks <- c(1:20)
+  mu_greps <- c("mu\\[1,","mu\\[2,","mu\\[3,","mu\\[4,","mu\\[5,","mu\\[6,")
+  ts = rbind(1:20,21:40,41:60,61:80,81:100,101:120)
+  lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  Pptz = Ppt
+  
+  for(k in 1:max(year_no)){
+    
+    mydata <- mu[,grep(mu_greps[k],colnames(mu))]
+    
+    t <- ts[k,]
+    
+    for(j in 2:max(season_weeks)){
+      
+      #process model
+      #filling Temp NAs
+      if(is.na(Pptz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_avg[j],sqrt(1/tau_P_proc))}
+      else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Pptz[k,j] }
+      
+      #Gloeo
+      pred.Seasonal_AR_Ppt[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
+      
+      #data model
+      pred_obs.Seasonal_AR_Ppt[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Ppt[,t[j]],sqrt(1/tau_obs))
     }
   }
 }

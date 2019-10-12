@@ -46,6 +46,12 @@ get_params <- function(model_name, forecast_type){
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
                      beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_S = 0)
     }
+    
+    if(model_name == "Seasonal_AR_Ppt"){
+      params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_P = 0)
+    }
   }
   
   ##PROCESS UNCERTAINTY 
@@ -87,6 +93,12 @@ get_params <- function(model_name, forecast_type){
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
                      beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_S = 0)
     }
+    
+    if(model_name == "Seasonal_AR_Ppt"){
+      params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_P = 0)
+    }
   }
   
   ##OBSERVATION UNCERTAINTY 
@@ -127,6 +139,12 @@ get_params <- function(model_name, forecast_type){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
                      beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Ppt"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_P = 0)
     }
   }
   
@@ -179,6 +197,11 @@ get_params <- function(model_name, forecast_type){
                      beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"], beta4 = out[prow,"beta4"],
                      sd_S = 0)
     }
+    
+    if(model_name == "Seasonal_AR_Ppt"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],sd_P = 0)
+    }
   }
   
   ##DRIVER UNCERTAINTY 
@@ -211,6 +234,12 @@ get_params <- function(model_name, forecast_type){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
                      beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],beta4 = out[prow,"beta4"],
                      sd_S = 1/sqrt(out[prow,"tau_S_proc"]))
+    }
+    
+    if(model_name == "Seasonal_AR_Ppt"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
+                     sd_P = 1/sqrt(out[prow,"tau_P_proc"]))
     }
   }
   
@@ -427,6 +456,30 @@ forecast_gloeo <- function(model_name, params, settings){
         Schmidt_prev <- Schmidt
       }}}
   
+  if(model_name == "Seasonal_AR_Ppt"){
+    
+    for(k in 1:length(forecast_years)){
+      gloeo_prev <- IC[,k]
+      t <- ts[k,]
+      
+      #populate first week of season with IC
+      if(k == 1){proc.model[,1] <- IC[,k]
+      out[,1] <- IC[,k]} else {
+        proc.model[,21] <- IC[,k]
+        out[,21] <- IC[,k]
+      }
+      
+      for(j in 2:max(season_weeks)){
+        #temp model
+        Ppt = rnorm(Nmc,week_avg[j],params$sd_P)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Ppt
+        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,t[j]] # update IC 
+      }}}
   
   return(out)
 }
@@ -506,7 +559,7 @@ make_varMat <- function(model_name){
     vm <- rbind(var.IC,var.IC.P,var.IC.P.O,var.IC.P.O.Pa)
   }
   
-  if(model_name == "Seasonal_AR_Temperature" | model_name == "Seasonal_AR_Temp_and_Diff" | model_name == "Seasonal_AR_Schmidt" | model_name == "Seasonal_AR_Schmidt_and_Diff"  ){
+  if(model_name == "Seasonal_AR_Temperature" | model_name == "Seasonal_AR_Temp_and_Diff" | model_name == "Seasonal_AR_Schmidt" | model_name == "Seasonal_AR_Schmidt_and_Diff" | model_name == "Seasonal_AR_Ppt"  ){
     var.IC     <- apply(forecast.IC,2,var)
     var.IC.P    <- apply(forecast.IC.P,2,var)
     var.IC.P.O   <- apply(forecast.IC.P.O,2,var)
@@ -516,57 +569,94 @@ make_varMat <- function(model_name){
   }
   
   return(vm)
+  
 }
 
 plot_varMat <- function(model_name){
   
   N.cols <- c("black","red","green","blue","orange","yellow") ## set colors
-  varMat = varMat
   V.pred.rel.2015 <- apply(varMat[,1:20],2,function(x) {x/max(x)})
   V.pred.rel.2016 <- apply(varMat[,21:40],2,function(x) {x/max(x)})
-  V.pred.rel <- (V.pred.rel.2015 + V.pred.rel.2016) / 2
-  
-  if(nrow(varMat) == 3){
-    plot(forecast_times[1:20], V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season")
-    ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[3,], rep(1,20), col = N.cols[3])
+
+  if(nrow(V.pred.rel.2015) == 3){
+    
+    par(mfrow = c(1,2))
+    
+    plot(forecast_times[1:20], V.pred.rel.2015[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season 2015")
+    ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel.2015)), V.pred.rel.2015[1,], col = N.cols[1])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[1,], V.pred.rel.2015[2,], col = N.cols[2])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[2,], V.pred.rel.2015[3,], col = N.cols[3])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[3,], rep(1,20), col = N.cols[3])
+    legend("bottomright", legend=c("Initial Cond","Process","Observation"), col=N.cols[1:3], lty=1, lwd=3, bg = 'white', cex = 0.8)
+    
+    plot(forecast_times[21:40], V.pred.rel.2016[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season 2016")
+    ciEnvelope(forecast_times[21:40], rep(0,ncol(V.pred.rel.2016)), V.pred.rel.2016[1,], col = N.cols[1])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[1,], V.pred.rel.2016[2,], col = N.cols[2])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[2,], V.pred.rel.2016[3,], col = N.cols[3])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[3,], rep(1,20), col = N.cols[3])
     legend("bottomright", legend=c("Initial Cond","Process","Observation"), col=N.cols[1:3], lty=1, lwd=3, bg = 'white', cex = 0.8)
   }
   
-  else if(nrow(varMat) == 5){
-    plot(forecast_times[1:20], V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season")
-    ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[3,], V.pred.rel[4,], col = N.cols[4])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[4,], V.pred.rel[5,], col = N.cols[5])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[5,], rep(1,20), col = N.cols[5])
+  else if(nrow(V.pred.rel.2015) == 5){
+    par(mfrow = c(1,2))
+    plot(forecast_times[1:20], V.pred.rel.2015[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season 2015")
+    ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel.2015)), V.pred.rel.2015[1,], col = N.cols[1])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[1,], V.pred.rel.2015[2,], col = N.cols[2])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[2,], V.pred.rel.2015[3,], col = N.cols[3])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[3,], V.pred.rel.2015[4,], col = N.cols[4])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[4,], V.pred.rel.2015[5,], col = N.cols[5])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[5,], rep(1,20), col = N.cols[5])
+    legend("bottomright", legend=c("Initial Cond","Process","Observation","Parameter","Driver"), col=N.cols[1:5], lty=1, lwd=3, bg = 'white', cex = 0.8)
+    
+    plot(forecast_times[21:40], V.pred.rel.2016[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season 2016")
+    ciEnvelope(forecast_times[21:40], rep(0,ncol(V.pred.rel.2016)), V.pred.rel.2016[1,], col = N.cols[1])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[1,], V.pred.rel.2016[2,], col = N.cols[2])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[2,], V.pred.rel.2016[3,], col = N.cols[3])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[3,], V.pred.rel.2016[4,], col = N.cols[4])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[4,], V.pred.rel.2016[5,], col = N.cols[5])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[5,], rep(1,20), col = N.cols[5])
     legend("bottomright", legend=c("Initial Cond","Process","Observation","Parameter","Driver"), col=N.cols[1:5], lty=1, lwd=3, bg = 'white', cex = 0.8)
   }
   
   else if(nrow(varMat) == 4 & model_name == "Seasonal_RandomWalk_RandomYear"){
-    plot(forecast_times[1:20], V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season")
-    ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[3,], V.pred.rel[4,], col = N.cols[6])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[4,], rep(1,20), col = N.cols[6])
+    par(mfrow = c(1,2))
+    
+    plot(forecast_times[1:20], V.pred.rel.2015[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season 2015")
+    ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel.2015)), V.pred.rel.2015[1,], col = N.cols[1])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[1,], V.pred.rel.2015[2,], col = N.cols[2])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[2,], V.pred.rel.2015[3,], col = N.cols[3])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[3,], V.pred.rel.2015[4,], col = N.cols[6])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[4,], rep(1,20), col = N.cols[6])
+    legend("bottomright", legend=c("Initial Cond","Process","Observation","Random Effects"), col=c(N.cols[1:3],N.cols[6]), lty=1, lwd=3, bg = 'white', cex = 0.8)
+    
+    plot(forecast_times[21:40], V.pred.rel.2016[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season 2016")
+    ciEnvelope(forecast_times[21:40], rep(0,ncol(V.pred.rel.2016)), V.pred.rel.2016[1,], col = N.cols[1])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[1,], V.pred.rel.2016[2,], col = N.cols[2])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[2,], V.pred.rel.2016[3,], col = N.cols[3])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[3,], V.pred.rel.2016[4,], col = N.cols[6])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[4,], rep(1,20), col = N.cols[6])
     legend("bottomright", legend=c("Initial Cond","Process","Observation","Random Effects"), col=c(N.cols[1:3],N.cols[6]), lty=1, lwd=3, bg = 'white', cex = 0.8)
   }
   
   else {
-    plot(forecast_times[1:20], V.pred.rel[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season")
-    ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel)), V.pred.rel[1,], col = N.cols[1])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[1,], V.pred.rel[2,], col = N.cols[2])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[2,], V.pred.rel[3,], col = N.cols[3])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[3,], V.pred.rel[4,], col = N.cols[4])
-    ciEnvelope(forecast_times[1:20], V.pred.rel[4,], rep(1,20), col = N.cols[4])
+    par(mfrow = c(1,2))
+    plot(forecast_times[1:20], V.pred.rel.2015[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season 2015")
+    ciEnvelope(forecast_times[1:20], rep(0,ncol(V.pred.rel.2015)), V.pred.rel.2015[1,], col = N.cols[1])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[1,], V.pred.rel.2015[2,], col = N.cols[2])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[2,], V.pred.rel.2015[3,], col = N.cols[3])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[3,], V.pred.rel.2015[4,], col = N.cols[4])
+    ciEnvelope(forecast_times[1:20], V.pred.rel.2015[4,], rep(1,20), col = N.cols[4])
+    legend("bottomright", legend=c("Initial Cond","Process","Observation","Parameter"), col=N.cols[1:4], lty=1, lwd=3, bg = 'white', cex = 0.8)
+    
+    plot(forecast_times[21:40], V.pred.rel.2016[1,], ylim=c(0,1), type='n', main="Relative Variance", ylab="Proportion of Variance", xlab="Sampling season 2016")
+    ciEnvelope(forecast_times[21:40], rep(0,ncol(V.pred.rel.2016)), V.pred.rel.2016[1,], col = N.cols[1])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[1,], V.pred.rel.2016[2,], col = N.cols[2])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[2,], V.pred.rel.2016[3,], col = N.cols[3])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[3,], V.pred.rel.2016[4,], col = N.cols[4])
+    ciEnvelope(forecast_times[21:40], V.pred.rel.2016[4,], rep(1,20), col = N.cols[4])
     legend("bottomright", legend=c("Initial Cond","Process","Observation","Parameter"), col=N.cols[1:4], lty=1, lwd=3, bg = 'white', cex = 0.8)
   }
   
-  return(V.pred.rel)
 }
 
 # plot_forecast_only <- function(model_name, forecast_years, forecast.ci){

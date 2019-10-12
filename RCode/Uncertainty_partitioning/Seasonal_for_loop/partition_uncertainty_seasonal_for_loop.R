@@ -19,7 +19,7 @@ source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Schmidt_and_Diff' #pick a model name
+model_name = 'Seasonal_AR_Ppt' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -45,6 +45,8 @@ Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week
 #for Schmidt
 Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_11AUG19.csv"))
 
+#for Ppt
+Ppt <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_summed_precip_10OCT19.csv"))
 
 years <- c(2009:2014)
 forecast_years <- c(2015:2016)
@@ -57,6 +59,9 @@ week_avg = colMeans(Temp_prior, na.rm = TRUE)
 
 #for Schmidt
 week_avg = colMeans(Schmidt, na.rm = TRUE)
+
+#for precipitation
+week_avg = colMeans(Ppt, na.rm = TRUE)
 
 #for combined covariate model
 week_avg_T = colMeans(Temp_prior, na.rm = TRUE)
@@ -325,13 +330,18 @@ dev.off()
 
 ### calculation of variances
 varMat   <- make_varMat(model_name = model_name)
+V.pred.rel.2015 <- apply(varMat[,1:20],2,function(x) {x/max(x)})
+V.pred.rel.2016 <- apply(varMat[,21:40],2,function(x) {x/max(x)})
+write.csv(V.pred.rel.2015,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_varMat_2015.csv'), sep = '_')),row.names = FALSE)
+write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
+
 
 #plot variances
 dev.off(dev.list()["RStudioGD"])
 plot_varMat(model_name = model_name)
 
 ## write stacked area plot to file
-png(file=file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')), res=300, width=15, height=10, units='cm')
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')), res=300, width=30, height=10, units='cm')
 plot_varMat(model_name = model_name)
 dev.off()
 
