@@ -19,7 +19,7 @@ source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Ppt' #pick a model name
+model_name = 'Seasonal_AR_PAR' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -48,6 +48,9 @@ Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_we
 #for Ppt
 Ppt <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_summed_precip_10OCT19.csv"))
 
+#for PAR
+Light <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_mean_buoyPAR_12OCT19.csv"))
+
 years <- c(2009:2014)
 forecast_years <- c(2015:2016)
 year_no = as.numeric(as.factor(years))
@@ -62,6 +65,9 @@ week_avg = colMeans(Schmidt, na.rm = TRUE)
 
 #for precipitation
 week_avg = colMeans(Ppt, na.rm = TRUE)
+
+#for PAR
+week_avg = colMeans(Light, na.rm = TRUE)
 
 #for combined covariate model
 week_avg_T = colMeans(Temp_prior, na.rm = TRUE)
@@ -120,6 +126,9 @@ samp <- sample.int(nrow(out),nsamp)
 mu = out[samp,mus] 
 Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
 Schmidts=c(Schmidt[1,], Schmidt[2,], Schmidt[3,], Schmidt[4,], Schmidt[5,], Schmidt[6,])
+Ppts=c(Ppt[1,], Ppt[2,], Ppt[3,], Ppt[4,], Ppt[5,], Ppt[6,])
+Lights=c(Light[1,], Light[2,], Light[3,], Light[4,], Light[5,], Light[6,])
+
 ys = exp(c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,]))
 forecast_ys = exp(c(forecast_y[1,],forecast_y[2,]))
 

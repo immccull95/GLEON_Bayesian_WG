@@ -52,6 +52,12 @@ get_params <- function(model_name, forecast_type){
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
                      sd_P = 0)
     }
+    
+    if(model_name == "Seasonal_AR_PAR"){
+      params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_L = 0)
+    }
   }
   
   ##PROCESS UNCERTAINTY 
@@ -99,6 +105,12 @@ get_params <- function(model_name, forecast_type){
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
                      sd_P = 0)
     }
+    
+    if(model_name == "Seasonal_AR_PAR"){
+      params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_L = 0)
+    }
   }
   
   ##OBSERVATION UNCERTAINTY 
@@ -145,6 +157,12 @@ get_params <- function(model_name, forecast_type){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
                      sd_P = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_PAR"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_L = 0)
     }
   }
   
@@ -202,6 +220,11 @@ get_params <- function(model_name, forecast_type){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
                      beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],sd_P = 0)
     }
+    
+    if(model_name == "Seasonal_AR_PAR"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],sd_L = 0)
+    }
   }
   
   ##DRIVER UNCERTAINTY 
@@ -240,6 +263,12 @@ get_params <- function(model_name, forecast_type){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
                      beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
                      sd_P = 1/sqrt(out[prow,"tau_P_proc"]))
+    }
+    
+    if(model_name == "Seasonal_AR_PAR"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
+                     sd_L = 1/sqrt(out[prow,"tau_L_proc"]))
     }
   }
   
@@ -481,6 +510,32 @@ forecast_gloeo <- function(model_name, params, settings){
         gloeo_prev <- out[,t[j]] # update IC 
       }}}
   
+  if(model_name == "Seasonal_AR_PAR"){
+    
+    for(k in 1:length(forecast_years)){
+      gloeo_prev <- IC[,k]
+      t <- ts[k,]
+      
+      #populate first week of season with IC
+      if(k == 1){proc.model[,1] <- IC[,k]
+      out[,1] <- IC[,k]} else {
+        proc.model[,21] <- IC[,k]
+        out[,21] <- IC[,k]
+      }
+      
+      for(j in 2:max(season_weeks)){
+        #temp model
+        Light = rnorm(Nmc,week_avg[j],params$sd_L)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Light
+        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,t[j]] # update IC 
+      }}}
+  
+  
   return(out)
 }
 
@@ -559,7 +614,7 @@ make_varMat <- function(model_name){
     vm <- rbind(var.IC,var.IC.P,var.IC.P.O,var.IC.P.O.Pa)
   }
   
-  if(model_name == "Seasonal_AR_Temperature" | model_name == "Seasonal_AR_Temp_and_Diff" | model_name == "Seasonal_AR_Schmidt" | model_name == "Seasonal_AR_Schmidt_and_Diff" | model_name == "Seasonal_AR_Ppt"  ){
+  if(model_name == "Seasonal_AR_Temperature" | model_name == "Seasonal_AR_Temp_and_Diff" | model_name == "Seasonal_AR_Schmidt" | model_name == "Seasonal_AR_Schmidt_and_Diff" | model_name == "Seasonal_AR_Ppt" | model_name == "Seasonal_AR_PAR"  ){
     var.IC     <- apply(forecast.IC,2,var)
     var.IC.P    <- apply(forecast.IC.P,2,var)
     var.IC.P.O   <- apply(forecast.IC.P.O,2,var)
