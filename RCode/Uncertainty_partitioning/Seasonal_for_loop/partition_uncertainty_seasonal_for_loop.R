@@ -339,6 +339,10 @@ dev.off()
 
 ### calculation of variances
 varMat   <- make_varMat(model_name = model_name)
+
+###consider adding code here to make sure the intervals are ordered from smallest to greatest 
+#to avoid weird overlapping when plotting due to small decreases in predictions
+#with all uncertainties incorporated due to chance
 V.pred.rel.2015 <- apply(varMat[,1:20],2,function(x) {x/max(x)})
 V.pred.rel.2016 <- apply(varMat[,21:40],2,function(x) {x/max(x)})
 write.csv(V.pred.rel.2015,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_varMat_2015.csv'), sep = '_')),row.names = FALSE)
