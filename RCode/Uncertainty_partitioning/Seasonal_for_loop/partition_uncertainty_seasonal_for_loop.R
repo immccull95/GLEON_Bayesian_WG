@@ -19,7 +19,7 @@ source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_PAR' #pick a model name
+model_name = 'Seasonal_AR_Wnd' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -51,6 +51,10 @@ Ppt <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly
 #for PAR
 Light <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_mean_buoyPAR_12OCT19.csv"))
 
+#for Wnd
+Wnd <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_perc90_14OCT19.csv"))
+
+
 years <- c(2009:2014)
 forecast_years <- c(2015:2016)
 year_no = as.numeric(as.factor(years))
@@ -68,6 +72,9 @@ week_avg = colMeans(Ppt, na.rm = TRUE)
 
 #for PAR
 week_avg = colMeans(Light, na.rm = TRUE)
+
+#for Wnd
+week_avg = colMeans(Wnd, na.rm = TRUE)
 
 #for combined covariate model
 week_avg_T = colMeans(Temp_prior, na.rm = TRUE)
@@ -128,6 +135,7 @@ Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
 Schmidts=c(Schmidt[1,], Schmidt[2,], Schmidt[3,], Schmidt[4,], Schmidt[5,], Schmidt[6,])
 Ppts=c(Ppt[1,], Ppt[2,], Ppt[3,], Ppt[4,], Ppt[5,], Ppt[6,])
 Lights=c(Light[1,], Light[2,], Light[3,], Light[4,], Light[5,], Light[6,])
+Wnds=c(Wnd[1,], Wnd[2,], Wnd[3,], Wnd[4,], Wnd[5,], Wnd[6,])
 
 ys = exp(c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,]))
 forecast_ys = exp(c(forecast_y[1,],forecast_y[2,]))
@@ -172,7 +180,7 @@ forecast_plot(cal_years = c(2009:2014),
 ######## initial condition uncertainty #######
 
 # set up IC: sample rows from previous analysis
-Nmc = 1000
+Nmc = 30000
 IC = cbind(rnorm(Nmc,-5,sqrt(1/100)),rnorm(Nmc,-5,sqrt(1/100)))
 
 ##Set up forecast
@@ -191,6 +199,9 @@ forecast.IC <- forecast_gloeo(model_name = model_name,
 
 ## Plot
 forecast.ci.IC = apply(exp(forecast.IC), 2, quantile, c(0.025,0.5,0.975))
+#log
+forecast.ci.IC = apply(forecast.IC, 2, quantile, c(0.025,0.5,0.975))
+
 
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
@@ -220,6 +231,8 @@ forecast.IC.P <- forecast_gloeo(model_name = model_name,
 
 ## Plot
 forecast.ci.IC.P = apply(exp(forecast.IC.P), 2, quantile, c(0.025,0.5,0.975))
+#log
+forecast.ci.IC.P = apply(forecast.IC.P, 2, quantile, c(0.025,0.5,0.975))
 
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
@@ -248,6 +261,9 @@ forecast.IC.P.O <- forecast_gloeo(model_name = model_name,
 
 ## Plot
 forecast.ci.IC.P.O = apply(exp(forecast.IC.P.O), 2, quantile, c(0.025,0.5,0.975))
+#log
+forecast.ci.IC.P.O = apply(forecast.IC.P.O, 2, quantile, c(0.025,0.5,0.975))
+
 
 tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')
 forecast_plot(cal_years = c(2009:2014), 
@@ -302,6 +318,9 @@ forecast.IC.P.O.Pa <- forecast_gloeo(model_name = model_name,
 
 ## Plot
 forecast.ci.IC.P.O.Pa = apply(exp(forecast.IC.P.O.Pa), 2, quantile, c(0.025,0.5,0.975))
+#log
+forecast.ci.IC.P.O.Pa = apply(forecast.IC.P.O.Pa, 2, quantile, c(0.025,0.5,0.975))
+
 
 tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')
 forecast_plot(cal_years = c(2009:2014), 
@@ -328,6 +347,9 @@ forecast.IC.P.O.Pa.D <- forecast_gloeo(model_name = model_name,
 
 ## Plot
 forecast.ci.IC.P.O.Pa.D = apply(exp(forecast.IC.P.O.Pa.D), 2, quantile, c(0.025,0.5,0.975))
+#log
+forecast.ci.IC.P.O.Pa.D = apply(forecast.IC.P.O.Pa.D, 2, quantile, c(0.025,0.5,0.975))
+
 
 tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')
 forecast_plot(cal_years = c(2009:2014), 
@@ -339,12 +361,14 @@ dev.off()
 
 ### calculation of variances
 varMat   <- make_varMat(model_name = model_name)
+varMat1 <- apply(varMat,2,sort)
+write.csv(varMat1, file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_total_var.csv'), sep = '_')),row.names = FALSE)
 
 ###consider adding code here to make sure the intervals are ordered from smallest to greatest 
 #to avoid weird overlapping when plotting due to small decreases in predictions
 #with all uncertainties incorporated due to chance
-V.pred.rel.2015 <- apply(varMat[,1:20],2,function(x) {x/max(x)})
-V.pred.rel.2016 <- apply(varMat[,21:40],2,function(x) {x/max(x)})
+V.pred.rel.2015 <- apply(varMat1[,1:20],2,function(x) {x/max(x)})
+V.pred.rel.2016 <- apply(varMat1[,21:40],2,function(x) {x/max(x)})
 write.csv(V.pred.rel.2015,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_varMat_2015.csv'), sep = '_')),row.names = FALSE)
 write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
 
@@ -359,4 +383,30 @@ plot_varMat(model_name = model_name)
 dev.off()
 
 
+##looking at percentile of obs in forecast distribution
+obs_quantile <- NULL
+for (i in 1:length(forecast_ys)){
+percentile1 <- ecdf(exp(forecast.IC.P.O.Pa.D[,i])) ##be sure to change this as needed - needs to be made into a function!!!
+obs_quantile[i] <- percentile1(forecast_ys[i])
+}
+obs_quantile <- obs_quantile[-c(1,21)]
 
+#should add vertical line at 0.5 to this
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_obs_quantile.png'), sep = '_')), res=300, width=10, height=10, units='cm')
+hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
+     cex.axis = 1.2, cex.lab = 1.2)
+dev.off()
+
+#a perfect forecast
+obs_quantile <- rep(0.5, 40)
+png(file=file.path(my_directory,paste("perfect_forecast.png")), res=300, width=10, height=10, units='cm')
+hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
+     cex.axis = 1.2, cex.lab = 1.2, breaks = seq(0,1,0.1))
+dev.off()
+
+#an extremely good forecast
+obs_quantile <- c(0.2, 0.3, 0.3, 0.4, 0.4, 0.4, 0.4, rep(0.5,26), 0.6, 0.6, 0.6, 0.6, 0.7, 0.7, 0.8)
+png(file=file.path(my_directory,paste("excellent_forecast.png")), res=300, width=10, height=10, units='cm')
+hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
+     cex.axis = 1.2, cex.lab = 1.2, breaks = seq(0,1,0.1))
+dev.off()

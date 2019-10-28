@@ -601,7 +601,7 @@ forecast_plot <- function(cal_years, forecast_years, is.forecast.ci, forecast.ci
   ci = ci
   pi = pi
   obs_pi = obs_pi
-  N.cols <- c("black","red","green","blue","orange")
+  N.cols <- c("gray","coral","deepskyblue4","gold","darkseagreen3")
   trans <- 0.8       ## set transparancy
   
   par(mfrow = c(rows,2), oma = c(1,1,5,1), mar = c(4,6,1,0)+0.1,
@@ -632,9 +632,9 @@ forecast_plot <- function(cal_years, forecast_years, is.forecast.ci, forecast.ci
     
     plot(forecast_times[qs[l,]],forecast_ys[qs[l,]],type='n', ylab="Gloeo (colonies/L)", ylim = lims,
          main="",xlab = "", cex.lab = 3, cex.axis = 2.5)
-    if(is.forecast.ci == "y"){ciEnvelope(forecast_times[qs[l,]],forecast.ci[1,qs[l,]],forecast.ci[3,qs[l,]],col = "plum1")}
-    lines(forecast_times[qs[l,]], exp(det.prediction[qs[l,]]), col="purple", lwd=5)
-    points(forecast_times[qs[l,]],forecast_ys[qs[l,]],pch="+",cex=2)
+    if(is.forecast.ci == "y"){ciEnvelope(forecast_times[qs[l,]],forecast.ci[1,qs[l,]],forecast.ci[3,qs[l,]],col = "lightblue")}
+    lines(forecast_times[qs[l,]], exp(det.prediction[qs[l,]]), col="black", lwd=5)
+    points(forecast_times[qs[l,]],forecast_ys[qs[l,]],pch="+",cex=3)
     legend("topleft",legend = forecast_years[l], bty = "n", cex = 3)
 
   }}
@@ -683,7 +683,7 @@ make_varMat <- function(model_name){
 
 plot_varMat <- function(model_name){
   
-  N.cols <- c("black","red","green","blue","orange","yellow") ## set colors
+  N.cols <- c("gray","coral","deepskyblue4","gold","darkseagreen3","orange")  
   V.pred.rel.2015 <- apply(varMat1[,1:20],2,function(x) {x/max(x)})
   V.pred.rel.2016 <- apply(varMat1[,21:40],2,function(x) {x/max(x)})
 
@@ -795,3 +795,107 @@ plot_varMat <- function(model_name){
 #   
 #   
 # }
+
+# ##forecast plot on log scale
+# lims <- c(min(forecast.ci.IC.P.O.Pa.D[1,c(1:20)])-0.2, max(forecast.ci.IC.P.O.Pa.D[3,c(1:20)])+0.2)
+# png(filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/forecast_log.png",
+#     width = 8, height = 6, units = "in", res = 300)
+# par(mgp = c(2.3,1,0))
+# plot(forecast_times[1:20],log(forecast_ys[1:20]),type = "n",
+#      xlab = "",ylab = expression(paste("log(colonies", ~~L^{-1},")")),cex.lab = 1.5, cex.axis = 1.4,
+#      ylim = lims)
+# lines(forecast_times[1:20],det.prediction[1:20], lwd = 2)
+# dev.off()
+# 
+# #ic only
+# png(filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/ci_log_IC.png",
+#     width = 8, height = 6, units = "in", res = 300)
+# par(mgp = c(2.3,1,0))
+# plot(forecast_times[1:20],log(forecast_ys[1:20]),type = "n",
+#      xlab = "",ylab = expression(paste("log(colonies", ~~L^{-1},")")),cex.lab = 1.5, cex.axis = 1.4,
+#      ylim = lims)
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC[1,c(1:20)],forecast.ci.IC[3,c(1:20)],col="gray")
+# lines(forecast_times[1:20],det.prediction[1:20], lwd = 2)
+# dev.off()
+# 
+# #ic + p
+# png(filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/ci_log_ICP.png",
+#     width = 8, height = 6, units = "in", res = 300)
+# par(mgp = c(2.3,1,0))
+# plot(forecast_times[1:20],log(forecast_ys[1:20]),type = "n",
+#      xlab = "",ylab = expression(paste("log(colonies", ~~L^{-1},")")),cex.lab = 1.5, cex.axis = 1.4,
+#      ylim = lims)
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P[1,c(1:20)],forecast.ci.IC.P[3,c(1:20)],col="coral")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC[1,c(1:20)],forecast.ci.IC[3,c(1:20)],col="gray")
+# lines(forecast_times[1:20],det.prediction[1:20], lwd = 2)
+# dev.off()
+# 
+# #ic + p + o
+# png(filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/ci_log_ICPO.png",
+#     width = 8, height = 6, units = "in", res = 300)
+# par(mgp = c(2.3,1,0))
+# plot(forecast_times[1:20],log(forecast_ys[1:20]),type = "n",
+#      xlab = "",ylab = expression(paste("log(colonies", ~~L^{-1},")")),cex.lab = 1.5, cex.axis = 1.4,
+#      ylim = lims)
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P.O[1,c(1:20)],forecast.ci.IC.P.O[3,c(1:20)],col="deepskyblue4")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P[1,c(1:20)],forecast.ci.IC.P[3,c(1:20)],col="coral")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC[1,c(1:20)],forecast.ci.IC[3,c(1:20)],col="gray")
+# lines(forecast_times[1:20],det.prediction[1:20], lwd = 2)
+# dev.off()
+# 
+# #ic + p + o + pa
+# png(filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/ci_log_ICPOPa.png",
+#     width = 8, height = 6, units = "in", res = 300)
+# par(mgp = c(2.3,1,0))
+# plot(forecast_times[1:20],log(forecast_ys[1:20]),type = "n",
+#      xlab = "",ylab = expression(paste("log(colonies", ~~L^{-1},")")),cex.lab = 1.5, cex.axis = 1.4,
+#      ylim = lims)
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P.O.Pa[1,c(1:20)],forecast.ci.IC.P.O.Pa[3,c(1:20)],col="gold")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P.O[1,c(1:20)],forecast.ci.IC.P.O[3,c(1:20)],col="deepskyblue4")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P[1,c(1:20)],forecast.ci.IC.P[3,c(1:20)],col="coral")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC[1,c(1:20)],forecast.ci.IC[3,c(1:20)],col="gray")
+# lines(forecast_times[1:20],det.prediction[1:20], lwd = 2)
+# dev.off()
+# 
+# #ic + p + o + pa + d
+# png(filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/ci_log_ICPOPaD.png",
+#     width = 8, height = 6, units = "in", res = 300)
+# par(mgp = c(2.3,1,0))
+# plot(forecast_times[1:20],log(forecast_ys[1:20]),type = "n",
+#      xlab = "",ylab = expression(paste("log(colonies", ~~L^{-1},")")),cex.lab = 1.5, cex.axis = 1.4,
+#      ylim = lims)
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P.O.Pa.D[1,c(1:20)],forecast.ci.IC.P.O.Pa.D[3,c(1:20)],col="darkseagreen3")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P.O.Pa[1,c(1:20)],forecast.ci.IC.P.O.Pa[3,c(1:20)],col="gold")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P.O[1,c(1:20)],forecast.ci.IC.P.O[3,c(1:20)],col="deepskyblue4")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P[1,c(1:20)],forecast.ci.IC.P[3,c(1:20)],col="coral")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC[1,c(1:20)],forecast.ci.IC[3,c(1:20)],col="gray")
+# lines(forecast_times[1:20],det.prediction[1:20], lwd = 2)
+# dev.off()
+# 
+# #not partitioned
+# #ic + p + o + pa + d
+# png(filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/ci_log_nopart.png",
+#     width = 8, height = 6, units = "in", res = 300)
+# par(mgp = c(2.3,1,0))
+# plot(forecast_times[1:20],log(forecast_ys[1:20]),type = "n",
+#      xlab = "",ylab = expression(paste("log(colonies", ~~L^{-1},")")),cex.lab = 1.5, cex.axis = 1.4,
+#      ylim = lims)
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P.O.Pa.D[1,c(1:20)],forecast.ci.IC.P.O.Pa.D[3,c(1:20)],col="lightblue")
+# lines(forecast_times[1:20],det.prediction[1:20], lwd = 2)
+# dev.off()
+# 
+# #ic + p + o + pa + d + obs
+# png(filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/ci_log_ICPOPaD_obs.png",
+#     width = 8, height = 6, units = "in", res = 300)
+# par(mgp = c(2.3,1,0))
+# plot(forecast_times[1:20],log(forecast_ys[1:20]),type = "n",
+#      xlab = "",ylab = expression(paste("log(colonies", ~~L^{-1},")")),cex.lab = 1.5, cex.axis = 1.4,
+#      ylim = lims)
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P.O.Pa.D[1,c(1:20)],forecast.ci.IC.P.O.Pa.D[3,c(1:20)],col="darkseagreen3")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P.O.Pa[1,c(1:20)],forecast.ci.IC.P.O.Pa[3,c(1:20)],col="gold")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P.O[1,c(1:20)],forecast.ci.IC.P.O[3,c(1:20)],col="deepskyblue4")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC.P[1,c(1:20)],forecast.ci.IC.P[3,c(1:20)],col="coral")
+# ciEnvelope(forecast_times[1:20],forecast.ci.IC[1,c(1:20)],forecast.ci.IC[3,c(1:20)],col="gray")
+# lines(forecast_times[1:20],det.prediction[1:20], lwd = 2)
+# points(forecast_times[1:20],forecast_ys[1:20],pch = 16)
+# dev.off()
