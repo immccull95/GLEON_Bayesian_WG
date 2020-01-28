@@ -19,7 +19,7 @@ source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Wnd' #pick a model name
+model_name = 'Seasonal_RandomWalk_Obs_error' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -180,7 +180,7 @@ forecast_plot(cal_years = c(2009:2014),
 ######## initial condition uncertainty #######
 
 # set up IC: sample rows from previous analysis
-Nmc = 30000
+Nmc = 1000
 IC = cbind(rnorm(Nmc,-5,sqrt(1/100)),rnorm(Nmc,-5,sqrt(1/100)))
 
 ##Set up forecast
@@ -386,7 +386,7 @@ dev.off()
 ##looking at percentile of obs in forecast distribution
 obs_quantile <- NULL
 for (i in 1:length(forecast_ys)){
-percentile1 <- ecdf(exp(forecast.IC.P.O.Pa.D[,i])) ##be sure to change this as needed - needs to be made into a function!!!
+percentile1 <- ecdf(exp(forecast.IC.P.O[,i])) ##be sure to change this as needed - needs to be made into a function!!!
 obs_quantile[i] <- percentile1(forecast_ys[i])
 }
 obs_quantile <- obs_quantile[-c(1,21)]
@@ -394,7 +394,7 @@ obs_quantile <- obs_quantile[-c(1,21)]
 #should add vertical line at 0.5 to this
 png(file=file.path(my_directory,paste(site,paste0(model_name,'_obs_quantile.png'), sep = '_')), res=300, width=10, height=10, units='cm')
 hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
-     cex.axis = 1.2, cex.lab = 1.2)
+     cex.axis = 1.2, cex.lab = 1.2, xlim = c(0.2,1), breaks = seq(0.2,1,0.1))
 dev.off()
 
 #a perfect forecast
