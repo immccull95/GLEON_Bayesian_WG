@@ -310,7 +310,7 @@ ggplot(data = watertemp_plot, aes(x = season_week, y = watertemp_mean, group = y
 write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_forecast_05OCT19.csv", row.names = FALSE)
 
 ###########################
-#cleaning for Schmidt stability
+#cleaning for max. Schmidt stability
 
 schmidt <- readRDS("~/RProjects/GLEON_Bayesian_WG/Datasets/Sunapee/Stability_metrics/sunapee_schmidt_stability.rds") %>%
   mutate(datetime = as.POSIXct(datetime)) %>%
@@ -318,7 +318,8 @@ schmidt <- readRDS("~/RProjects/GLEON_Bayesian_WG/Datasets/Sunapee/Stability_met
 
 dates <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp_forecast.csv") %>%
   filter(site == "midge") %>%
-  select(date)
+  select(date) %>%
+  filter(!year(date) %in% c(2015:2016))
 
 schmidt1 <- left_join(dates,schmidt, by = "date") %>%
   group_by(date) %>%
@@ -332,7 +333,7 @@ ggplot(data = schmidt1, aes(x = date, y = schmidt))+
   theme_bw()
 
 schmidt2 <- schmidt1 %>%
-  mutate(season_week = rep(c(1:20),times = 8),
+  mutate(season_week = rep(c(1:20),times = 6),
          year = year(date)) %>%
   select(year, season_week, schmidt) %>%
   spread(key = season_week, value = schmidt) %>%
@@ -346,8 +347,7 @@ mean(schmidt1$schmidt,na.rm = TRUE)
 1/(sd(schmidt1$schmidt,na.rm = TRUE)^2)
 #3.11e-5
 
-write.csv(schmidt2, "./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_forecast_05OCT19.csv", row.names = FALSE)
-
+write.csv(schmidt2, "./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_max_Schmidt_28JAN20.csv", row.names = FALSE)
 
 ##precip
 precip <- read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/gloeo_Midge_airtemp_precip.csv")

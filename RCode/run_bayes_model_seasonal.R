@@ -15,7 +15,7 @@ source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Wnd' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Seasonal_AR_Mintemp_Lag' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -24,7 +24,7 @@ nsamp = 1500
 
 #My local directory - use as a temporary file repository for plot files before uploading
 #to Google Drive for the team to see :)
-my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results"
+my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/Final_analysis"
 
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
@@ -33,6 +33,10 @@ y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_wee
 #for watertemp_mean
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_11AUG19.csv"))
 Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_16AUG19.csv"))
+
+#for watertemp_min
+Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_16AUG19.csv"))
+Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_min_16AUG19.csv"))
 
 #for airtemp
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
@@ -57,6 +61,9 @@ site = "Midge"
 
 #for water temp
 week_avg = colMeans(Temp_prior, na.rm = TRUE)
+
+#for min water temp
+week_min = colMeans(Temp_prior, na.rm = TRUE)
 # week_var_mean = mean(1/apply(Temp_prior,2,var),na.rm = TRUE)
 # week_var_var = var(1/apply(Temp_prior,2,var),na.rm = TRUE)
 
@@ -103,7 +110,7 @@ jags.out <- run.jags(model = model,
                      monitor = jags_plug_ins$variable.namesout.model)
 
 #5) Save and Process Output
-write.jagsfile(jags.out, file=file.path("Results/Jags_Models/GLEON_poster",paste(site,paste0(model_name,'.txt'), sep = '_')), 
+write.jagsfile(jags.out, file=file.path("Results/Jags_Models/Final_analysis",paste(site,paste0(model_name,'.txt'), sep = '_')), 
                remove.tags = TRUE, write.data = TRUE, write.inits = TRUE)
 
 #this will create multiple plots if var names are different but doesn't create multiple
@@ -124,7 +131,7 @@ sum <- summary(jags.out, vars = jags_plug_ins$variable.names.model)
 DIC=dic.samples(j.model, n.iter=5000)
 
 #save results
-sink(file = file.path("Results/Jags_Models/GLEON_poster",paste(site,paste0(model_name,'_param_summary.txt'), sep = '_')))
+sink(file = file.path("Results/Jags_Models/Final_analysis",paste(site,paste0(model_name,'_param_summary.txt'), sep = '_')))
 print("Parameter summary")
 sum
 print("DIC")
@@ -135,7 +142,7 @@ jags.out.mcmc <- as.mcmc.list(jags.out)
 out <- as.matrix(jags.out.mcmc)
 
 #Seasonal_RandomWalk_Obs_error
-saveRDS(object = DIC, file = file.path("Results/Jags_Models/GLEON_poster", paste(site, paste0(model_name,'_DIC.rds'), sep = '_')))
+saveRDS(object = DIC, file = file.path("Results/Jags_Models/Final_analysis", paste(site, paste0(model_name,'_DIC.rds'), sep = '_')))
 
 
 #6) CI, PI, Obs PI Calculations
@@ -270,7 +277,7 @@ for(i in 2:ncol(mypreds)){
   obs_quantile_dm[i] <- percentile1(exp(perc_ys[i])) #get percentile of obs 
 }
 
-sink(file = file.path("Results/Jags_Models/GLEON_poster",paste(site,paste0(model_name,'_obs_pred_differences.txt'), sep = '_')))
+sink(file = file.path("Results/Jags_Models/Final_analysis",paste(site,paste0(model_name,'_obs_pred_differences.txt'), sep = '_')))
 
 #Mean of difference between pred and obs
 obspred_mean=mean(obs_diff, na.rm=TRUE)

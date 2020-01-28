@@ -19,7 +19,7 @@ source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_RandomWalk_Obs_error' #pick a model name
+model_name = 'Seasonal_AR_Mintemp_Lag' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -28,7 +28,7 @@ nsamp = 1500
 
 #My local directory - use as a temporary file repository for plot files before uploading
 #to Google Drive for the team to see :)
-my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning"
+my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/Final_analysis/Uncertainty_partitioning"
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
 y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))+0.003)
@@ -38,6 +38,10 @@ forecast_y <- forecast_y[7:8,]
 #for watertemp_mean
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_11AUG19.csv"))
 Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_16AUG19.csv"))
+
+#for watertemp_min
+Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_16AUG19.csv"))
+Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_min_16AUG19.csv"))
 
 #for airtemp
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
@@ -63,6 +67,9 @@ site = "Midge"
 
 #for water temp
 week_avg = colMeans(Temp_prior, na.rm = TRUE)
+
+#for min water temp
+week_min = colMeans(Temp_prior, na.rm = TRUE)
 
 #for Schmidt
 week_avg = colMeans(Schmidt, na.rm = TRUE)
@@ -397,16 +404,16 @@ hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
      cex.axis = 1.2, cex.lab = 1.2, xlim = c(0.2,1), breaks = seq(0.2,1,0.1))
 dev.off()
 
-#a perfect forecast
-obs_quantile <- rep(0.5, 40)
-png(file=file.path(my_directory,paste("perfect_forecast.png")), res=300, width=10, height=10, units='cm')
-hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
-     cex.axis = 1.2, cex.lab = 1.2, breaks = seq(0,1,0.1))
-dev.off()
-
-#an extremely good forecast
-obs_quantile <- c(0.2, 0.3, 0.3, 0.4, 0.4, 0.4, 0.4, rep(0.5,26), 0.6, 0.6, 0.6, 0.6, 0.7, 0.7, 0.8)
-png(file=file.path(my_directory,paste("excellent_forecast.png")), res=300, width=10, height=10, units='cm')
-hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
-     cex.axis = 1.2, cex.lab = 1.2, breaks = seq(0,1,0.1))
-dev.off()
+# #a perfect forecast
+# obs_quantile <- rep(0.5, 40)
+# png(file=file.path(my_directory,paste("perfect_forecast.png")), res=300, width=10, height=10, units='cm')
+# hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
+#      cex.axis = 1.2, cex.lab = 1.2, breaks = seq(0,1,0.1))
+# dev.off()
+# 
+# #an extremely good forecast
+# obs_quantile <- c(0.2, 0.3, 0.3, 0.4, 0.4, 0.4, 0.4, rep(0.5,26), 0.6, 0.6, 0.6, 0.6, 0.7, 0.7, 0.8)
+# png(file=file.path(my_directory,paste("excellent_forecast.png")), res=300, width=10, height=10, units='cm')
+# hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
+#      cex.axis = 1.2, cex.lab = 1.2, breaks = seq(0,1,0.1))
+# dev.off()
