@@ -15,7 +15,7 @@ source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Mintemp_Lag' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Seasonal_AR_MinSchmidt_Diff' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -41,8 +41,11 @@ Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year
 #for airtemp
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
 
-#for Schmidt
-Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_11AUG19.csv"))
+#for max Schmidt
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_max_Schmidt_28JAN20.csv"))
+
+#for min Schmidt
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_28JAN20.csv"))
 
 #for Ppt
 Ppt <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_summed_precip_10OCT19.csv"))
@@ -69,6 +72,16 @@ week_min = colMeans(Temp_prior, na.rm = TRUE)
 
 #for Schmidt
 week_avg = colMeans(Schmidt, na.rm = TRUE)
+# week_var_mean = mean(1/apply(Schmidt,2,var),na.rm = TRUE)
+# week_var_var = var(1/apply(Schmidt,2,var),na.rm = TRUE)
+
+#for max Schmidt
+week_max = colMeans(Schmidt, na.rm = TRUE)
+# week_var_mean = mean(1/apply(Schmidt,2,var),na.rm = TRUE)
+# week_var_var = var(1/apply(Schmidt,2,var),na.rm = TRUE)
+
+#for min Schmidt
+week_min = colMeans(Schmidt, na.rm = TRUE)
 # week_var_mean = mean(1/apply(Schmidt,2,var),na.rm = TRUE)
 # week_var_var = var(1/apply(Schmidt,2,var),na.rm = TRUE)
 

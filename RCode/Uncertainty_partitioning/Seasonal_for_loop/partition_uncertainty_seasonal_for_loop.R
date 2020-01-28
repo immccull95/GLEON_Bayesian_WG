@@ -19,7 +19,7 @@ source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Mintemp_Lag' #pick a model name
+model_name = 'Seasonal_AR_MinSchmidt_Diff' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -46,8 +46,11 @@ Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year
 #for airtemp
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
 
-#for Schmidt
-Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_11AUG19.csv"))
+#for max Schmidt
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_max_Schmidt_28JAN20.csv"))
+
+#for min Schmidt
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_28JAN20.csv"))
 
 #for Ppt
 Ppt <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_summed_precip_10OCT19.csv"))
@@ -73,6 +76,12 @@ week_min = colMeans(Temp_prior, na.rm = TRUE)
 
 #for Schmidt
 week_avg = colMeans(Schmidt, na.rm = TRUE)
+
+#for max Schmidt
+week_max = colMeans(Schmidt, na.rm = TRUE)
+
+#for min Schmidt
+week_min = colMeans(Schmidt, na.rm = TRUE)
 
 #for precipitation
 week_avg = colMeans(Ppt, na.rm = TRUE)
@@ -207,7 +216,7 @@ forecast.IC <- forecast_gloeo(model_name = model_name,
 ## Plot
 forecast.ci.IC = apply(exp(forecast.IC), 2, quantile, c(0.025,0.5,0.975))
 #log
-forecast.ci.IC = apply(forecast.IC, 2, quantile, c(0.025,0.5,0.975))
+#forecast.ci.IC = apply(forecast.IC, 2, quantile, c(0.025,0.5,0.975))
 
 
 forecast_plot(cal_years = c(2009:2014), 
@@ -239,7 +248,7 @@ forecast.IC.P <- forecast_gloeo(model_name = model_name,
 ## Plot
 forecast.ci.IC.P = apply(exp(forecast.IC.P), 2, quantile, c(0.025,0.5,0.975))
 #log
-forecast.ci.IC.P = apply(forecast.IC.P, 2, quantile, c(0.025,0.5,0.975))
+#forecast.ci.IC.P = apply(forecast.IC.P, 2, quantile, c(0.025,0.5,0.975))
 
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
@@ -269,7 +278,7 @@ forecast.IC.P.O <- forecast_gloeo(model_name = model_name,
 ## Plot
 forecast.ci.IC.P.O = apply(exp(forecast.IC.P.O), 2, quantile, c(0.025,0.5,0.975))
 #log
-forecast.ci.IC.P.O = apply(forecast.IC.P.O, 2, quantile, c(0.025,0.5,0.975))
+#forecast.ci.IC.P.O = apply(forecast.IC.P.O, 2, quantile, c(0.025,0.5,0.975))
 
 
 tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')
@@ -326,7 +335,7 @@ forecast.IC.P.O.Pa <- forecast_gloeo(model_name = model_name,
 ## Plot
 forecast.ci.IC.P.O.Pa = apply(exp(forecast.IC.P.O.Pa), 2, quantile, c(0.025,0.5,0.975))
 #log
-forecast.ci.IC.P.O.Pa = apply(forecast.IC.P.O.Pa, 2, quantile, c(0.025,0.5,0.975))
+#forecast.ci.IC.P.O.Pa = apply(forecast.IC.P.O.Pa, 2, quantile, c(0.025,0.5,0.975))
 
 
 tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')
@@ -355,7 +364,7 @@ forecast.IC.P.O.Pa.D <- forecast_gloeo(model_name = model_name,
 ## Plot
 forecast.ci.IC.P.O.Pa.D = apply(exp(forecast.IC.P.O.Pa.D), 2, quantile, c(0.025,0.5,0.975))
 #log
-forecast.ci.IC.P.O.Pa.D = apply(forecast.IC.P.O.Pa.D, 2, quantile, c(0.025,0.5,0.975))
+#forecast.ci.IC.P.O.Pa.D = apply(forecast.IC.P.O.Pa.D, 2, quantile, c(0.025,0.5,0.975))
 
 
 tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')

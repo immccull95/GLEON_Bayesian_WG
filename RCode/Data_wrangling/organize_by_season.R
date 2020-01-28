@@ -321,11 +321,18 @@ dates <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp_forecast
   select(date) %>%
   filter(!year(date) %in% c(2015:2016))
 
+#####MAX SCHMIDT
 schmidt1 <- left_join(dates,schmidt, by = "date") %>%
   group_by(date) %>%
   summarize(schmidt = max(schmidt.stability, na.rm = TRUE))
 
+#########MIN SCHMIDT
+schmidt1 <- left_join(dates,schmidt, by = "date") %>%
+  group_by(date) %>%
+  summarize(schmidt = min(schmidt.stability, na.rm = TRUE))
+
 schmidt1[schmidt1 == -Inf] <- NA
+schmidt1[schmidt1 == Inf] <- NA
 schmidt1[schmidt1 < 0] <- 0
 
 ggplot(data = schmidt1, aes(x = date, y = schmidt))+
@@ -347,7 +354,7 @@ mean(schmidt1$schmidt,na.rm = TRUE)
 1/(sd(schmidt1$schmidt,na.rm = TRUE)^2)
 #3.11e-5
 
-write.csv(schmidt2, "./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_max_Schmidt_28JAN20.csv", row.names = FALSE)
+write.csv(schmidt2, "./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_28JAN20.csv", row.names = FALSE)
 
 ##precip
 precip <- read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/gloeo_Midge_airtemp_precip.csv")

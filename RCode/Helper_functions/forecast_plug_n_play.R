@@ -47,6 +47,18 @@ get_params <- function(model_name, forecast_type){
                      sd_S = 0)
     }
     
+    if(model_name == "Seasonal_AR_MaxSchmidt_Lag"){
+      params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_MinSchmidt_Diff"){
+      params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_S = 0)
+    }
+    
     if(model_name == "Seasonal_AR_Temp_and_Diff"){
       params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
@@ -118,6 +130,18 @@ get_params <- function(model_name, forecast_type){
                      sd_S = 0)
     }
     
+    if(model_name == "Seasonal_AR_MaxSchmidt_Lag"){
+      params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_MinSchmidt_Diff"){
+      params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_S = 0)
+    }
+    
     if(model_name == "Seasonal_AR_Temp_and_Diff"){
       params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
@@ -184,6 +208,18 @@ get_params <- function(model_name, forecast_type){
     }
     
     if(model_name == "Seasonal_AR_Schmidt"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_MaxSchmidt_Lag"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_MinSchmidt_Diff"){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
                      sd_S = 0)
@@ -270,6 +306,18 @@ get_params <- function(model_name, forecast_type){
                      sd_S = 0)
     }
     
+    if(model_name == "Seasonal_AR_MaxSchmidt_Lag"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
+                     sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_MinSchmidt_Diff"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
+                     sd_S = 0)
+    }
+    
     if(model_name == "Seasonal_AR_Temp_and_Diff"){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
                      beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],beta4 = out[prow,"beta4"],
@@ -330,6 +378,18 @@ get_params <- function(model_name, forecast_type){
                      sd_S = 1/sqrt(out[prow,"tau_S_proc"]))
     }
     
+    if(model_name == "Seasonal_AR_MaxSchmidt_Lag"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
+                     sd_S = 1/sqrt(out[prow,"tau_S_proc"]))
+    }
+    
+    if(model_name == "Seasonal_AR_MinSchmidt_Diff"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
+                     sd_S = 1/sqrt(out[prow,"tau_S_proc"]))
+    }
+    
     if(model_name == "Seasonal_AR_Temp_and_Diff"){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
                      beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"], beta4 = out[prow,"beta4"],
@@ -377,6 +437,7 @@ forecast_gloeo <- function(model_name, params, settings){
   forecast_years = forecast_years
   week_avg = week_avg
   week_min = week_min
+  week_max = week_max
   
   if(model_name == "Seasonal_RandomWalk"){
     
@@ -598,12 +659,63 @@ forecast_gloeo <- function(model_name, params, settings){
         gloeo_prev <- out[,t[j]] # update IC 
       }}}
   
+  if(model_name == "Seasonal_AR_MaxSchmidt_Lag"){
+    
+    for(k in 1:length(forecast_years)){
+      gloeo_prev <- IC[,k]
+      t <- ts[k,]
+      
+      #populate first week of season with IC
+      if(k == 1){proc.model[,1] <- IC[,k]
+      out[,1] <- IC[,k]} else {
+        proc.model[,21] <- IC[,k]
+        out[,21] <- IC[,k]
+      }
+      
+      for(j in 2:max(season_weeks)){
+        #temp model
+        Schmidt = rnorm(Nmc,week_max[j-1],params$sd_S)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Schmidt
+        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,t[j]] # update IC 
+      }}}
+  
+  if(model_name == "Seasonal_AR_MinSchmidt_Diff"){
+    
+    for(k in 1:length(forecast_years)){
+      gloeo_prev <- IC[,k]
+      t <- ts[k,]
+      
+      #populate first week of season with IC
+      if(k == 1){proc.model[,1] <- IC[,k]
+      out[,1] <- IC[,k]} else {
+        proc.model[,21] <- IC[,k]
+        out[,21] <- IC[,k]
+      }
+      
+      for(j in 2:max(season_weeks)){
+        #temp model
+        prev_Schmidt = rnorm(Nmc,week_min[j-1],params$sd_S)
+        Schmidt = rnorm(Nmc,week_min[j],params$sd_S)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*(Schmidt-prev_Schmidt)
+        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,t[j]] # update IC 
+      }}}
+  
   if(model_name == "Seasonal_AR_Schmidt_and_Diff"){
     
     for(k in 1:length(forecast_years)){
       gloeo_prev <- IC[,k]
       t <- ts[k,]
-      Schmidt_prev = rnorm(Nmc,week_avg[1],params$sd_S)
+      Schmidt_prev = rnorm(Nmc,week_avg[i],params$sd_S)
       
       #populate first week of season with IC
       if(k == 1){proc.model[,1] <- IC[,k]
@@ -779,7 +891,7 @@ make_varMat <- function(model_name){
     vm <- rbind(var.IC,var.IC.P,var.IC.P.O,var.IC.P.O.Pa)
   }
   
-  if(model_name == "Seasonal_AR_Temperature" | model_name == "Seasonal_AR_Temp_and_Diff" | model_name == "Seasonal_AR_Schmidt" | model_name == "Seasonal_AR_Schmidt_and_Diff" | model_name == "Seasonal_AR_Ppt" | model_name == "Seasonal_AR_PAR" | model_name == "Seasonal_AR_Wnd" |  model_name == "Seasonal_AR_Mintemp" | model_name == "Seasonal_AR_Mintemp_Lag"){
+  if(model_name == "Seasonal_AR_Temperature" | model_name == "Seasonal_AR_Temp_and_Diff" | model_name == "Seasonal_AR_Schmidt" | model_name == "Seasonal_AR_Schmidt_and_Diff" | model_name == "Seasonal_AR_Ppt" | model_name == "Seasonal_AR_PAR" | model_name == "Seasonal_AR_Wnd" |  model_name == "Seasonal_AR_Mintemp" | model_name == "Seasonal_AR_Mintemp_Lag" | model_name == "Seasonal_AR_MaxSchmidt_Lag" | model_name == "Seasonal_AR_MinSchmidt_Diff"){
     var.IC     <- apply(forecast.IC,2,var)
     var.IC.P    <- apply(forecast.IC.P,2,var)
     var.IC.P.O   <- apply(forecast.IC.P.O,2,var)

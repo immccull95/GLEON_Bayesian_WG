@@ -137,6 +137,20 @@ jags_plug_ins <- function(model_name){
   init.Seasonal_AR_Schmidt_Lag <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_S_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_S_proc = 0.1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_obs = 5,tau_S_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5))
   params.Seasonal_AR_Schmidt_Lag <- c("tau_proc","beta1", "beta2", "beta3","tau_obs","tau_S_proc")
   
+#Seasonal_AR_MaxSchmidt_Lag
+  data.Seasonal_AR_MaxSchmidt_Lag <- list(y=y, year_no = year_no,week_max = week_max, beta.m1=0,  beta.m2=0,beta.m3=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Schmidt=Schmidt, season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84)
+  variable.names.Seasonal_AR_MaxSchmidt_Lag <- c("tau_proc", "beta1","beta2", "beta3", "tau_obs","tau_S_proc")
+  variable.namesout.Seasonal_AR_MaxSchmidt_Lag <- c("tau_proc", "beta1", "beta2","beta3",  "mu", "tau_obs", "tau_S_proc")
+  init.Seasonal_AR_MaxSchmidt_Lag <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_S_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_S_proc = 0.1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_obs = 5,tau_S_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5))
+  params.Seasonal_AR_MaxSchmidt_Lag <- c("tau_proc","beta1", "beta2", "beta3","tau_obs","tau_S_proc")
+  
+#Seasonal_AR_MinSchmidt_Diff
+  data.Seasonal_AR_MinSchmidt_Diff <- list(y=y, year_no = year_no,week_min = week_min, beta.m1=0,  beta.m2=0,beta.m3=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Schmidt=Schmidt, season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84)
+  variable.names.Seasonal_AR_MinSchmidt_Diff <- c("tau_proc", "beta1","beta2", "beta3", "tau_obs","tau_S_proc")
+  variable.namesout.Seasonal_AR_MinSchmidt_Diff <- c("tau_proc", "beta1", "beta2","beta3",  "mu", "tau_obs", "tau_S_proc")
+  init.Seasonal_AR_MinSchmidt_Diff <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_S_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_S_proc = 0.1, beta1=0, beta2=0, beta3=0), list(tau_proc=1, tau_obs = 5,tau_S_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5))
+  params.Seasonal_AR_MinSchmidt_Diff <- c("tau_proc","beta1", "beta2", "beta3","tau_obs","tau_S_proc")
+  
 #Seasonal_AR_Schmidt_Diff
   data.Seasonal_AR_Schmidt_Diff <- list(y=y, year_no = year_no,week_avg = week_avg, beta.m1=0,  beta.m2=0,beta.m3=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001, Schmidt=Schmidt, season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84)
   variable.names.Seasonal_AR_Schmidt_Diff <- c("tau_proc", "beta1","beta2", "beta3", "tau_obs","tau_S_proc")
@@ -214,6 +228,8 @@ Ppts=c(Ppt[1,], Ppt[2,], Ppt[3,], Ppt[4,], Ppt[5,], Ppt[6,])
 Lights=c(Light[1,], Light[2,], Light[3,], Light[4,], Light[5,], Light[6,])
 
 week_avg = week_avg
+week_min = week_min
+week_max = week_max
 week_avg_T = week_avg_T
 week_avg_S = week_avg_S
 
@@ -725,6 +741,87 @@ if(model_name=="Seasonal_AR_Schmidt"){
     }
   }
 }
+
+#Seasonal_AR_MaxSchmidt_Lag
+if(model_name=="Seasonal_AR_MaxSchmidt_Lag"){
+  tau_proc = out[samp,grep("tau_proc",colnames(out))]
+  tau_obs = out[samp,grep("tau_obs",colnames(out))]
+  tau_S_proc = out[samp,grep("tau_S_proc",colnames(out))]
+  beta1 = out[samp,grep("beta1",colnames(out))]
+  beta2 = out[samp,grep("beta2",colnames(out))]
+  beta3 = out[samp,grep("beta3",colnames(out))]
+  pred.Seasonal_AR_MaxSchmidt_Lag <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Seasonal_AR_MaxSchmidt_Lag <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  year_no <- c(1:6)
+  season_weeks <- c(1:20)
+  mu_greps <- c("mu\\[1,","mu\\[2,","mu\\[3,","mu\\[4,","mu\\[5,","mu\\[6,")
+  ts = rbind(1:20,21:40,41:60,61:80,81:100,101:120)
+  lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  Schmidtz = Schmidt
+  
+  for(k in 1:max(year_no)){
+    
+    mydata <- mu[,grep(mu_greps[k],colnames(mu))]
+    
+    t <- ts[k,]
+    
+    
+    for(j in 2:max(season_weeks)){
+      
+      #process model
+      #filling Temp NAs
+      if(is.na(Schmidtz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_max[j-1],sqrt(1/tau_S_proc))}
+      else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Schmidtz[k,j-1] }
+      
+      pred.Seasonal_AR_MaxSchmidt_Lag[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
+      
+      #data model
+      pred_obs.Seasonal_AR_MaxSchmidt_Lag[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_MaxSchmidt_Lag[,t[j]],sqrt(1/tau_obs))
+    }
+  }
+}
+
+#Seasonal_AR_MinSchmidt_Diff
+if(model_name=="Seasonal_AR_MinSchmidt_Diff"){
+  tau_proc = out[samp,grep("tau_proc",colnames(out))]
+  tau_obs = out[samp,grep("tau_obs",colnames(out))]
+  tau_S_proc = out[samp,grep("tau_S_proc",colnames(out))]
+  beta1 = out[samp,grep("beta1",colnames(out))]
+  beta2 = out[samp,grep("beta2",colnames(out))]
+  beta3 = out[samp,grep("beta3",colnames(out))]
+  pred.Seasonal_AR_MinSchmidt_Diff <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Seasonal_AR_MinSchmidt_Diff <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  year_no <- c(1:6)
+  season_weeks <- c(1:20)
+  mu_greps <- c("mu\\[1,","mu\\[2,","mu\\[3,","mu\\[4,","mu\\[5,","mu\\[6,")
+  ts = rbind(1:20,21:40,41:60,61:80,81:100,101:120)
+  lambda <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  Schmidtz = Schmidt
+  
+  for(k in 1:max(year_no)){
+    
+    mydata <- mu[,grep(mu_greps[k],colnames(mu))]
+    
+    t <- ts[k,]
+    
+    
+    for(j in 2:max(season_weeks)){
+      
+      #process model
+      #filling Temp NAs
+      if(is.na(Schmidtz[k,j-1]) & !is.na(Schmidtz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(Schmidtz[k,j]-rnorm(nsamp,week_min[j-1],sqrt(1/tau_S_proc)))}
+      else if(is.na(Schmidtz[k,j-1]) & is.na(Schmidtz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_min[j],sqrt(1/tau_S_proc))-rnorm(nsamp,week_min[j-1],sqrt(1/tau_S_proc)))}
+      else if(!is.na(Schmidtz[k,j-1]) & is.na(Schmidtz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(rnorm(nsamp,week_min[j],sqrt(1/tau_S_proc))-Schmidtz[k,j-1])}
+      else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*(Schmidtz[k,j]-Schmidtz[k,j-1]) }
+      
+      pred.Seasonal_AR_MinSchmidt_Diff[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
+      
+      #data model
+      pred_obs.Seasonal_AR_MinSchmidt_Diff[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_MinSchmidt_Diff[,t[j]],sqrt(1/tau_obs))
+    }
+  }
+}
+
 
 #Seasonal_AR_Schmidt_Temp
 if(model_name=="Seasonal_AR_Schmidt_Temp"){
