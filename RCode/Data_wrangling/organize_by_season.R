@@ -548,3 +548,181 @@ week_var_var = var(1/apply(wnd_final3,2,var, na.rm = TRUE),na.rm = TRUE)
 
 write.csv(wnd_final3, "./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_perc90_14OCT19.csv", row.names = FALSE)
 
+################GROWING DEGREE DAYS
+gdd <- cleaned_dat1 %>%
+  filter(!date %in% bad_dates) %>%
+  arrange(year,date,site) %>%
+  mutate(season_week = rep(c(1:20),times = 6, each = 4))
+
+gdd1 <- gdd %>%
+  filter(site == "midge") %>%
+  select(year, season_week, watertemp_max, watertemp_min) %>%
+  mutate(watertemp_gdd = ((watertemp_max + watertemp_min)/2) - 4) %>%
+  mutate(watertemp_gdd = ifelse(is.na(watertemp_gdd),0,watertemp_gdd))%>%
+  select(-watertemp_max,-watertemp_min) %>%
+  spread(key = year, value = watertemp_gdd) %>%
+  select(-season_week)
+
+
+for (i in 1:ncol(gdd1)){
+  gdd1[,i] <- cumsum(na.omit(gdd1[,i]))
+}
+
+gdd1[3,1] <- NA
+gdd1[19,1] <- NA
+
+gdd2 <- as.tibble(t(gdd1))
+
+colnames(gdd2) <- colnames(gloeo_seasonal)
+
+#write.csv(gdd2, "./Datasets/Sunapee/SummarizedData/GDD_year_by_week_28JAN20.csv", row.names = FALSE)
+
+gdd_reg <- as.numeric(c(gdd2[1,],gdd2[2,],gdd2[3,],gdd2[4,],gdd2[5,],gdd2[6,]))
+
+gloeo_seasonal_reg <- c(gloeo_seasonal[1,],gloeo_seasonal[2,],gloeo_seasonal[3,],gloeo_seasonal[4,],gloeo_seasonal[5,],gloeo_seasonal[6,])
+gloeo_seasonal_reg2 <- log(as.numeric(gloeo_seasonal_reg)+0.003)
+
+plot(gdd_reg,gloeo_seasonal_reg2)
+
+summary(lm(gloeo_seasonal_reg2~gdd_reg))$r.squared
+
+gdd_reg2 <- gdd_reg^2
+
+quadratic.model <-lm(gloeo_seasonal_reg2 ~ gdd_reg + gdd_reg2)
+
+summary(quadratic.model)
+
+gdd_values <- seq(0, 400, 1)
+
+predicted.gloeo <- predict(quadratic.model,list(gdd_reg=gdd_values, gdd_reg2=gdd_values^2))
+
+plot(gdd_reg,gloeo_seasonal_reg2)
+lines(gdd_values, predicted.gloeo, col = "darkgreen", lwd = 3)
+
+for (i in 1:nrow(gdd2)){
+gdd3 <- as.numeric(gdd2[i,])
+gloeo <- log(as.numeric(gloeo_seasonal[i,])+0.003)
+
+gdd4 <- gdd3^2
+
+quadratic.model <-lm(gloeo ~ gdd3 + gdd4)
+
+print(summary(quadratic.model)$r.squared)
+
+gdd_values <- seq(0, 400, 1)
+
+predicted.gloeo <- predict(quadratic.model,list(gdd3=gdd_values, gdd4=gdd_values^2))
+
+plot(gdd3,gloeo)
+lines(gdd_values, predicted.gloeo, col = "darkgreen", lwd = 3)}
+
+################DAY LENGTH
+gdd <- cleaned_dat1 %>%
+  filter(!date %in% bad_dates) %>%
+  arrange(year,date,site) %>%
+  mutate(season_week = rep(c(1:20),times = 6, each = 4))
+
+gdd2 <- gdd %>%
+  filter(site == "midge") %>%
+  select(year, season_week, daylength) %>%
+  spread(key = season_week, value = daylength) %>%
+  select(-year)
+
+write.csv(gdd2, "./Datasets/Sunapee/SummarizedData/daylength_year_by_week_28JAN20.csv", row.names = FALSE)
+
+gdd_reg <- as.numeric(c(gdd2[1,],gdd2[2,],gdd2[3,],gdd2[4,],gdd2[5,],gdd2[6,]))
+
+gloeo_seasonal_reg <- c(gloeo_seasonal[1,],gloeo_seasonal[2,],gloeo_seasonal[3,],gloeo_seasonal[4,],gloeo_seasonal[5,],gloeo_seasonal[6,])
+gloeo_seasonal_reg2 <- log(as.numeric(gloeo_seasonal_reg)+0.003)
+
+plot(gdd_reg,gloeo_seasonal_reg2)
+
+summary(lm(gloeo_seasonal_reg2~gdd_reg))$r.squared
+
+gdd_reg2 <- gdd_reg^2
+
+quadratic.model <-lm(gloeo_seasonal_reg2 ~ gdd_reg + gdd_reg2)
+
+summary(quadratic.model)
+
+gdd_values <- seq(10, 16, 0.1)
+
+predicted.gloeo <- predict(quadratic.model,list(gdd_reg=gdd_values, gdd_reg2=gdd_values^2))
+
+plot(gdd_reg,gloeo_seasonal_reg2)
+lines(gdd_values, predicted.gloeo, col = "darkgreen", lwd = 3)
+
+for (i in 1:nrow(gdd2)){
+  gdd3 <- as.numeric(gdd2[i,])
+  gloeo <- log(as.numeric(gloeo_seasonal[i,])+0.003)
+  
+  gdd4 <- gdd3^2
+  
+  quadratic.model <-lm(gloeo ~ gdd3 + gdd4)
+  
+  print(summary(quadratic.model)$r.squared)
+  
+  gdd_values <- seq(0, 400, 1)
+  
+  predicted.gloeo <- predict(quadratic.model,list(gdd3=gdd_values, gdd4=gdd_values^2))
+  
+  plot(gdd3,gloeo)
+  lines(gdd_values, predicted.gloeo, col = "darkgreen", lwd = 3)}
+
+################OTHER VARS
+gdd <- cleaned_dat1 %>%
+  filter(!date %in% bad_dates) %>%
+  arrange(year,date,site) %>%
+  mutate(season_week = rep(c(1:20),times = 6, each = 4))
+
+gdd2 <- gdd %>%
+  filter(site == "midge") %>%
+  select(year, season_week, watertemp_max) %>%
+  spread(key = season_week, value = watertemp_max) %>%
+  select(-year)
+
+gdd2 <- read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_max_Schmidt_28JAN20.csv")
+
+gdd_reg <- as.numeric(c(gdd2[1,],gdd2[2,],gdd2[3,],gdd2[4,],gdd2[5,],gdd2[6,]))
+
+gloeo_seasonal_reg <- c(gloeo_seasonal[1,],gloeo_seasonal[2,],gloeo_seasonal[3,],gloeo_seasonal[4,],gloeo_seasonal[5,],gloeo_seasonal[6,])
+gloeo_seasonal_reg2 <- log(as.numeric(gloeo_seasonal_reg)+0.003)
+
+plot(gdd_reg,gloeo_seasonal_reg2)
+
+summary(lm(gloeo_seasonal_reg2~gdd_reg))$r.squared
+
+gdd_reg2 <- gdd_reg^2
+
+quadratic.model <-lm(gloeo_seasonal_reg2 ~ gdd_reg + gdd_reg2)
+
+summary(quadratic.model)
+
+gdd_values <- seq(10, 16, 0.1)
+
+predicted.gloeo <- predict(quadratic.model,list(gdd_reg=gdd_values, gdd_reg2=gdd_values^2))
+
+plot(gdd_reg,gloeo_seasonal_reg2)
+lines(gdd_values, predicted.gloeo, col = "darkgreen", lwd = 3)
+
+for (i in 1:nrow(gdd2)){
+  gdd3 <- as.numeric(gdd2[i,])
+  gloeo <- log(as.numeric(gloeo_seasonal[i,])+0.003)
+  
+  gdd4 <- gdd3^2
+  
+  linear.model <-lm(gloeo ~ gdd3 + gdd4)
+  
+  print(summary(linear.model)$r.squared)
+  
+  quadratic.model <-lm(gloeo ~ gdd3 + gdd4)
+  
+  print(summary(quadratic.model)$r.squared)
+  
+  gdd_values <- seq(0, 700, 1)
+  
+  predicted.gloeo <- predict(quadratic.model,list(gdd3=gdd_values, gdd4=gdd_values^2))
+  
+  plot(gdd3,gloeo)
+  lines(gdd_values, predicted.gloeo, col = "darkgreen", lwd = 3)}
+
