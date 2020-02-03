@@ -19,7 +19,7 @@ source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_MinSchmidt_Diff' #pick a model name
+model_name = 'Seasonal_AR_UnderwaterLight' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -28,7 +28,7 @@ nsamp = 1500
 
 #My local directory - use as a temporary file repository for plot files before uploading
 #to Google Drive for the team to see :)
-my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/Final_analysis/Uncertainty_partitioning"
+my_directory <- "C:/Users/Mary Lofton/Dropbox/Ch5/Final_analysis/Uncertainty_partitioning"
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
 y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))+0.003)
@@ -52,11 +52,20 @@ Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_we
 #for min Schmidt
 Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_28JAN20.csv"))
 
+#for GDD
+GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_28JAN20.csv"))
+
+#for DayLength
+DayLength <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/daylength_year_by_week_28JAN20.csv"))
+
 #for Ppt
 Ppt <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_summed_precip_10OCT19.csv"))
 
 #for PAR
 Light <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_mean_buoyPAR_12OCT19.csv"))
+
+#for underwater light from HOBOs
+Light <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/UnderwaterLight_year_by_week_02FEB20.csv"))
 
 #for Wnd
 Wnd <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_perc90_14OCT19.csv"))
@@ -83,11 +92,21 @@ week_max = colMeans(Schmidt, na.rm = TRUE)
 #for min Schmidt
 week_min = colMeans(Schmidt, na.rm = TRUE)
 
+#for GDD
+week_avg = colMeans(GDD, na.rm = TRUE)
+
+#for DayLength
+week_avg = colMeans(DayLength, na.rm = TRUE)
+
 #for precipitation
 week_avg = colMeans(Ppt, na.rm = TRUE)
 
 #for PAR
 week_avg = colMeans(Light, na.rm = TRUE)
+
+#for underwater light
+week_avg = colMeans(Light, na.rm = TRUE)
+week_avg[c(19,20)]<- week_avg[18]
 
 #for Wnd
 week_avg = colMeans(Wnd, na.rm = TRUE)
@@ -152,6 +171,8 @@ Schmidts=c(Schmidt[1,], Schmidt[2,], Schmidt[3,], Schmidt[4,], Schmidt[5,], Schm
 Ppts=c(Ppt[1,], Ppt[2,], Ppt[3,], Ppt[4,], Ppt[5,], Ppt[6,])
 Lights=c(Light[1,], Light[2,], Light[3,], Light[4,], Light[5,], Light[6,])
 Wnds=c(Wnd[1,], Wnd[2,], Wnd[3,], Wnd[4,], Wnd[5,], Wnd[6,])
+GDDs=c(GDD[1,], GDD[2,], GDD[3,], GDD[4,], GDD[5,], GDD[6,])
+DayLengths=c(DayLength[1,], DayLength[2,], DayLength[3,], DayLength[4,], DayLength[5,], DayLength[6,])
 
 ys = exp(c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,]))
 forecast_ys = exp(c(forecast_y[1,],forecast_y[2,]))

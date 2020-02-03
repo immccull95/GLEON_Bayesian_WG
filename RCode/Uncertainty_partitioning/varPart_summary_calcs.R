@@ -107,7 +107,7 @@ dat6 <- dat5 %>%
 allvar <- ggplot(data = dat6, aes(x = reorder(Mod_name,-mean_perc_var),y = mean_perc_var,color = Var_type,fill = Var_type))+
   geom_col()+
   theme_classic()+
-  theme(axis.text.x = element_blank(),
+  theme(axis.text.x = element_text(size = 16, angle = 90),
         axis.text.y = element_text(size = 16),axis.title = element_text(size = 20),
         legend.title = element_text(size = 18), legend.text = element_text(size = 16))+
   labs(fill = "Variance type",color = "Variance type")+
@@ -115,8 +115,8 @@ allvar <- ggplot(data = dat6, aes(x = reorder(Mod_name,-mean_perc_var),y = mean_
   scale_color_manual(values = c("darkseagreen3","gold","deepskyblue4","coral","gray"))+
   xlab("")+
   ylab("Proportion of forecast variance")
-ggsave(allvar, filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/variance_by_model_no_labs.png",
-       device = "png",height = 6, width = 12, units = "in")
+ggsave(allvar, filename = "C:/Users/Mary Lofton/Dropbox/Ch5/Final_figs/variance_by_model.png",
+       device = "png",height = 10, width = 12, units = "in")
 
 driver <- subset(dat5, Var_type == "Driver") #lower for good models
 parameter <- subset(dat5, Var_type == "Parameter") #higher for good models
@@ -168,19 +168,24 @@ p1 <- ggplot(data = dat4, aes(x = Mod_name, y = variance))+
   xlab("")+
   ylab("Forecast variance")
 p1
-ggsave(p1, filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/total_var_covars.png",
+ggsave(p1, filename = "C:/Users/Mary Lofton/Dropbox/Ch5/Final_figs/total_var_covars.png",
        device = "png",height = 6, width = 4, units = "in")
 
-p2 <- ggplot(data = dat4, aes(x = Mod_name, y = variance))+
+p2 <- ggplot(data = dat5, aes(x = Mod_name, y = variance))+
   geom_boxplot()+
   theme_classic()+
-  theme(axis.text.x = element_blank(),
+  theme(axis.text.x = element_text(angle = 90),
         axis.text.y = element_text(size = 16),axis.title = element_text(size = 20),
         legend.title = element_text(size = 18), legend.text = element_text(size = 16))+
   xlab("")+
   ylab("Forecast variance")
-ggsave(p2, filename = "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning/total_var_covars_no_labs.png",
-       device = "png",height = 6, width = 9, units = "in")
+ggsave(p2, filename = "C:/Users/Mary Lofton/Dropbox/Ch5/Final_figs/total_var_random_walks.png",
+       device = "png",height = 6, width = 1.3, units = "in")
+
+#summary of variance
+dat7 <- dat4 %>%
+  group_by(Mod_name)%>%
+  summarize(mean_var = mean(variance, na.rm = TRUE))
 
 #example informed and uninformed prior
 hist(rgamma(10000,0.001,0.001), breaks = 20, xlab = "Observation error",

@@ -726,3 +726,25 @@ for (i in 1:nrow(gdd2)){
   plot(gdd3,gloeo)
   lines(gdd_values, predicted.gloeo, col = "darkgreen", lwd = 3)}
 
+########################HOBO PAR DATA
+hobo <- read_csv("./Datasets/Sunapee/SummarizedData/light_day_HOBO_aggregation.csv") %>%
+  select(date, light_Newbury.sum)
+
+head(hobo)
+
+datez <- cleaned_dat1 %>%
+  filter(site == "newbury") %>%
+  select(date, year, season_week)
+
+check <- left_join(datez, hobo, by = "date")
+
+#get in shape for seasonal for-loop
+hobo_seasonal <- check %>%
+  select(year, season_week, light_Newbury.sum) %>%
+  spread(key = season_week, value = light_Newbury.sum) %>%
+  select(-year)
+
+colnames(hobo_seasonal) <- paste("wk", colnames(hobo_seasonal), sep = "_")
+
+write.csv(hobo_seasonal, "./Datasets/Sunapee/SummarizedData/UnderwaterLight_year_by_week_02FEB20.csv", row.names = FALSE)
+
