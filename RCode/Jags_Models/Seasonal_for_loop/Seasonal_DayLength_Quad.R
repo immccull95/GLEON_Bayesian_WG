@@ -18,7 +18,7 @@ model{
     
     #process model for Gloeo
     mu[k,j]~dnorm(lambda[k,j],tau_proc) 
-    lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*DayLength[k,j] + beta4*(DayLength[k,j]^2) 
+    lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*DayLength[k,j] + beta4*(DayLength[k,j]^2)  
     
     #process model for temperature
     DayLength[k,j]~dnorm(week_avg[j],tau_D_proc)
