@@ -15,7 +15,7 @@ model{
     
     #process model for Gloeo
     mu[k,j]~dnorm(lambda[k,j],tau_proc) 
-    lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*Temp[k,j-1] + beta4*Light[k,j]
+    lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*Temp[k,j] + beta4*Light[k,j]
     
     #process model for temperature
     Temp[k,j]~dnorm(week_min[j],tau_T_proc)

@@ -228,19 +228,19 @@ jags_plug_ins <- function(model_name){
   init.Seasonal_AR_Mintemp_Lag_MaxSchmidt_Lag <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_T_proc = 0.01,tau_S_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5, beta4=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_T_proc = 0.1,tau_S_proc = 0.1, beta1=0, beta2=0, beta3=0, beta4=0), list(tau_proc=1, tau_obs = 5,tau_T_proc = 1,tau_S_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5, beta4=0.5))
   params.Seasonal_AR_Mintemp_Lag_MaxSchmidt_Lag <- c("tau_proc","beta1", "beta2", "beta3","beta4","tau_obs","tau_T_proc", "tau_S_proc")
   
-#Seasonal_AR_Mintemp_Lag_UnderwaterLight
-  data.Seasonal_AR_Mintemp_Lag_UnderwaterLight <- list(y=y, year_no = year_no,week_min = week_min, week_avg = week_avg, beta.m1=0,  beta.m2=0,beta.m3=0,beta.m4=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001,beta.v4=0.001, Temp=Temp, Light=Light,season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84)
-  variable.names.Seasonal_AR_Mintemp_Lag_UnderwaterLight <- c("tau_proc", "beta1","beta2", "beta3","beta4", "tau_obs","tau_T_proc", "tau_L_proc")
-  variable.namesout.Seasonal_AR_Mintemp_Lag_UnderwaterLight <- c("tau_proc", "beta1", "beta2","beta3","beta4",  "mu", "tau_obs", "tau_T_proc", "tau_L_proc")
-  init.Seasonal_AR_Mintemp_Lag_UnderwaterLight <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_T_proc = 0.01,tau_L_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5, beta4=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_T_proc = 0.1,tau_L_proc = 0.1, beta1=0, beta2=0, beta3=0, beta4=0), list(tau_proc=1, tau_obs = 5,tau_T_proc = 1,tau_L_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5, beta4=0.5))
-  params.Seasonal_AR_Mintemp_Lag_UnderwaterLight <- c("tau_proc","beta1", "beta2", "beta3","beta4","tau_obs","tau_T_proc", "tau_L_proc")
+#Seasonal_AR_Mintemp_UnderwaterLight
+  data.Seasonal_AR_Mintemp_UnderwaterLight <- list(y=y, year_no = year_no,week_min = week_min, week_avg = week_avg, beta.m1=0,  beta.m2=0,beta.m3=0,beta.m4=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001,beta.v4=0.001, Temp=Temp, Light=Light,season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84)
+  variable.names.Seasonal_AR_Mintemp_UnderwaterLight <- c("tau_proc", "beta1","beta2", "beta3","beta4", "tau_obs","tau_T_proc", "tau_L_proc")
+  variable.namesout.Seasonal_AR_Mintemp_UnderwaterLight <- c("tau_proc", "beta1", "beta2","beta3","beta4",  "mu", "tau_obs", "tau_T_proc", "tau_L_proc")
+  init.Seasonal_AR_Mintemp_UnderwaterLight <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_T_proc = 0.01,tau_L_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5, beta4=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_T_proc = 0.1,tau_L_proc = 0.1, beta1=0, beta2=0, beta3=0, beta4=0), list(tau_proc=1, tau_obs = 5,tau_T_proc = 1,tau_L_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5, beta4=0.5))
+  params.Seasonal_AR_Mintemp_UnderwaterLight <- c("tau_proc","beta1", "beta2", "beta3","beta4","tau_obs","tau_T_proc", "tau_L_proc")
   
-#Seasonal_AR_Mintemp_Lag_UnderwaterLight
-  data.Seasonal_AR_Mintemp_Lag_Wnd90_Lag <- list(y=y, year_no = year_no,week_min = week_min, week_avg = week_avg, beta.m1=0,  beta.m2=0,beta.m3=0,beta.m4=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001,beta.v4=0.001, Temp=Temp, Wnd=Wnd,season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84)
-  variable.names.Seasonal_AR_Mintemp_Lag_Wnd90_Lag <- c("tau_proc", "beta1","beta2", "beta3","beta4", "tau_obs","tau_T_proc", "tau_W_proc")
-  variable.namesout.Seasonal_AR_Mintemp_Lag_Wnd90_Lag <- c("tau_proc", "beta1", "beta2","beta3","beta4",  "mu", "tau_obs", "tau_T_proc", "tau_W_proc")
-  init.Seasonal_AR_Mintemp_Lag_Wnd90_Lag <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_T_proc = 0.01,tau_W_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5, beta4=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_T_proc = 0.1,tau_W_proc = 0.1, beta1=0, beta2=0, beta3=0, beta4=0), list(tau_proc=1, tau_obs = 5,tau_T_proc = 1,tau_W_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5, beta4=0.5))
-  params.Seasonal_AR_Mintemp_Lag_Wnd90_Lag <- c("tau_proc","beta1", "beta2", "beta3","beta4","tau_obs","tau_T_proc", "tau_W_proc")
+#Seasonal_AR_Mintemp_Wnd90_Lag
+  data.Seasonal_AR_Mintemp_Wnd90_Lag <- list(y=y, year_no = year_no,week_min = week_min, week_avg = week_avg, beta.m1=0,  beta.m2=0,beta.m3=0,beta.m4=0, beta.v1=0.001, beta.v2=0.001,beta.v3=0.001,beta.v4=0.001, Temp=Temp, Wnd=Wnd,season_weeks=season_weeks,x_ic=-5,tau_ic = 100,a_proc = 0.001,r_proc = 0.001, a_obs = 15.37, r_obs = 7.84)
+  variable.names.Seasonal_AR_Mintemp_Wnd90_Lag <- c("tau_proc", "beta1","beta2", "beta3","beta4", "tau_obs","tau_T_proc", "tau_W_proc")
+  variable.namesout.Seasonal_AR_Mintemp_Wnd90_Lag <- c("tau_proc", "beta1", "beta2","beta3","beta4",  "mu", "tau_obs", "tau_T_proc", "tau_W_proc")
+  init.Seasonal_AR_Mintemp_Wnd90_Lag <- list(list(tau_proc=0.001, tau_obs = 0.1,  tau_T_proc = 0.01,tau_W_proc = 0.01, beta1=-0.5, beta2=-0.5, beta3=-0.5, beta4=-0.5), list(tau_proc=0.1,  tau_obs = 1,tau_T_proc = 0.1,tau_W_proc = 0.1, beta1=0, beta2=0, beta3=0, beta4=0), list(tau_proc=1, tau_obs = 5,tau_T_proc = 1,tau_W_proc = 1, beta1=0.5,beta2=0.5, beta3=0.5, beta4=0.5))
+  params.Seasonal_AR_Mintemp_Wnd90_Lag <- c("tau_proc","beta1", "beta2", "beta3","beta4","tau_obs","tau_T_proc", "tau_W_proc")
   
   data = eval(parse(text = paste0('data.', model_name)))
   variable.names = eval(parse(text = paste0('variable.names.', model_name)))
@@ -1463,8 +1463,8 @@ if(model_name=="Seasonal_AR_Mintemp_Lag_MaxSchmidt_Lag"){
   }
 }
 
-#Seasonal_AR_Mintemp_Lag_UnderwaterLight
-if(model_name=="Seasonal_AR_Mintemp_Lag_UnderwaterLight"){
+#Seasonal_AR_Mintemp_UnderwaterLight
+if(model_name=="Seasonal_AR_Mintemp_UnderwaterLight"){
   tau_proc = out[samp,grep("tau_proc",colnames(out))]
   tau_obs = out[samp,grep("tau_obs",colnames(out))]
   tau_T_proc = out[samp,grep("tau_T_proc",colnames(out))]
@@ -1473,8 +1473,8 @@ if(model_name=="Seasonal_AR_Mintemp_Lag_UnderwaterLight"){
   beta2 = out[samp,grep("beta2",colnames(out))]
   beta3 = out[samp,grep("beta3",colnames(out))]
   beta4 = out[samp,grep("beta4",colnames(out))]
-  pred.Seasonal_AR_Mintemp_Lag_UnderwaterLight <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
-  pred_obs.Seasonal_AR_Mintemp_Lag_UnderwaterLight <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  pred.Seasonal_AR_Mintemp_UnderwaterLight <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Seasonal_AR_Mintemp_UnderwaterLight <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
   year_no <- c(1:6)
   season_weeks <- c(1:20)
   mu_greps <- c("mu\\[1,","mu\\[2,","mu\\[3,","mu\\[4,","mu\\[5,","mu\\[6,")
@@ -1493,21 +1493,21 @@ if(model_name=="Seasonal_AR_Mintemp_Lag_UnderwaterLight"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Tempz[k,j-1]) & is.na(Lightz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_min[j-1],sqrt(1/tau_T_proc)) + beta4*rnorm(nsamp,week_avg[j],sqrt(1/tau_L_proc))}
-      else if(!is.na(Tempz[k,j-1]) & is.na(Lightz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j-1] + beta4*rnorm(nsamp,week_avg[j],sqrt(1/tau_L_proc))}
-      else if(is.na(Tempz[k,j-1]) & !is.na(Lightz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_min[j-1],sqrt(1/tau_T_proc))+ beta4*Lightz[k,j] }
-      else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j-1] + beta4*Lightz[k,j] }
+      if(is.na(Tempz[k,j]) & is.na(Lightz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_min[j],sqrt(1/tau_T_proc)) + beta4*rnorm(nsamp,week_avg[j],sqrt(1/tau_L_proc))}
+      else if(!is.na(Tempz[k,j]) & is.na(Lightz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j] + beta4*rnorm(nsamp,week_avg[j],sqrt(1/tau_L_proc))}
+      else if(is.na(Tempz[k,j]) & !is.na(Lightz[k,j])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_min[j],sqrt(1/tau_T_proc))+ beta4*Lightz[k,j] }
+      else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j] + beta4*Lightz[k,j] }
       
-      pred.Seasonal_AR_Mintemp_Lag_UnderwaterLight[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
+      pred.Seasonal_AR_Mintemp_UnderwaterLight[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_Mintemp_Lag_UnderwaterLight[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Mintemp_Lag_UnderwaterLight[,t[j]],sqrt(1/tau_obs))
+      pred_obs.Seasonal_AR_Mintemp_UnderwaterLight[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Mintemp_UnderwaterLight[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
 
-#Seasonal_AR_Mintemp_Lag_Wnd90_Lag
-if(model_name=="Seasonal_AR_Mintemp_Lag_Wnd90_Lag"){
+#Seasonal_AR_Mintemp_Wnd90_Lag
+if(model_name=="Seasonal_AR_Mintemp_Wnd90_Lag"){
   tau_proc = out[samp,grep("tau_proc",colnames(out))]
   tau_obs = out[samp,grep("tau_obs",colnames(out))]
   tau_T_proc = out[samp,grep("tau_T_proc",colnames(out))]
@@ -1516,8 +1516,8 @@ if(model_name=="Seasonal_AR_Mintemp_Lag_Wnd90_Lag"){
   beta2 = out[samp,grep("beta2",colnames(out))]
   beta3 = out[samp,grep("beta3",colnames(out))]
   beta4 = out[samp,grep("beta4",colnames(out))]
-  pred.Seasonal_AR_Mintemp_Lag_Wnd90_Lag <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
-  pred_obs.Seasonal_AR_Mintemp_Lag_Wnd90_Lag <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
+  pred.Seasonal_AR_Mintemp_Wnd90_Lag <- matrix(NA,nrow=nsamp,ncol=ncol(mu))
+  pred_obs.Seasonal_AR_Mintemp_Wnd90_Lag <- matrix(NA, nrow=nsamp, ncol=ncol(mu))
   year_no <- c(1:6)
   season_weeks <- c(1:20)
   mu_greps <- c("mu\\[1,","mu\\[2,","mu\\[3,","mu\\[4,","mu\\[5,","mu\\[6,")
@@ -1536,15 +1536,15 @@ if(model_name=="Seasonal_AR_Mintemp_Lag_Wnd90_Lag"){
       
       #process model
       #filling Temp NAs
-      if(is.na(Tempz[k,j-1]) & is.na(Wndz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_min[j-1],sqrt(1/tau_T_proc)) + beta4*rnorm(nsamp,week_avg[j-1],sqrt(1/tau_W_proc))}
-      else if(!is.na(Tempz[k,j-1]) & is.na(Wndz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j-1] + beta4*rnorm(nsamp,week_avg[j-1],sqrt(1/tau_W_proc))}
-      else if(is.na(Tempz[k,j-1]) & !is.na(Wndz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_min[j-1],sqrt(1/tau_T_proc))+ beta4*Wndz[k,j-1] }
-      else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j-1] + beta4*Wndz[k,j-1] }
+      if(is.na(Tempz[k,j]) & is.na(Wndz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_min[j],sqrt(1/tau_T_proc)) + beta4*rnorm(nsamp,week_avg[j-1],sqrt(1/tau_W_proc))}
+      else if(!is.na(Tempz[k,j]) & is.na(Wndz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j] + beta4*rnorm(nsamp,week_avg[j-1],sqrt(1/tau_W_proc))}
+      else if(is.na(Tempz[k,j]) & !is.na(Wndz[k,j-1])){lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*rnorm(nsamp,week_min[j],sqrt(1/tau_T_proc))+ beta4*Wndz[k,j-1] }
+      else{lambda[,t[j]] <- beta1 + beta2*mydata[,j-1]+ beta3*Tempz[k,j] + beta4*Wndz[k,j-1] }
       
-      pred.Seasonal_AR_Mintemp_Lag_Wnd90_Lag[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
+      pred.Seasonal_AR_Mintemp_Wnd90_Lag[,t[j]] = rnorm(nsamp,lambda[,t[j]],sqrt(1/tau_proc))
       
       #data model
-      pred_obs.Seasonal_AR_Mintemp_Lag_Wnd90_Lag[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Mintemp_Lag_Wnd90_Lag[,t[j]],sqrt(1/tau_obs))
+      pred_obs.Seasonal_AR_Mintemp_Wnd90_Lag[,t[j]] = rnorm(nsamp,pred.Seasonal_AR_Mintemp_Wnd90_Lag[,t[j]],sqrt(1/tau_obs))
     }
   }
 }
