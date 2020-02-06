@@ -37,6 +37,6 @@ model{
   beta3 ~ dnorm(beta.m3,beta.v3) 
   tau_obs ~ dgamma(a_obs,r_obs)
   #tau_S_obs ~ dgamma(0.01, 0.01) 
-  tau_S_proc ~ dgamma(0.71, 1660)
+  tau_S_proc ~ dgamma(0.01, 0.01)
   
 }

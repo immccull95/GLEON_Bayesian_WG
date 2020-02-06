@@ -19,7 +19,7 @@ source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_UnderwaterLight' #pick a model name
+model_name = 'Seasonal_AR_Mintemp_Lag_Wnd90_Lag' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -54,9 +54,11 @@ Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_we
 
 #for GDD
 GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_28JAN20.csv"))
+GDD <- scale(GDD, center = TRUE, scale = TRUE)
 
 #for DayLength
 DayLength <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/daylength_year_by_week_28JAN20.csv"))
+DayLength <- scale(DayLength, center = TRUE, scale = TRUE)
 
 #for Ppt
 Ppt <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_summed_precip_10OCT19.csv"))
@@ -69,6 +71,23 @@ Light <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/UnderwaterLight_y
 
 #for Wnd
 Wnd <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_perc90_14OCT19.csv"))
+Wnd <- scale(Wnd, center = TRUE, scale = TRUE)
+
+#####for multivariate models
+
+#for watertemp_min
+Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_16AUG19.csv"))
+Temp <- scale(Temp, center = TRUE, scale = TRUE)
+Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_min_16AUG19.csv"))
+Temp_prior <- scale(Temp_prior, center = TRUE, scale = TRUE)
+
+#for max Schmidt
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_max_Schmidt_28JAN20.csv"))
+Schmidt <- scale(Schmidt, center = TRUE, scale = TRUE)
+
+#for underwater light from HOBOs
+Light <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/UnderwaterLight_year_by_week_02FEB20.csv"))
+Light <- scale(Light, center = TRUE, scale = TRUE)
 
 
 years <- c(2009:2014)
@@ -431,7 +450,7 @@ obs_quantile <- obs_quantile[-c(1,21)]
 #should add vertical line at 0.5 to this
 png(file=file.path(my_directory,paste(site,paste0(model_name,'_obs_quantile.png'), sep = '_')), res=300, width=10, height=10, units='cm')
 hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
-     cex.axis = 1.2, cex.lab = 1.2, xlim = c(0.2,1), breaks = seq(0.2,1,0.1))
+     cex.axis = 1.2, cex.lab = 1.2, xlim = c(0.2,1), breaks = seq(0,1,0.25))
 dev.off()
 
 # #a perfect forecast

@@ -43,13 +43,13 @@ get_params <- function(model_name, forecast_type){
     
     if(model_name == "Seasonal_GDD_Quad"){
       params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
-                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),
                      sd_G = 0)
     }
     
     if(model_name == "Seasonal_DayLength_Quad"){
       params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
-                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),
                      sd_D = 0)
     }
     
@@ -81,6 +81,24 @@ get_params <- function(model_name, forecast_type){
       params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
                      beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_MaxSchmidt_Lag"){
+      params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_T = 0, sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_UnderwaterLight"){
+      params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_T = 0, sd_L = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_Wnd90_Lag"){
+      params <- list(sd_obs = 0, sd_proc = 0, beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_T = 0, sd_W = 0)
     }
     
     if(model_name == "Seasonal_AR_Ppt"){
@@ -144,13 +162,13 @@ get_params <- function(model_name, forecast_type){
     
     if(model_name == "Seasonal_GDD_Quad"){
       params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
-                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),
                      sd_G = 0)
     }
     
     if(model_name == "Seasonal_DayLength_Quad"){
       params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
-                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),
                      sd_D = 0)
     }
     
@@ -182,6 +200,24 @@ get_params <- function(model_name, forecast_type){
       params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
                      beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_MaxSchmidt_Lag"){
+      params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_S = 0, sd_T = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_UnderwaterLight"){
+      params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_T = 0, sd_L = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_Wnd90_Lag"){
+      params <- list(sd_obs = 0, sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_T = 0, sd_W = 0)
     }
     
     if(model_name == "Seasonal_AR_Ppt"){
@@ -245,13 +281,13 @@ get_params <- function(model_name, forecast_type){
     
     if(model_name == "Seasonal_GDD_Quad"){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
-                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE), beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),
                      sd_G = 0)
     }
     
     if(model_name == "Seasonal_DayLength_Quad"){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
-                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),
                      sd_D = 0)
     }
     
@@ -283,6 +319,24 @@ get_params <- function(model_name, forecast_type){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
                      beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
                      beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_MaxSchmidt_Lag"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_S = 0, sd_T = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_UnderwaterLight"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_T = 0, sd_L = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_Wnd90_Lag"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = mean(out[,grep("beta1",colnames(out))],na.rm = TRUE),
+                     beta2 = mean(out[,grep("beta2",colnames(out))],na.rm = TRUE), beta3 = mean(out[,grep("beta3",colnames(out))],na.rm = TRUE),
+                     beta4 = mean(out[,grep("beta4",colnames(out))],na.rm = TRUE),sd_T = 0, sd_W = 0)
     }
     
     if(model_name == "Seasonal_AR_Ppt"){
@@ -356,13 +410,13 @@ get_params <- function(model_name, forecast_type){
     
     if(model_name == "Seasonal_GDD_Quad"){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
-                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"], beta4 = out[prow,"beta4"],
                      sd_G = 0)
     }
     
     if(model_name == "Seasonal_DayLength_Quad"){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
-                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],beta4 = out[prow,"beta4"],
                      sd_D = 0)
     }
     
@@ -394,6 +448,24 @@ get_params <- function(model_name, forecast_type){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
                      beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"], beta4 = out[prow,"beta4"],
                      sd_S = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_MaxSchmidt_Lag"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"], beta4 = out[prow,"beta4"],
+                     sd_S = 0, sd_T = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_UnderwaterLight"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"], beta4 = out[prow,"beta4"],
+                     sd_T = 0, sd_L = 0)
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_Wnd90_Lag"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"], beta4 = out[prow,"beta4"],
+                     sd_T = 0, sd_W = 0)
     }
     
     if(model_name == "Seasonal_AR_Ppt"){
@@ -445,13 +517,13 @@ get_params <- function(model_name, forecast_type){
     
     if(model_name == "Seasonal_GDD_Quad"){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
-                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],beta4 = out[prow,"beta4"],
                      sd_G = 1/sqrt(out[prow,"tau_G_proc"]))
     }
     
     if(model_name == "Seasonal_DayLength_Quad"){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
-                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],beta4 = out[prow,"beta4"],
                      sd_D = 1/sqrt(out[prow,"tau_D_proc"]))
     }
     
@@ -483,6 +555,24 @@ get_params <- function(model_name, forecast_type){
       params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
                      beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],beta4 = out[prow,"beta4"],
                      sd_S = 1/sqrt(out[prow,"tau_S_proc"]))
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_MaxSchmidt_Lag"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],beta4 = out[prow,"beta4"],
+                     sd_S = 1/sqrt(out[prow,"tau_S_proc"]), sd_T = 1/sqrt(out[prow,"tau_T_proc"]))
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_UnderwaterLight"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],beta4 = out[prow,"beta4"],
+                     sd_L = 1/sqrt(out[prow,"tau_L_proc"]), sd_T = 1/sqrt(out[prow,"tau_T_proc"]))
+    }
+    
+    if(model_name == "Seasonal_AR_Mintemp_Lag_Wnd90_Lag"){
+      params <- list(sd_obs = 1/sqrt(out[prow,"tau_obs"]), sd_proc = 1/sqrt(out[prow,"tau_proc"]), beta1 = out[prow,"beta1"],
+                     beta2 = out[prow,"beta2"], beta3 = out[prow,"beta3"],beta4 = out[prow,"beta4"],
+                     sd_W = 1/sqrt(out[prow,"tau_W_proc"]), sd_T = 1/sqrt(out[prow,"tau_T_proc"]))
     }
     
     if(model_name == "Seasonal_AR_Ppt"){
@@ -713,7 +803,7 @@ forecast_gloeo <- function(model_name, params, settings){
         #GDD model
         GDD = rnorm(Nmc,week_avg[j],params$sd_G)
         #process model
-        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*GDD^2
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*GDD + + params$beta4*GDD^2
         proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
         #data model
         out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
@@ -738,7 +828,7 @@ forecast_gloeo <- function(model_name, params, settings){
         #DayLength model
         DayLength = rnorm(Nmc,week_avg[j],params$sd_D)
         #process model
-        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength^2
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2
         proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
         #data model
         out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
@@ -874,6 +964,84 @@ forecast_gloeo <- function(model_name, params, settings){
         #update IC
         gloeo_prev <- out[,t[j]] # update IC
         Schmidt_prev <- Schmidt
+      }}}
+  
+  if(model_name == "Seasonal_AR_Mintemp_Lag_MaxSchmidt_Lag"){
+    
+    for(k in 1:length(forecast_years)){
+      gloeo_prev <- IC[,k]
+      t <- ts[k,]
+      
+      #populate first week of season with IC
+      if(k == 1){proc.model[,1] <- IC[,k]
+      out[,1] <- IC[,k]} else {
+        proc.model[,21] <- IC[,k]
+        out[,21] <- IC[,k]
+      }
+      
+      for(j in 2:max(season_weeks)){
+        #temp model
+        Schmidt = rnorm(Nmc,week_max[j-1],params$sd_S)
+        Temp = rnorm(Nmc,week_min[j-1],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Temp + params$beta4*Schmidt
+        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,t[j]] # update IC
+      }}}
+  
+  if(model_name == "Seasonal_AR_Mintemp_Lag_UnderwaterLight"){
+    
+    for(k in 1:length(forecast_years)){
+      gloeo_prev <- IC[,k]
+      t <- ts[k,]
+      
+      #populate first week of season with IC
+      if(k == 1){proc.model[,1] <- IC[,k]
+      out[,1] <- IC[,k]} else {
+        proc.model[,21] <- IC[,k]
+        out[,21] <- IC[,k]
+      }
+      
+      for(j in 2:max(season_weeks)){
+        #temp model
+        Light = rnorm(Nmc,week_avg[j],params$sd_L)
+        Temp = rnorm(Nmc,week_min[j-1],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Temp + params$beta4*Light
+        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,t[j]] # update IC
+      }}}
+  
+  if(model_name == "Seasonal_AR_Mintemp_Lag_Wnd90_Lag"){
+    
+    for(k in 1:length(forecast_years)){
+      gloeo_prev <- IC[,k]
+      t <- ts[k,]
+      
+      #populate first week of season with IC
+      if(k == 1){proc.model[,1] <- IC[,k]
+      out[,1] <- IC[,k]} else {
+        proc.model[,21] <- IC[,k]
+        out[,21] <- IC[,k]
+      }
+      
+      for(j in 2:max(season_weeks)){
+        #temp model
+        Wnd = rnorm(Nmc,week_avg[j-1],params$sd_W)
+        Temp = rnorm(Nmc,week_min[j-1],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Temp + params$beta4*Wnd
+        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,t[j]] # update IC
       }}}
   
   if(model_name == "Seasonal_AR_Ppt"){
@@ -1055,7 +1223,7 @@ make_varMat <- function(model_name){
     vm <- rbind(var.IC,var.IC.P,var.IC.P.O,var.IC.P.O.Pa)
   }
   
-  if(model_name == "Seasonal_AR_Temperature" | model_name == "Seasonal_AR_Temp_and_Diff" | model_name == "Seasonal_AR_Schmidt" | model_name == "Seasonal_AR_Schmidt_and_Diff" | model_name == "Seasonal_AR_Ppt" | model_name == "Seasonal_AR_PAR" | model_name == "Seasonal_AR_Wnd" |  model_name == "Seasonal_AR_Mintemp" | model_name == "Seasonal_AR_Mintemp_Lag" | model_name == "Seasonal_AR_MaxSchmidt_Lag" | model_name == "Seasonal_AR_MinSchmidt_Diff" | model_name == "Seasonal_GDD_Quad" | model_name == "Seasonal_DayLength_Quad" | model_name == "Seasonal_AR_UnderwaterLight"){
+  if(model_name == "Seasonal_AR_Temperature" | model_name == "Seasonal_AR_Temp_and_Diff" | model_name == "Seasonal_AR_Schmidt" | model_name == "Seasonal_AR_Schmidt_and_Diff" | model_name == "Seasonal_AR_Ppt" | model_name == "Seasonal_AR_PAR" | model_name == "Seasonal_AR_Wnd" |  model_name == "Seasonal_AR_Mintemp" | model_name == "Seasonal_AR_Mintemp_Lag" | model_name == "Seasonal_AR_MaxSchmidt_Lag" | model_name == "Seasonal_AR_MinSchmidt_Diff" | model_name == "Seasonal_GDD_Quad" | model_name == "Seasonal_DayLength_Quad" | model_name == "Seasonal_AR_UnderwaterLight" | model_name == "Seasonal_AR_Mintemp_Lag_MaxSchmidt_Lag" | model_name == "Seasonal_AR_Mintemp_Lag_UnderwaterLight" | model_name == "Seasonal_AR_Mintemp_Lag_Wnd90_Lag"){
     var.IC     <- apply(forecast.IC,2,var)
     var.IC.P    <- apply(forecast.IC.P,2,var)
     var.IC.P.O   <- apply(forecast.IC.P.O,2,var)

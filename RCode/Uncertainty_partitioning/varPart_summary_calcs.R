@@ -102,7 +102,8 @@ dat5 <- dat1 %>%
   mutate(Var_type = factor(Var_type, levels = rev(c("Initial_conditions","Process","Observation","Parameter","Driver"))))
 
 dat6 <- dat5 %>%
-  filter(!Mod_name %in% c("Seasonal_AR_Schmidt_and_Diff","Seasonal_AR_Temp_and_Diff"))
+  filter(!Mod_name %in% c("Seasonal_AR_Schmidt_and_Diff","Seasonal_AR_Temp_and_Diff", "Seasonal_AR_PAR","Seasonal_AR_Wnd","Seasonal_AR_Temperature","Seasonal_AR_Schmidt","Seasonal_AR_Ppt"))
+  
 
 allvar <- ggplot(data = dat6, aes(x = reorder(Mod_name,-mean_perc_var),y = mean_perc_var,color = Var_type,fill = Var_type))+
   geom_col()+
@@ -115,6 +116,7 @@ allvar <- ggplot(data = dat6, aes(x = reorder(Mod_name,-mean_perc_var),y = mean_
   scale_color_manual(values = c("darkseagreen3","gold","deepskyblue4","coral","gray"))+
   xlab("")+
   ylab("Proportion of forecast variance")
+allvar
 ggsave(allvar, filename = "C:/Users/Mary Lofton/Dropbox/Ch5/Final_figs/variance_by_model.png",
        device = "png",height = 10, width = 12, units = "in")
 
@@ -153,7 +155,7 @@ dat3 <- bind_cols(check1, dat2) %>%
   select(Mod_name, sampling_week, variance)
 
 dat4 <- dat3 %>%
-  filter(!Mod_name %in% c("Midge_Seasonal_RandomWalk","Midge_Seasonal_RandomWalk_Obs_error"))
+  filter(!Mod_name %in% c("Midge_Seasonal_RandomWalk","Midge_Seasonal_RandomWalk_Obs_error", "Midge_Seasonal_AR_PAR","Midge_Seasonal_AR_Wnd","Midge_Seasonal_AR_Temperature","Midge_Seasonal_AR_Schmidt","Midge_Seasonal_AR_Ppt")) 
 
 dat5 <- dat3 %>%
   filter(Mod_name %in% c("Midge_Seasonal_RandomWalk","Midge_Seasonal_RandomWalk_Obs_error"))

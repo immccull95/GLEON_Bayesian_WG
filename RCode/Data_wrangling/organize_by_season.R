@@ -547,6 +547,7 @@ week_var_var = var(1/apply(wnd_final3,2,var, na.rm = TRUE),na.rm = TRUE)
 
 
 write.csv(wnd_final3, "./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_perc90_14OCT19.csv", row.names = FALSE)
+check <- read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_perc90_14OCT19.csv")
 
 ################GROWING DEGREE DAYS
 gdd <- cleaned_dat1 %>%
