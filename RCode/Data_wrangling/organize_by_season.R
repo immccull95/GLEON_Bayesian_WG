@@ -293,21 +293,21 @@ write.csv(temp_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_a
 #same thing for water temp
 watertemp_seasonal <- cleaned_dat1 %>%
   filter(site == "midge") %>%
-  select(year, season_week, watertemp_mean) %>%
-  spread(key = season_week, value = watertemp_mean) %>%
+  select(year, season_week, watertemp_min) %>%
+  spread(key = season_week, value = watertemp_min) %>%
   select(-year)
 
 colnames(watertemp_seasonal) <- paste("wk", colnames(watertemp_seasonal), sep = "_")
 
 watertemp_plot <- cleaned_dat1 %>%
   filter(site == "midge") %>%
-  select(year, season_week, watertemp_mean)
+  select(year, season_week, watertemp_min)
 
-ggplot(data = watertemp_plot, aes(x = season_week, y = watertemp_mean, group = year, colour = year))+
+ggplot(data = watertemp_plot, aes(x = season_week, y = watertemp_min, group = year, colour = year))+
   geom_line(size = 1)+
   theme_bw()
 
-write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_forecast_05OCT19.csv", row.names = FALSE)
+write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_forecast_05OCT19.csv", row.names = FALSE)
 
 ###########################
 #cleaning for max. Schmidt stability
@@ -621,7 +621,7 @@ lines(gdd_values, predicted.gloeo, col = "darkgreen", lwd = 3)}
 gdd <- cleaned_dat1 %>%
   filter(!date %in% bad_dates) %>%
   arrange(year,date,site) %>%
-  mutate(season_week = rep(c(1:20),times = 6, each = 4))
+  mutate(season_week = rep(c(1:20),times = 8, each = 4))
 
 gdd2 <- gdd %>%
   filter(site == "midge") %>%
@@ -629,7 +629,7 @@ gdd2 <- gdd %>%
   spread(key = season_week, value = daylength) %>%
   select(-year)
 
-write.csv(gdd2, "./Datasets/Sunapee/SummarizedData/daylength_year_by_week_28JAN20.csv", row.names = FALSE)
+write.csv(gdd2, "./Datasets/Sunapee/SummarizedData/daylength_year_by_week_forecast_09FEB20.csv", row.names = FALSE)
 
 gdd_reg <- as.numeric(c(gdd2[1,],gdd2[2,],gdd2[3,],gdd2[4,],gdd2[5,],gdd2[6,]))
 
