@@ -19,7 +19,7 @@ source('RCode/Helper_functions/forecast_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Temperature' #pick a model name
+model_name = 'Seasonal_AR_Mintemp_Lag_Wnd90_Lag' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -28,7 +28,7 @@ nsamp = 1500
 
 #My local directory - use as a temporary file repository for plot files before uploading
 #to Google Drive for the team to see :)
-my_directory <- "C:/Users/Mary Lofton/Documents/Ch5/GLEON_poster_results/Uncertainty_partitioning"
+my_directory <- "C:/Users/Mary Lofton/Dropbox/Ch5/Final_analysis/Uncertainty_partitioning"
 
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
 y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))+0.003)
@@ -39,11 +39,55 @@ forecast_y <- forecast_y[7:8,]
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_11AUG19.csv"))
 Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_16AUG19.csv"))
 
+#for watertemp_min
+Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_16AUG19.csv"))
+Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_min_16AUG19.csv"))
+
 #for airtemp
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_airtemp_22JUL19.csv"))
 
-#for Schmidt
-Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_Schmidt_11AUG19.csv"))
+#for max Schmidt
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_max_Schmidt_28JAN20.csv"))
+
+#for min Schmidt
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_28JAN20.csv"))
+
+#for GDD
+GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_28JAN20.csv"))
+GDD <- scale(GDD, center = TRUE, scale = TRUE)
+
+#for DayLength
+DayLength <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/daylength_year_by_week_28JAN20.csv"))
+DayLength <- scale(DayLength, center = TRUE, scale = TRUE)
+
+#for Ppt
+Ppt <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_summed_precip_10OCT19.csv"))
+
+#for PAR
+Light <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_mean_buoyPAR_12OCT19.csv"))
+
+#for underwater light from HOBOs
+Light <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/UnderwaterLight_year_by_week_02FEB20.csv"))
+
+#for Wnd
+Wnd <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_perc90_14OCT19.csv"))
+Wnd <- scale(Wnd, center = TRUE, scale = TRUE)
+
+#####for multivariate models
+
+#for watertemp_min
+Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_16AUG19.csv"))
+Temp <- scale(Temp, center = TRUE, scale = TRUE)
+Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_min_16AUG19.csv"))
+Temp_prior <- scale(Temp_prior, center = TRUE, scale = TRUE)
+
+#for max Schmidt
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_max_Schmidt_28JAN20.csv"))
+Schmidt <- scale(Schmidt, center = TRUE, scale = TRUE)
+
+#for underwater light from HOBOs
+Light <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/UnderwaterLight_year_by_week_02FEB20.csv"))
+Light <- scale(Light, center = TRUE, scale = TRUE)
 
 
 years <- c(2009:2014)
@@ -55,8 +99,36 @@ site = "Midge"
 #for water temp
 week_avg = colMeans(Temp_prior, na.rm = TRUE)
 
+#for min water temp
+week_min = colMeans(Temp_prior, na.rm = TRUE)
+
 #for Schmidt
 week_avg = colMeans(Schmidt, na.rm = TRUE)
+
+#for max Schmidt
+week_max = colMeans(Schmidt, na.rm = TRUE)
+
+#for min Schmidt
+week_min = colMeans(Schmidt, na.rm = TRUE)
+
+#for GDD
+week_avg = colMeans(GDD, na.rm = TRUE)
+
+#for DayLength
+week_avg = colMeans(DayLength, na.rm = TRUE)
+
+#for precipitation
+week_avg = colMeans(Ppt, na.rm = TRUE)
+
+#for PAR
+week_avg = colMeans(Light, na.rm = TRUE)
+
+#for underwater light
+week_avg = colMeans(Light, na.rm = TRUE)
+week_avg[c(19,20)]<- week_avg[18]
+
+#for Wnd
+week_avg = colMeans(Wnd, na.rm = TRUE)
 
 #for combined covariate model
 week_avg_T = colMeans(Temp_prior, na.rm = TRUE)
@@ -115,6 +187,12 @@ samp <- sample.int(nrow(out),nsamp)
 mu = out[samp,mus] 
 Temps=c(Temp[1,], Temp[2,], Temp[3,], Temp[4,], Temp[5,], Temp[6,])
 Schmidts=c(Schmidt[1,], Schmidt[2,], Schmidt[3,], Schmidt[4,], Schmidt[5,], Schmidt[6,])
+Ppts=c(Ppt[1,], Ppt[2,], Ppt[3,], Ppt[4,], Ppt[5,], Ppt[6,])
+Lights=c(Light[1,], Light[2,], Light[3,], Light[4,], Light[5,], Light[6,])
+Wnds=c(Wnd[1,], Wnd[2,], Wnd[3,], Wnd[4,], Wnd[5,], Wnd[6,])
+GDDs=c(GDD[1,], GDD[2,], GDD[3,], GDD[4,], GDD[5,], GDD[6,])
+DayLengths=c(DayLength[1,], DayLength[2,], DayLength[3,], DayLength[4,], DayLength[5,], DayLength[6,])
+
 ys = exp(c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,]))
 forecast_ys = exp(c(forecast_y[1,],forecast_y[2,]))
 
@@ -177,6 +255,9 @@ forecast.IC <- forecast_gloeo(model_name = model_name,
 
 ## Plot
 forecast.ci.IC = apply(exp(forecast.IC), 2, quantile, c(0.025,0.5,0.975))
+#log
+#forecast.ci.IC = apply(forecast.IC, 2, quantile, c(0.025,0.5,0.975))
+
 
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
@@ -206,6 +287,8 @@ forecast.IC.P <- forecast_gloeo(model_name = model_name,
 
 ## Plot
 forecast.ci.IC.P = apply(exp(forecast.IC.P), 2, quantile, c(0.025,0.5,0.975))
+#log
+#forecast.ci.IC.P = apply(forecast.IC.P, 2, quantile, c(0.025,0.5,0.975))
 
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
@@ -234,12 +317,16 @@ forecast.IC.P.O <- forecast_gloeo(model_name = model_name,
 
 ## Plot
 forecast.ci.IC.P.O = apply(exp(forecast.IC.P.O), 2, quantile, c(0.025,0.5,0.975))
+#log
+#forecast.ci.IC.P.O = apply(forecast.IC.P.O, 2, quantile, c(0.025,0.5,0.975))
 
+
+tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
               is.forecast.ci  = "y", #choose from "y" or "n"
               forecast.ci = forecast.ci.IC.P.O)
-
+dev.off()
 
 ###### random effect uncertainty #######
 #MOST MODELS DO NOT HAVE THIS!!
@@ -261,10 +348,12 @@ forecast.IC.P.O.R <- forecast_gloeo(model_name = model_name,
 ## Plot
 forecast.ci.IC.P.O.R = apply(exp(forecast.IC.P.O.R), 2, quantile, c(0.025,0.5,0.975))
 
+tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=15, height=40, units='cm')
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
               is.forecast.ci  = "y", #choose from "y" or "n"
               forecast.ci = forecast.ci.IC.P.O.R)
+dev.off()
 
 
 ###### parameter uncertainty #######
@@ -285,12 +374,16 @@ forecast.IC.P.O.Pa <- forecast_gloeo(model_name = model_name,
 
 ## Plot
 forecast.ci.IC.P.O.Pa = apply(exp(forecast.IC.P.O.Pa), 2, quantile, c(0.025,0.5,0.975))
+#log
+#forecast.ci.IC.P.O.Pa = apply(forecast.IC.P.O.Pa, 2, quantile, c(0.025,0.5,0.975))
 
+
+tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
               is.forecast.ci  = "y", #choose from "y" or "n"
               forecast.ci = forecast.ci.IC.P.O.Pa)
-
+dev.off()
 
 ###### driver uncertainty ########## 
 
@@ -310,23 +403,66 @@ forecast.IC.P.O.Pa.D <- forecast_gloeo(model_name = model_name,
 
 ## Plot
 forecast.ci.IC.P.O.Pa.D = apply(exp(forecast.IC.P.O.Pa.D), 2, quantile, c(0.025,0.5,0.975))
+#log
+#forecast.ci.IC.P.O.Pa.D = apply(forecast.IC.P.O.Pa.D, 2, quantile, c(0.025,0.5,0.975))
 
+
+tiff(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.png'), sep = '_')), res=300, width=40, height=40, units='cm')
 forecast_plot(cal_years = c(2009:2014), 
               forecast_years = c(2015:2016), 
               is.forecast.ci  = "y", #choose from "y" or "n"
               forecast.ci = forecast.ci.IC.P.O.Pa.D)
-
+dev.off()
 
 
 ### calculation of variances
 varMat   <- make_varMat(model_name = model_name)
+varMat1 <- apply(varMat,2,sort)
+write.csv(varMat1, file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_total_var.csv'), sep = '_')),row.names = FALSE)
+
+###consider adding code here to make sure the intervals are ordered from smallest to greatest 
+#to avoid weird overlapping when plotting due to small decreases in predictions
+#with all uncertainties incorporated due to chance
+V.pred.rel.2015 <- apply(varMat1[,1:20],2,function(x) {x/max(x)})
+V.pred.rel.2016 <- apply(varMat1[,21:40],2,function(x) {x/max(x)})
+write.csv(V.pred.rel.2015,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_varMat_2015.csv'), sep = '_')),row.names = FALSE)
+write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
+
 
 #plot variances
 dev.off(dev.list()["RStudioGD"])
 plot_varMat(model_name = model_name)
 
 ## write stacked area plot to file
-png(file=file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')), res=300, width=15, height=10, units='cm')
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')), res=300, width=30, height=10, units='cm')
 plot_varMat(model_name = model_name)
 dev.off()
 
+
+##looking at percentile of obs in forecast distribution
+obs_quantile <- NULL
+for (i in 1:length(forecast_ys)){
+percentile1 <- ecdf(exp(forecast.IC.P.O[,i])) ##be sure to change this as needed - needs to be made into a function!!!
+obs_quantile[i] <- percentile1(forecast_ys[i])
+}
+obs_quantile <- obs_quantile[-c(1,21)]
+
+#should add vertical line at 0.5 to this
+png(file=file.path(my_directory,paste(site,paste0(model_name,'_obs_quantile.png'), sep = '_')), res=300, width=10, height=10, units='cm')
+hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
+     cex.axis = 1.2, cex.lab = 1.2, xlim = c(0.2,1), breaks = seq(0,1,0.25))
+dev.off()
+
+# #a perfect forecast
+# obs_quantile <- rep(0.5, 40)
+# png(file=file.path(my_directory,paste("perfect_forecast.png")), res=300, width=10, height=10, units='cm')
+# hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
+#      cex.axis = 1.2, cex.lab = 1.2, breaks = seq(0,1,0.1))
+# dev.off()
+# 
+# #an extremely good forecast
+# obs_quantile <- c(0.2, 0.3, 0.3, 0.4, 0.4, 0.4, 0.4, rep(0.5,26), 0.6, 0.6, 0.6, 0.6, 0.7, 0.7, 0.8)
+# png(file=file.path(my_directory,paste("excellent_forecast.png")), res=300, width=10, height=10, units='cm')
+# hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
+#      cex.axis = 1.2, cex.lab = 1.2, breaks = seq(0,1,0.1))
+# dev.off()

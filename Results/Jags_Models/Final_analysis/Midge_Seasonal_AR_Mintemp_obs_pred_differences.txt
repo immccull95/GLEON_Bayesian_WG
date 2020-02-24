@@ -1,0 +1,16 @@
+[1] "Mean of difference between pred including observation error and obs"
+[1] 0.157149
+[1] "Median of difference between pred including observation error and obs"
+[1] 0.290349
+[1] "Mean quantile of obs in distribution of pred including observation error"
+[1] 0.4974535
+[1] "Quantile of 2013 bloom point in distribution of pred including observation error"
+[1] 0.9546667
+[1] "Mean quantile of observations of 0 Gloeo in distribution of pred including observation error"
+[1] 0.1513333
+[1] "Percent of time we are predicting negative Gloeo"
+[1] 0
+[1] "Pearson's correlation coefficient of observations and 50th quantile of predicted"
+[1] 0.6091887
+[1] "Mean range of 95% confidence interval including observation error"
+[1] 14.96328
