@@ -293,9 +293,10 @@ write.csv(temp_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_a
 #same thing for water temp
 watertemp_seasonal <- cleaned_dat1 %>%
   filter(site == "midge") %>%
-  select(year, season_week, watertemp_min) %>%
-  spread(key = season_week, value = watertemp_min) %>%
-  select(-year)
+  select(year, date, season_week, watertemp_min) %>%
+  spread(key = season_week, value = watertemp_min) 
+
+write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/seasonal_data_mintemp_forecast.csv",row.names = FALSE)
 
 colnames(watertemp_seasonal) <- paste("wk", colnames(watertemp_seasonal), sep = "_")
 
@@ -621,7 +622,12 @@ lines(gdd_values, predicted.gloeo, col = "darkgreen", lwd = 3)}
 gdd <- cleaned_dat1 %>%
   filter(!date %in% bad_dates) %>%
   arrange(year,date,site) %>%
-  mutate(season_week = rep(c(1:20),times = 8, each = 4))
+  mutate(season_week = rep(c(1:20),times = 8, each = 4)) %>%
+  filter(site == "midge") %>%
+  select(year, date, season_week, daylength)
+
+write.csv(gdd, "./Datasets/Sunapee/SummarizedData/seasonal_data_daylength_forecast.csv", row.names = FALSE)
+
 
 gdd2 <- gdd %>%
   filter(site == "midge") %>%

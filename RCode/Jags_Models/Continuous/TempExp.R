@@ -17,6 +17,6 @@ model{
   #### Priors
   mu[1] ~ dnorm(x_ic,tau_ic) 
   tau_add ~ dgamma(a_add,r_add)
-  beta ~ dmnorm(beta.m,beta.v)
+  beta ~ dmnorm(beta.m,beta.v) #this specifies a multivariate normal distribution for betas but you could also specify the parameters for each beta distribution separately
   
 }

@@ -19,12 +19,12 @@ source('RCode/Helper_functions/forecast_plug_n_play_data_assim.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_DayLength_Quad_Mintemp' #pick a model name
+model_name = 'Seasonal_RandomWalk' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
 #Edit nsamp to reflect a subset of total number of samples
-nsamp = 1500 
+nsamp = 5000 
 
 #My local directory - use as a temporary file repository for plot files before uploading
 #to Google Drive for the team to see :)
@@ -60,7 +60,7 @@ Wnd <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_p
 #for GDD
 GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_28JAN20.csv"))
 
-years <- c(2009:2014)
+years <- c(2009:2016)
 forecast_years <- c(2015:2016)
 year_no = as.numeric(as.factor(years))
 season_weeks = c(1:20)
@@ -79,35 +79,9 @@ week_max = colMeans(Schmidt, na.rm = TRUE)
 week_avg_T = colMeans(Temp_prior, na.rm = TRUE)
 week_avg_S = colMeans(Schmidt, na.rm = TRUE)
 
-#3) JAGS Plug-Ins -----------------------------------------------------------------------------------------------------
-jags_plug_ins <- jags_plug_ins(model_name = model_name)
-
-# Now that we've defined the model, the data, and the initialization, we need to send all this info to JAGS, which will return the JAGS model object.
-
-#4) Run model (no edits, unless you want to change # of iterations) -------------------------------------------------------------
-j.model   <- jags.model (file = model,
-                         data = jags_plug_ins$data.model,
-                         inits = jags_plug_ins$init.model,
-                         n.chains = 3)
-
-jags.out <- run.jags(model = model,
-                     data = jags_plug_ins$data.model,
-                     adapt =  5000, 
-                     burnin =  100000, 
-                     sample = 5000, 
-                     n.chains = 3, 
-                     inits=jags_plug_ins$init.model,
-                     monitor = jags_plug_ins$variable.namesout.model)
-
-#5) Save and Process Output
-jags.out.mcmc <- as.mcmc.list(jags.out)
-out <- as.matrix(jags.out.mcmc)
-
-
 #6) Run forecasts with data assimilation
 
 ## Forward Simulation
-prow = sample.int(nrow(out),1000,replace=TRUE)
 N_weeks <- c(1:40)
 observ <- c(forecast_y[1,],forecast_y[2,])
 y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)
@@ -116,28 +90,35 @@ Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week
 Temp <- scale(Temp, center = TRUE, scale = TRUE)
 observ_Temp <- c(Temp[7,],Temp[8,])
 
+
 DayLength <- read_csv("./Datasets/Sunapee/SummarizedData/daylength_year_by_week_forecast_09FEB20.csv")
 DayLength <- scale(DayLength, center = TRUE, scale = TRUE)
 observ_DayLength <- c(DayLength[7,],DayLength[8,])
+
 ######## deterministic prediction #######
 ##Set up forecast
 
 for (i in 1:length(N_weeks)){
   source('RCode/Helper_functions/seasonal_plug_n_play.R')
   
-  prow = sample.int(nrow(out),1000,replace=TRUE)
   N_weeks <- c(1:40)
   observ <- c(forecast_y[1,],forecast_y[2,])
   y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)
   
+  if(i == 1){
+    obs_data <- rep(NA,40)
+    obs_Temp <- rep(NA,40)
+    obs_DayLength <- rep(NA,40)
+  } else{
   obs_data <- rep(NA,40)
-  obs_data[1:N_weeks[i]] <- observ[1:N_weeks[i]]
+  obs_data[1:N_weeks[i-1]] <- observ[1:N_weeks[i-1]]
   
   obs_Temp <- rep(NA,40)
-  obs_Temp[1:N_weeks[i]] <- observ_Temp[1:N_weeks[i]]
+  obs_Temp[1:N_weeks[i-1]] <- observ_Temp[1:N_weeks[i-1]]
   
   obs_DayLength <- rep(NA,40)
-  obs_DayLength[1:N_weeks[i]] <- observ_DayLength[1:N_weeks[i]]
+  obs_DayLength[1:N_weeks[i-1]] <- observ_DayLength[1:N_weeks[i-1]]
+  }
   
   y[7,] <- obs_data[1:20]
   y[8,] <- obs_data[21:40]
@@ -147,6 +128,7 @@ for (i in 1:length(N_weeks)){
   
   DayLength[7,] <- obs_DayLength[1:20]
   DayLength[8,] <- obs_DayLength[21:40]
+  
   
   jags_plug_ins <- jags_plug_ins(model_name = model_name)
   
@@ -171,10 +153,26 @@ for (i in 1:length(N_weeks)){
   jags.out.mcmc <- as.mcmc.list(jags.out)
   out <- as.matrix(jags.out.mcmc)
   
+  # set up IC: sample rows from previous analysis
+  prow = sample.int(nrow(out),5000,replace=TRUE)
+  week_num = N_weeks[i]
+  Nmc = 5000
+  colnums = rep(1:20, times = 2)
+  
+  if(N_weeks[i]==1 | N_weeks[i]==21){ #first week uses IC prior from Holly
+    IC = rnorm(Nmc,-5,sqrt(1/100))
+  } else if(N_weeks[i] %in% c(2:20)) { #other weeks use last mu from spin-up model calibration
+    mycol <- paste0("mu","[7,",colnums[N_weeks[i-1]],"]") 
+    IC = out[prow,mycol]
+  } else {
+    mycol <- paste0("mu","[8,",colnums[N_weeks[i-1]],"]") 
+    IC = out[prow,mycol]
+  }
+  
 
-settings.det <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+settings.det <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                  Nmc = 1, #number of Monte Carlo draws
-                 IC = cbind(-5,-5)) #set initial conditions (will be the same for every model)
+                 IC = mean(IC)) #set initial conditions (will be the same for every model)
 
 #MUST BE EDITED TO REFLECT CORRECT PARAMS FOR MODEL
 params.det <- get_params(model_name = model_name, 
@@ -189,12 +187,9 @@ write.csv(det.prediction,file=file.path(my_directory,paste(site,paste0(model_nam
 
 ######## initial condition uncertainty #######
 
-# set up IC: sample rows from previous analysis
-Nmc = 1000
-IC = cbind(rnorm(Nmc,-5,sqrt(1/100)),rnorm(Nmc,-5,sqrt(1/100)))
 
 ##Set up forecast
-settings.IC <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+settings.IC <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                     Nmc = Nmc,
                     IC = IC)
 
@@ -213,7 +208,7 @@ write.csv(forecast.IC,file=file.path(my_directory,paste(site,paste0(model_name,'
 ###### process uncertainty ######### 
 
 ##Set up forecast
-settings.IC.P <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+settings.IC.P <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                       Nmc = Nmc,
                       IC = IC)
 
@@ -232,7 +227,7 @@ write.csv(forecast.IC.P,file=file.path(my_directory,paste(site,paste0(model_name
 ###### observation uncertainty ######### 
 
 ##Set up forecast
-settings.IC.P.O <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+settings.IC.P.O <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                         Nmc = Nmc,
                         IC = IC)
 
@@ -251,7 +246,7 @@ if(!model_name %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error")){
 ###### parameter uncertainty #######
 
 ##Set up forecast
-settings.IC.P.O.Pa <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+settings.IC.P.O.Pa <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                            Nmc = Nmc,
                            IC = IC)
 
@@ -273,7 +268,7 @@ if(!model_name %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Sea
 ###### driver uncertainty ########## 
 
 ##Set up forecast
-settings.IC.P.O.Pa.D <- list(N_out = 40, #length of forecast time points (2 years x 20 weeks)
+settings.IC.P.O.Pa.D <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                              Nmc = Nmc,
                              IC = IC)
 
@@ -294,105 +289,129 @@ write.csv(forecast.IC.P.O.Pa.D,file=file.path(my_directory,paste(site,paste0(mod
 
 
 ##############CALCULATING TOTAL AND RELATIVE VARIANCE FROM FORECASTS
-N_weeks <- c(1:40)
-model_name = 'Seasonal_DayLength_Quad_Mintemp' #pick a model name
+model_names <- c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error",
+                 "Seasonal_AR","Seasonal_AR_Mintemp",
+                 "Seasonal_DayLength_Quad","Seasonal_DayLength_Quad_Mintemp")
+forecast_week = 4
+
+for (j in 1:length(model_names)){
 my_directory <- "C:/Users/Mary Lofton/Dropbox/Ch5/Final_analysis/Data_assim"
 site = "Midge"
+N_weeks <- c(1:40)
 
-vardat.IC <- matrix(NA, 1000, 40)
+vardat.IC <- matrix(NA, 5000, 40)
 vardat.IC <- data.frame(vardat.IC)
-dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC_',N_weeks[1],'.csv'),sep = '_')))
-vardat.IC[,1] <- dat[,1]
 
-vardat.IC.P <- matrix(NA, 1000, 40)
+
+vardat.IC.P <- matrix(NA, 5000, 40)
 vardat.IC.P <- data.frame(vardat.IC.P)
-dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P_',N_weeks[1],'.csv'),sep = '_')))
-vardat.IC.P[,1] <- dat[,1]
 
-vardat.IC.P.O <- matrix(NA, 1000, 40)
+
+vardat.IC.P.O <- matrix(NA, 5000, 40)
 vardat.IC.P.O <- data.frame(vardat.IC.P.O)
-dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O_',N_weeks[1],'.csv'),sep = '_')))
-vardat.IC.P.O[,1] <- dat[,1]
 
-vardat.IC.P.O.Pa <- matrix(NA, 1000, 40)
+vardat.IC.P.O.Pa <- matrix(NA, 5000, 40)
 vardat.IC.P.O.Pa <- data.frame(vardat.IC.P.O.Pa)
-dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O.Pa_',N_weeks[1],'.csv'),sep = '_')))
-vardat.IC.P.O.Pa[,1] <- dat[,1]
 
-vardat.IC.P.O.Pa.D <- matrix(NA, 1000, 40)
+
+vardat.IC.P.O.Pa.D <- matrix(NA, 5000, 40)
 vardat.IC.P.O.Pa.D <- data.frame(vardat.IC.P.O.Pa.D)
-dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O.Pa.D_',N_weeks[1],'.csv'),sep = '_')))
-vardat.IC.P.O.Pa.D[,1] <- dat[,1]
 
-for (i in 1:39){
+
+for (i in 1:40){
   
-  dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC_',N_weeks[i],'.csv'),sep = '_')))
-  vardat.IC[,N_weeks[i+1]] <- dat[,i+1]
+  dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC_',N_weeks[i],'.csv'),sep = '_')))
+  vardat.IC[,N_weeks[i]] <- dat[,forecast_week]
   
-  dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P_',N_weeks[i],'.csv'),sep = '_')))
-  vardat.IC.P[,i+1] <- dat[,i+1]
+  dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P_',N_weeks[i],'.csv'),sep = '_')))
+  vardat.IC.P[,i] <- dat[,forecast_week]
   
-  dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O_',N_weeks[i],'.csv'),sep = '_')))
-  vardat.IC.P.O[,i+1] <- dat[,i+1]
+  dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P.O_',N_weeks[i],'.csv'),sep = '_')))
+  vardat.IC.P.O[,i] <- dat[,forecast_week]
   
-  if(!model_name %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error")){
-    dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O.Pa_',N_weeks[i],'.csv'),sep = '_')))
-    vardat.IC.P.O.Pa[,i+1] <- dat[,i+1]}
+  if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error")){
+    dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P.O.Pa_',N_weeks[i],'.csv'),sep = '_')))
+    vardat.IC.P.O.Pa[,i] <- dat[,forecast_week]}
   
-  if(!model_name %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Seasonal_AR")){
-    dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O.Pa.D_',N_weeks[i],'.csv'),sep = '_')))
-    vardat.IC.P.O.Pa.D[,i+1] <- dat[,i+1]}
+  if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Seasonal_AR")){
+    dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P.O.Pa.D_',N_weeks[i],'.csv'),sep = '_')))
+    vardat.IC.P.O.Pa.D[,i] <- dat[,forecast_week]}
   
 }
+
+vardat.IC <- vardat.IC[,c(1:16,21:36)]
+vardat.IC.P <- vardat.IC.P[,c(1:16,21:36)]
+vardat.IC.P.O <- vardat.IC.P.O[,c(1:16,21:36)]
+vardat.IC.P.O.Pa <- vardat.IC.P.O.Pa[,c(1:16,21:36)]
+vardat.IC.P.O.Pa.D <- vardat.IC.P.O.Pa.D[,c(1:16,21:36)]
+
 
 
 ### calculation of variances
 source('RCode/Helper_functions/forecast_plug_n_play_data_assim.R')
 
-varMat   <- make_varMat(model_name = model_name)
-varMat1 <- apply(varMat,2,sort)
-write.csv(varMat1, file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_total_var.csv'), sep = '_')),row.names = FALSE)
+varMat   <- make_varMat(model_name = model_names[j])
+rowMeans(varMat, na.rm = TRUE)
+write.csv(varMat, file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_names[j],'_total_var.csv'), sep = '_')),row.names = FALSE)
 
 ###consider adding code here to make sure the intervals are ordered from smallest to greatest 
 #to avoid weird overlapping when plotting due to small decreases in predictions
 #with all uncertainties incorporated due to chance
-V.pred.rel.2015 <- apply(varMat1[,1:20],2,function(x) {x/max(x)})
-V.pred.rel.2016 <- apply(varMat1[,21:40],2,function(x) {x/max(x)})
-write.csv(V.pred.rel.2015,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_varMat_2015.csv'), sep = '_')),row.names = FALSE)
-write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_name,'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
+V.pred.rel.2015 <- apply(varMat[,1:16],2,function(x) {x/max(x)})
+V.pred.rel.2016 <- apply(varMat[,17:32],2,function(x) {x/max(x)})
+write.csv(V.pred.rel.2015,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_names[j],'_varMat_2015.csv'), sep = '_')),row.names = FALSE)
+write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_names[j],'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
 
 
 # #plot variances
 # dev.off(dev.list()["RStudioGD"])
 # plot_varMat(model_name = model_name)
-# 
+#
 # ## write stacked area plot to file
 # png(file=file.path(my_directory,paste(site,paste0(model_name,'_var_part.png'), sep = '_')), res=300, width=30, height=10, units='cm')
 # plot_varMat(model_name = model_name)
 # dev.off()
-# 
-# 
+#
+#
 # ##looking at percentile of obs in forecast distribution
-# obs_quantile <- NULL
-# for (i in 1:length(forecast_ys)){
-# percentile1 <- ecdf(exp(forecast.IC.P.O[,i])) ##be sure to change this as needed - needs to be made into a function!!!
-# obs_quantile[i] <- percentile1(forecast_ys[i])
-# }
-# obs_quantile <- obs_quantile[-c(1,21)]
-# 
-# #should add vertical line at 0.5 to this
-# png(file=file.path(my_directory,paste(site,paste0(model_name,'_obs_quantile.png'), sep = '_')), res=300, width=10, height=10, units='cm')
-# hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
-#      cex.axis = 1.2, cex.lab = 1.2, xlim = c(0.2,1), breaks = seq(0,1,0.25))
-# dev.off()
+forecast_y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)
+forecast_y <- exp(forecast_y[7:8,])
+forecast_ys <- forecast_y[,-c(17:20)]
 
+obs_quantile <- NULL
+if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error")){
+for (i in 1:length(forecast_ys)){
+percentile1 <- ecdf(exp(vardat.IC.P.O.Pa[,i])) ##be sure to change this as needed - needs to be made into a function!!!
+obs_quantile[i] <- percentile1(forecast_ys[i])
+}} else if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Seasonal_AR")){
+  for (i in 1:length(forecast_ys)){
+    percentile1 <- ecdf(exp(vardat.IC.P.O.Pa.D[,i])) ##be sure to change this as needed - needs to be made into a function!!!
+    obs_quantile[i] <- percentile1(forecast_ys[i])
+  }} else{
+    for (i in 1:length(forecast_ys)){
+      percentile1 <- ecdf(exp(vardat.IC.P.O[,i])) ##be sure to change this as needed - needs to be made into a function!!!
+      obs_quantile[i] <- percentile1(forecast_ys[i])
+    }}
+
+
+#should add vertical line at 0.5 to this
+png(file=file.path(my_directory,paste(site,paste0(model_names[j],'_obs_decile_4wk.png'), sep = '_')), res=300, width=10, height=10, units='cm')
+hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
+     cex.axis = 1.2, cex.lab = 1.2, xlim = c(0,1), breaks = seq(0,1,0.1))
+dev.off()
+
+png(file=file.path(my_directory,paste(site,paste0(model_names[j],'_obs_quartile_4wk.png'), sep = '_')), res=300, width=10, height=10, units='cm')
+hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
+     cex.axis = 1.2, cex.lab = 1.2, xlim = c(0,1), breaks = seq(0,1,0.25))
+dev.off()
+}
 # #a perfect forecast
 # obs_quantile <- rep(0.5, 40)
 # png(file=file.path(my_directory,paste("perfect_forecast.png")), res=300, width=10, height=10, units='cm')
 # hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
 #      cex.axis = 1.2, cex.lab = 1.2, breaks = seq(0,1,0.1))
 # dev.off()
-# 
+#
 # #an extremely good forecast
 # obs_quantile <- c(0.2, 0.3, 0.3, 0.4, 0.4, 0.4, 0.4, rep(0.5,26), 0.6, 0.6, 0.6, 0.6, 0.7, 0.7, 0.8)
 # png(file=file.path(my_directory,paste("excellent_forecast.png")), res=300, width=10, height=10, units='cm')

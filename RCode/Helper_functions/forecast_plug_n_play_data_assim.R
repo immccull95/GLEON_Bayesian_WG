@@ -643,57 +643,130 @@ forecast_gloeo <- function(model_name, params, settings){
   proc.model <- matrix(NA, Nmc, N_out) # setting up output 
   out <- matrix(NA, Nmc, N_out)
   ts = rbind(1:20,21:40)
-  forecast_years = forecast_years
   week_avg = week_avg
   week_min = week_min
   week_max = week_max
+  week_num = week_num
   obs_data = obs_data
-  
+  colnums = colnums
+
   if(model_name == "Seasonal_RandomWalk"){
-    
-  for(k in 1:length(forecast_years)){
-    gloeo_prev <- IC[,k]
-    t <- ts[k,]
-    
-    #populate first week of season with IC
-    if(k == 1){proc.model[,1] <- IC[,k]
-    out[,1] <- IC[,k]} else {
-      proc.model[,21] <- IC[,k]
-      out[,21] <- IC[,k]
-    }
-    
-    for(j in 2:max(season_weeks)){
+    if(week_num %in% c(1:16,21:36)){
+    for(j in 1:5){
+      #set initial conditions
+      if(j == 1){gloeo_prev <- IC}
       #process model
-      proc.model[,t[j]] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+      proc.model[,j] = rnorm(Nmc,gloeo_prev,params$sd_proc)
       #data model
-      out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+      out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
       #update IC
-      if (!is.na(obs_data[t[j]])){gloeo_prev <- obs_data[t[j]]}
-      else {gloeo_prev <- out[,t[j]]}
-    }}}
+      gloeo_prev <- out[,j]
+    }}
+    
+    if(week_num %in% c(17,37)){
+      for(j in 1:4){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #process model
+        proc.model[,j] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(18,38)){
+      for(j in 1:3){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #process model
+        proc.model[,j] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(19,39)){
+      for(j in 1:2){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #process model
+        proc.model[,j] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(20,40)){
+        #set initial conditions
+        gloeo_prev <- IC
+        #process model
+        proc.model[,1] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+        #data model
+        out[,1] = rnorm(Nmc,proc.model[,1],params$sd_obs)
+      }
+  }
   
   if(model_name == "Seasonal_RandomWalk_Obs_error"){
-    
-    for(k in 1:length(forecast_years)){
-      gloeo_prev <- IC[,k]
-      t <- ts[k,]
-      
-      #populate first week of season with IC
-      if(k == 1){proc.model[,1] <- IC[,k]
-      out[,1] <- IC[,k]} else {
-        proc.model[,21] <- IC[,k]
-        out[,21] <- IC[,k]
-      }
-      
-      for(j in 2:max(season_weeks)){
+    if(week_num %in% c(1:16,21:36)){
+      for(j in 1:5){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
         #process model
-        proc.model[,t[j]] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+        proc.model[,j] = rnorm(Nmc,gloeo_prev,params$sd_proc)
         #data model
-        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
         #update IC
-        if (!is.na(obs_data[t[j]])){gloeo_prev <- obs_data[t[j]]}
-        else {gloeo_prev <- out[,t[j]]} 
-      }}}
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(17,37)){
+      for(j in 1:4){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #process model
+        proc.model[,j] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(18,38)){
+      for(j in 1:3){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #process model
+        proc.model[,j] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(19,39)){
+      for(j in 1:2){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #process model
+        proc.model[,j] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(20,40)){
+        #set initial conditions
+        gloeo_prev <- IC
+        #process model
+        proc.model[,1] = rnorm(Nmc,gloeo_prev,params$sd_proc)
+        #data model
+        out[,1] = rnorm(Nmc,proc.model[,1],params$sd_obs)
+      }
+  }
 
   if(model_name == "Seasonal_RandomWalk_RandomYear"){
     
@@ -722,28 +795,68 @@ forecast_gloeo <- function(model_name, params, settings){
       }}}
   
   if(model_name == "Seasonal_AR"){
-    
-    for(k in 1:length(forecast_years)){
-      gloeo_prev <- IC[,k]
-      t <- ts[k,]
-      
-      #populate first week of season with IC
-      if(k == 1){proc.model[,1] <- IC[,k]
-      out[,1] <- IC[,k]} else {
-        proc.model[,21] <- IC[,k]
-        out[,21] <- IC[,k]
-      }
-      
-      for(j in 2:max(season_weeks)){
+    if(week_num %in% c(1:16,21:36)){
+      for(j in 1:5){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
         #process model
         gloeo_temp = params$beta1 + params$beta2*gloeo_prev
-        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
         #data model
-        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
         #update IC
-        if (!is.na(obs_data[t[j]])){gloeo_prev <- obs_data[t[j]]}
-        else {gloeo_prev <- out[,t[j]]}
-      }}}
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(17,37)){
+      for(j in 1:4){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(18,38)){
+      for(j in 1:3){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(19,39)){
+      for(j in 1:2){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(20,40)){
+        #set initial conditions
+        gloeo_prev <- IC
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev
+        proc.model[,1] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,1] = rnorm(Nmc,proc.model[,1],params$sd_obs)
+      }
+  }
   
   if(model_name == "Seasonal_AR_Temperature"){
     
@@ -771,31 +884,78 @@ forecast_gloeo <- function(model_name, params, settings){
       }}}
   
   if(model_name == "Seasonal_AR_Mintemp"){
-    
-    for(k in 1:length(forecast_years)){
-      gloeo_prev <- IC[,k]
-      t <- ts[k,]
-      
-      #populate first week of season with IC
-      if(k == 1){proc.model[,1] <- IC[,k]
-      out[,1] <- IC[,k]} else {
-        proc.model[,21] <- IC[,k]
-        out[,21] <- IC[,k]
-      }
-      
-      for(j in 2:max(season_weeks)){
+    if(week_num %in% c(1:16,21:36)){
+      for(j in 1:5){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
         #temp model
-        if (!is.na(obs_Temp[t[j]])){Temp <- obs_Temp[t[j]]}
-        else {Temp = rnorm(Nmc,week_min[j],params$sd_T)}
+        Temp = rnorm(Nmc,week_min[colnums[week_num]],params$sd_T)
         #process model
         gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Temp
-        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
         #data model
-        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
         #update IC
-        if (!is.na(obs_data[t[j]])){gloeo_prev <- obs_data[t[j]]}
-        else {gloeo_prev <- out[,t[j]]}
-      }}}
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(17,37)){
+      for(j in 1:4){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #temp model
+        Temp = rnorm(Nmc,week_min[colnums[week_num]],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Temp
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(18,38)){
+      for(j in 1:3){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #temp model
+        Temp = rnorm(Nmc,week_min[colnums[week_num]],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Temp
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(19,39)){
+      for(j in 1:2){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #temp model
+        Temp = rnorm(Nmc,week_min[colnums[week_num]],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Temp
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(20,40)){
+        #set initial conditions
+        gloeo_prev <- IC
+        #temp model
+        Temp = rnorm(Nmc,week_min[colnums[week_num]],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*Temp
+        proc.model[,1] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,1] = rnorm(Nmc,proc.model[,1],params$sd_obs)
+      }
+  }
   
   if(model_name == "Seasonal_AR_Mintemp_Lag"){
     
@@ -848,61 +1008,162 @@ forecast_gloeo <- function(model_name, params, settings){
       }}}
   
   if(model_name == "Seasonal_DayLength_Quad"){
-    
-    for(k in 1:length(forecast_years)){
-      gloeo_prev <- IC[,k]
-      t <- ts[k,]
-      
-      #populate first week of season with IC
-      if(k == 1){proc.model[,1] <- IC[,k]
-      out[,1] <- IC[,k]} else {
-        proc.model[,21] <- IC[,k]
-        out[,21] <- IC[,k]
-      }
-      
-      for(j in 2:max(season_weeks)){
-        #DayLength model
-        if (!is.na(obs_DayLength[t[j]])){DayLength <- obs_DayLength[t[j]]}
-        else {DayLength = rnorm(Nmc,week_avg[j],params$sd_D)}
+    if(week_num %in% c(1:16,21:36)){
+      for(j in 1:5){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #temp model
+        DayLength = rnorm(Nmc,week_avg[colnums[week_num]],params$sd_D)
         #process model
         gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2
-        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
         #data model
-        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
         #update IC
-        if (!is.na(obs_data[t[j]])){gloeo_prev <- obs_data[t[j]]}
-        else {gloeo_prev <- out[,t[j]]}
-      }}}
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(17,37)){
+      for(j in 1:4){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #temp model
+        DayLength = rnorm(Nmc,week_avg[colnums[week_num]],params$sd_D)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(18,38)){
+      for(j in 1:3){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #temp model
+        DayLength = rnorm(Nmc,week_avg[colnums[week_num]],params$sd_D)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(19,39)){
+      for(j in 1:2){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #temp model
+        DayLength = rnorm(Nmc,week_avg[colnums[week_num]],params$sd_D)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(20,40)){
+        #set initial conditions
+        gloeo_prev <- IC
+        #temp model
+        DayLength = rnorm(Nmc,week_avg[colnums[week_num]],params$sd_D)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2
+        proc.model[,1] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,1] = rnorm(Nmc,proc.model[,1],params$sd_obs)
+      }
+  }
   
   if(model_name == "Seasonal_DayLength_Quad_Mintemp"){
-    
-    for(k in 1:length(forecast_years)){
-      gloeo_prev <- IC[,k]
-      t <- ts[k,]
-      
-      #populate first week of season with IC
-      if(k == 1){proc.model[,1] <- IC[,k]
-      out[,1] <- IC[,k]} else {
-        proc.model[,21] <- IC[,k]
-        out[,21] <- IC[,k]
-      }
-      
-      for(j in 2:max(season_weeks)){
-        #DayLength model
-        if (!is.na(obs_DayLength[t[j]])){DayLength <- obs_DayLength[t[j]]}
-        else {DayLength = rnorm(Nmc,week_avg[j],params$sd_D)}
+    if(week_num %in% c(1:16,21:36)){
+      for(j in 1:5){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
         #temp model
-        if (!is.na(obs_Temp[t[j]])){Temp <- obs_Temp[t[j]]}
-        else {Temp = rnorm(Nmc,week_min[j],params$sd_T)}
+        DayLength = rnorm(Nmc,week_avg[colnums[week_num]],params$sd_D)
+        #temp model
+        Temp = rnorm(Nmc,week_min[colnums[week_num]],params$sd_T)
         #process model
         gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2 + params$beta5*Temp
-        proc.model[,t[j]] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
         #data model
-        out[,t[j]] = rnorm(Nmc,proc.model[,t[j]],params$sd_obs)
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
         #update IC
-        if (!is.na(obs_data[t[j]])){gloeo_prev <- obs_data[t[j]]}
-        else {gloeo_prev <- out[,t[j]]}
-      }}}
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(17,37)){
+      for(j in 1:4){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #temp model
+        DayLength = rnorm(Nmc,week_avg[colnums[week_num]],params$sd_D)
+        #temp model
+        Temp = rnorm(Nmc,week_min[colnums[week_num]],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2 + params$beta5*Temp
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(18,38)){
+      for(j in 1:3){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #temp model
+        DayLength = rnorm(Nmc,week_avg[colnums[week_num]],params$sd_D)
+        #temp model
+        Temp = rnorm(Nmc,week_min[colnums[week_num]],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2 + params$beta5*Temp
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(19,39)){
+      for(j in 1:2){
+        #set initial conditions
+        if(j == 1){gloeo_prev <- IC}
+        #temp model
+        DayLength = rnorm(Nmc,week_avg[colnums[week_num]],params$sd_D)
+        #temp model
+        Temp = rnorm(Nmc,week_min[colnums[week_num]],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2 + params$beta5*Temp
+        proc.model[,j] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,j] = rnorm(Nmc,proc.model[,j],params$sd_obs)
+        #update IC
+        gloeo_prev <- out[,j]
+      }}
+    
+    if(week_num %in% c(20,40)){
+        #set initial conditions
+        gloeo_prev <- IC
+        #temp model
+        DayLength = rnorm(Nmc,week_avg[colnums[week_num]],params$sd_D)
+        #temp model
+        Temp = rnorm(Nmc,week_min[colnums[week_num]],params$sd_T)
+        #process model
+        gloeo_temp = params$beta1 + params$beta2*gloeo_prev + params$beta3*DayLength + params$beta4*DayLength^2 + params$beta5*Temp
+        proc.model[,1] = rnorm(Nmc,gloeo_temp,params$sd_proc)
+        #data model
+        out[,1] = rnorm(Nmc,proc.model[,1],params$sd_obs)
+      }
+  }
   
   if(model_name == "Seasonal_AR_Temp_and_Diff"){
     
