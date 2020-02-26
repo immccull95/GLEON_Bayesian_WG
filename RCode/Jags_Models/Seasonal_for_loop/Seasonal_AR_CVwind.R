@@ -21,7 +21,7 @@ model{
     lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*Wnd[k,j] 
     
     #process model for temperature
-    Wnd[k,j]~dnorm(week_min[j],tau_W_proc)
+    Wnd[k,j]~dnorm(week_cv[j],tau_W_proc)
 
   }
     

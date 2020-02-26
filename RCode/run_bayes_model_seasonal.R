@@ -15,7 +15,7 @@ source('RCode/helper_functions/seasonal_plug_n_play.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Minwind' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
+model_name = 'Seasonal_SWradiation_Quad_Mintemp' # options are RandomWalk, RandomWalkZip, Logistic, Exponential, DayLength, DayLength_Quad, RandomYear, TempExp, Temp_Quad,  ChangepointTempExp
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #Do not edit
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -39,8 +39,16 @@ GDD <- scale(GDD, center = TRUE, scale = TRUE)
 DayLength <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/daylength_year_by_week_28JAN20.csv"))
 DayLength <- scale(DayLength, center = TRUE, scale = TRUE)
 
-#for Wnd
-Wnd <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_perc90_14OCT19.csv"))
+#for SW radiation
+SW <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_SW_24FEB20.csv"))
+SW <- scale(SW, center = TRUE, scale = TRUE)
+
+#for Minwind
+Wnd <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_minwind_24FEB20.csv"))
+Wnd <- scale(Wnd, center = TRUE, scale = TRUE)
+
+#for CVwind
+Wnd <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_CVwind_24FEB20.csv"))
 Wnd <- scale(Wnd, center = TRUE, scale = TRUE)
 
 #for watertemp_min
@@ -102,6 +110,9 @@ week_avg = colMeans(DayLength, na.rm = TRUE)
 # week_var_mean = mean(1/apply(DayLength,2,var),na.rm = TRUE)
 # week_var_var = var(1/apply(DayLength,2,var),na.rm = TRUE)
 
+#for SW radiation
+week_avg = colMeans(SW, na.rm = TRUE)
+
 #for precipitation
 week_avg = colMeans(Ppt, na.rm = TRUE)
 # week_var_mean = mean(1/apply(Ppt,2,var),na.rm = TRUE)
@@ -113,12 +124,21 @@ week_avg[c(19,20)]<- week_avg[18]
 # week_var_mean = mean(1/apply(Light,2,var),na.rm = TRUE)
 # week_var_var = var(1/apply(Light,2,var),na.rm = TRUE)
 
-#for Wnd
-week_avg = colMeans(Wnd, na.rm = TRUE)
+#for Minwind
+week_min = colMeans(Wnd, na.rm = TRUE)
+
+#for CVwind
+week_cv = colMeans(Wnd, na.rm = TRUE)
 
 #for combined covariate model
 week_avg_T = colMeans(Temp_prior, na.rm = TRUE)
 week_avg_S = colMeans(Schmidt, na.rm = TRUE)
+
+#for combined covariate model
+week_min_T = colMeans(Temp_prior, na.rm = TRUE)
+week_min_S = colMeans(Schmidt, na.rm = TRUE)
+week_min_W = colMeans(Wnd, na.rm = TRUE)
+
 
 #3) JAGS Plug-Ins -----------------------------------------------------------------------------------------------------
 jags_plug_ins <- jags_plug_ins(model_name = model_name)
@@ -205,6 +225,8 @@ Lights=c(Light[1,], Light[2,], Light[3,], Light[4,], Light[5,], Light[6,])
 Wnds=c(Wnd[1,], Wnd[2,], Wnd[3,], Wnd[4,], Wnd[5,], Wnd[6,])
 GDDs=c(GDD[1,], GDD[2,], GDD[3,], GDD[4,], GDD[5,], GDD[6,])
 DayLengths=c(DayLength[1,], DayLength[2,], DayLength[3,], DayLength[4,], DayLength[5,], DayLength[6,])
+SWs=c(SW[1,], SW[2,], SW[3,], SW[4,], SW[5,], SW[6,])
+
 ys = exp(c(y[1,],y[2,],y[3,],y[4,],y[5,],y[6,]))
 
 

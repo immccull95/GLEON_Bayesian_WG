@@ -18,10 +18,11 @@ model{
     
     #process model for Gloeo
     mu[k,j]~dnorm(lambda[k,j],tau_proc) 
-    lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*Wnd[k,j] 
+    lambda[k,j] <- beta1  + beta2*mu[k,j-1] + beta3*SW[k,j] + beta4*(SW[k,j]^2) + beta5*Temp[k,j] 
     
     #process model for temperature
-    Wnd[k,j]~dnorm(week_min[j],tau_W_proc)
+    SW[k,j]~dnorm(week_avg[j],tau_SW_proc)
+    Temp[k,j]~dnorm(week_min[j],tau_T_proc)
 
   }
     
@@ -34,9 +35,14 @@ model{
   tau_proc ~ dgamma(a_proc,r_proc)
   beta1 ~ dnorm(beta.m1,beta.v1) 
   beta2 ~ dnorm(beta.m2,beta.v2) 
-  beta3 ~ dnorm(beta.m3,beta.v3) 
+  beta3 ~ dnorm(beta.m3,beta.v3)
+  beta4 ~ dnorm(beta.m4,beta.v4)
+  beta5 ~ dnorm(beta.m5,beta.v5)
   tau_obs ~ dgamma(a_obs,r_obs)
   #tau_T_obs ~ dgamma(0.01, 0.01) 
-  tau_W_proc ~ dgamma(0.01, 0.01)
+  #tau_D_proc ~ dgamma(6.70e-2, 1.38e-5)
+  tau_SW_proc ~ dgamma(0.01,0.01)
+  tau_T_proc ~ dgamma(0.01,0.01)
+  
   
 }
