@@ -128,6 +128,6 @@ sw_seasonal <- sw1 %>%
 
 colnames(sw_seasonal) <- paste("wk", colnames(sw_seasonal), sep = "_")
 
-write.csv(sw_seasonal, "./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_SW_24FEB20.csv", row.names = FALSE)
+write.csv(sw_seasonal, "./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_SW_forecast_03MAR20.csv", row.names = FALSE)
 
   

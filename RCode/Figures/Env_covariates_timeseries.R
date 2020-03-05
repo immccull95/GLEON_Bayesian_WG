@@ -6,7 +6,7 @@ Temp <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_mintemp_foreca
 
 SW <- read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_SW_forecast_25FEB20.csv")
 
-Minwind <- read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_minwind_forecast_25FEB20.csv")
+Schmidt <- read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_forecast_04MAR20.csv")
 
 
 mytheme <- theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),

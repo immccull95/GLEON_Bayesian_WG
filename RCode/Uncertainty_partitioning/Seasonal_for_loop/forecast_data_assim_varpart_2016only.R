@@ -14,13 +14,13 @@ library(runjags)
 library(moments)
 library(geosphere)
 library(googledrive)
-source('RCode/Helper_functions/seasonal_plug_n_play.R')
+source('RCode/Helper_functions/seasonal_plug_n_play_2015_validation.R')
 source('RCode/Helper_functions/forecast_plug_n_play_data_assim.R')
 #source('RCode/Helper_functions/get_forecast_data.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Mintemp' #pick a model name
+model_name = 'Seasonal_AR_Minwind_MinSchmidt_Diff' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -34,12 +34,12 @@ my_directory <- "C:/Users/Mary Lofton/Dropbox/Ch5/Final_analysis/Data_assim"
 #2) read in and visualize data ------------------------------------------------------------------------------------------------------------
 y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_22JUL19.csv"))+0.003)
 forecast_y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)
-forecast_y <- forecast_y[7:8,]
+forecast_y <- forecast_y[8,]
 
 #for watertemp_min
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_16AUG19.csv"))
 Temp <- scale(Temp, center = TRUE, scale = TRUE)
-Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Fichter_year_by_week_watertemp_min_16AUG19.csv"))
+Temp_prior <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Seasonal_data_mintemp_Fichter_forecast_03MAR20.csv"))
 Temp_prior <- scale(Temp_prior, center = TRUE, scale = TRUE)
 
 #for DayLength
@@ -48,6 +48,10 @@ DayLength <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/daylength_yea
 #for max Schmidt
 Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_max_Schmidt_28JAN20.csv"))
 
+#for min Schmidt
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_forecast_04MAR20.csv"))
+Schmidt <- scale(Schmidt, center = TRUE, scale = TRUE)
+
 #for Ppt
 Ppt <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly_summed_precip_10OCT19.csv"))
 
@@ -55,28 +59,39 @@ Ppt <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_weekly
 Light <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/UnderwaterLight_year_by_week_02FEB20.csv"))
 
 #for Wnd
-Wnd <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_perc90_14OCT19.csv"))
+Wnd <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_NLDASminwind_forecast_03MAR20.csv"))
+Wnd <- scale(Wnd, center = TRUE, scale = TRUE)
 
 #for GDD
-GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_28JAN20.csv"))
+GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_forecast_03MAR20.csv"))
+
+#for SW
+SW <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_SW_forecast_03MAR20.csv"))
+SW <- scale(SWs, center = TRUE, scale = TRUE)
 
 years <- c(2009:2016)
-forecast_years <- c(2015:2016)
+forecast_years <- c(2016)
 year_no = as.numeric(as.factor(years))
 season_weeks = c(1:20)
 site = "Midge"
 
 #for min water temp
-week_min = colMeans(Temp_prior, na.rm = TRUE)
+week_min = colMeans(Temp_prior[1:7,], na.rm = TRUE)
 
-#for DayLength
-week_avg = colMeans(DayLength, na.rm = TRUE)
+#for GDD
+week_avg = colMeans(GDD[1:7,], na.rm = TRUE)
+
+#for SW
+week_avg = colMeans(SW[1:7,],na.rm = TRUE)
 
 #for max Schmidt
 week_max = colMeans(Schmidt, na.rm = TRUE)
 
+#for min Schmidt
+week_min = colMeans(Schmidt[1:7,], na.rm = TRUE)
+
 #for cv Wnd
-week_cv = colMeans(Wnd, na.rm = TRUE)
+week_cv = colMeans(Wnd[1:7,], na.rm = TRUE)
 
 #for combined covariate model
 week_avg_T = colMeans(Temp_prior, na.rm = TRUE)
@@ -84,96 +99,93 @@ week_avg_S = colMeans(Schmidt, na.rm = TRUE)
 
 #for combined covariate model
 week_min_T = colMeans(Temp_prior, na.rm = TRUE)
-week_min_S = colMeans(Schmidt, na.rm = TRUE)
-week_min_W = colMeans(Wnd, na.rm = TRUE)
+week_min_S = colMeans(Schmidt[1:7,], na.rm = TRUE)
+week_min_W = colMeans(Wnd[1:7,], na.rm = TRUE)
 
 #6) Run forecasts with data assimilation
 
 ## Forward Simulation
-N_weeks <- c(1:40)
-observ <- c(forecast_y[1,],forecast_y[2,])
+N_weeks <- c(1:20)
+observ <- forecast_y
 y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)
 
 Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_forecast_05OCT19.csv"))
 Temp <- scale(Temp, center = TRUE, scale = TRUE)
-observ_Temp <- c(Temp[7,],Temp[8,])
+observ_Temp <- c(Temp[8,])
 
 SW <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_SW_forecast_03MAR20.csv"))
 SW <- scale(SW, center = TRUE, scale = TRUE)
-observ_SW <- c(SW[7,],SW[8,])
+observ_SW <- c(SW[8,])
 
 GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_forecast_03MAR20.csv"))
 GDD <- scale(GDD, center = TRUE, scale = TRUE)
-observ_GDD <- c(GDD[7,],GDD[8,])
+observ_GDD <- c(GDD[8,])
+
+Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_forecast_04MAR20.csv"))
+Schmidt <- scale(Schmidt, center = TRUE, scale = TRUE)
+observ_Schmidt <- c(Schmidt[8,])
 
 
 ######## deterministic prediction #######
 ##Set up forecast
 
 for (i in 1:length(N_weeks)){
-  source('RCode/Helper_functions/seasonal_plug_n_play.R')
+  source('RCode/Helper_functions/seasonal_plug_n_play_2015_validation.R')
   
-  N_weeks <- c(1:40)
-  observ <- c(forecast_y[1,],forecast_y[2,])
+  N_weeks <- c(1:20)
+  observ <- forecast_y
   y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)
   
   Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_forecast_05OCT19.csv"))
   Temp <- scale(Temp, center = TRUE, scale = TRUE)
-  observ_Temp <- c(Temp[7,],Temp[8,])
+  observ_Temp <- c(Temp[8,])
   
   SW <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_SW_forecast_03MAR20.csv"))
   SW <- scale(SW, center = TRUE, scale = TRUE)
-  observ_SW <- c(SW[7,],SW[8,])
+  observ_SW <- c(SW[8,])
   
   GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_forecast_03MAR20.csv"))
   GDD <- scale(GDD, center = TRUE, scale = TRUE)
-  observ_GDD <- c(GDD[7,],GDD[8,])
+  observ_GDD <- c(GDD[8,])
+  
+  Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_forecast_04MAR20.csv"))
+  Schmidt <- scale(Schmidt, center = TRUE, scale = TRUE)
+  observ_Schmidt <- c(Schmidt[8,])
   
   if(i == 1){
-    obs_data <- rep(NA,40)
-    obs_Temp <- rep(NA,40)
-    obs_SW <- rep(NA,40)
-    obs_GDD <- rep(NA,40)
+    obs_data <- rep(NA,20)
+    obs_Temp <- rep(NA,20)
+    obs_SW <- rep(NA,20)
+    obs_GDD <- rep(NA,20)
+    obs_Schmidt <- rep(NA,20)
   } else{
-  obs_data <- rep(NA,40)
+  obs_data <- rep(NA,20)
   obs_data[1:N_weeks[i-1]] <- observ[1:N_weeks[i-1]]
   
-  obs_Temp <- rep(NA,40)
+  obs_Temp <- rep(NA,20)
   obs_Temp[1:N_weeks[i-1]] <- observ_Temp[1:N_weeks[i-1]]
   
-  obs_SW <- rep(NA,40)
+  obs_SW <- rep(NA,20)
   obs_SW[1:N_weeks[i-1]] <- observ_SW[1:N_weeks[i-1]]
   
-  obs_GDD <- rep(NA,40)
+  obs_GDD <- rep(NA,20)
   obs_GDD[1:N_weeks[i-1]] <- observ_GDD[1:N_weeks[i-1]]
   
+  obs_Schmidt <- rep(NA,20)
+  obs_Schmidt[1:N_weeks[i-1]] <- observ_Schmidt[1:N_weeks[i-1]]
+  
   }
   
-  y[7,] <- obs_data[1:20]
-  y[8,] <- obs_data[21:40]
+  y[8,] <- obs_data[1:20]
   
-  Temp[7,] <- obs_Temp[1:20]
-  Temp[8,] <- obs_Temp[21:40]
+  Temp[8,] <- obs_Temp[1:20]
   
-  SW[7,] <- obs_SW[1:20]
-  SW[8,] <- obs_SW[21:40]
+  SW[8,] <- obs_SW[1:20]
   
-  GDD[7,] <- obs_GDD[1:20]
-  GDD[8,] <- obs_GDD[21:40]
+  GDD[8,] <- obs_GDD[1:20]
   
-  if(N_weeks[i] %in% c(1:20)){
-    y <- y[1:7,]
-    Temp <- Temp[1:7,]
-    SW <- SW[1:7,]
-    GDD <- GDD[1:7,]
-    year_no = as.numeric(as.factor(c(2009:2015)))
-  } else {
-    y <- y[1:8,]
-    Temp <- Temp[1:8,]
-    SW <- SW[1:8,]
-    GDD <- GDD[1:8,]
-    year_no = as.numeric(as.factor(c(2009:2016)))
-  }
+  Schmidt[8,] <- obs_Schmidt[1:20]
+  
   
   
   jags_plug_ins <- jags_plug_ins(model_name = model_name)
@@ -203,22 +215,21 @@ for (i in 1:length(N_weeks)){
   prow = sample.int(nrow(out),5000,replace=TRUE)
   week_num = N_weeks[i]
   Nmc = 5000
-  colnums = rep(1:20, times = 2)
+  colnums = rep(1:20, times = 1)
   
-  if(N_weeks[i]==1 | N_weeks[i]==21){ #first week uses IC prior from Holly
+  if(N_weeks[i]==1){ #first week uses IC prior from Holly
     IC = rnorm(Nmc,-5,sqrt(1/100))
+    IC_S = rnorm(Nmc, week_min[1],1/sqrt(out[prow,"tau_S_proc"]))
   } else if(N_weeks[i] %in% c(2:20)) { #other weeks use last mu from spin-up model calibration
-    mycol <- paste0("mu","[7,",colnums[N_weeks[i-1]],"]") 
-    IC = out[prow,mycol]
-  } else {
     mycol <- paste0("mu","[8,",colnums[N_weeks[i-1]],"]") 
     IC = out[prow,mycol]
-  }
-  
+    IC_S = rnorm(Nmc, week_min[i-1],1/sqrt(out[prow,"tau_S_proc"]))
+  } 
 
 settings.det <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                  Nmc = 1, #number of Monte Carlo draws
-                 IC = mean(IC)) #set initial conditions (will be the same for every model)
+                 IC = mean(IC),
+                 IC_S = mean(IC_S)) #set initial conditions (will be the same for every model)
 
 #MUST BE EDITED TO REFLECT CORRECT PARAMS FOR MODEL
 params.det <- get_params(model_name = model_name, 
@@ -237,7 +248,8 @@ write.csv(det.prediction,file=file.path(my_directory,paste(site,paste0(model_nam
 ##Set up forecast
 settings.IC <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                     Nmc = Nmc,
-                    IC = IC)
+                    IC = IC,
+                    IC_S = IC_S)
 
 params.IC <- get_params(model_name = model_name,
                         forecast_type = "IC")
@@ -256,7 +268,8 @@ write.csv(forecast.IC,file=file.path(my_directory,paste(site,paste0(model_name,'
 ##Set up forecast
 settings.IC.P <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                       Nmc = Nmc,
-                      IC = IC)
+                      IC = IC,
+                      IC_S = IC_S)
 
 params.IC.P <- get_params(model_name = model_name,
                           forecast_type = "IC.P")
@@ -275,7 +288,8 @@ write.csv(forecast.IC.P,file=file.path(my_directory,paste(site,paste0(model_name
 ##Set up forecast
 settings.IC.P.O <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                         Nmc = Nmc,
-                        IC = IC)
+                        IC = IC,
+                        IC_S = IC_S)
 
 params.IC.P.O <- get_params(model_name = model_name,
                             forecast_type = "IC.P.O")
@@ -294,7 +308,8 @@ if(!model_name %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error")){
 ##Set up forecast
 settings.IC.P.O.Pa <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                            Nmc = Nmc,
-                           IC = IC)
+                           IC = IC,
+                           IC_S = IC_S)
 
 params.IC.P.O.Pa <- get_params(model_name = model_name,
                                forecast_type = "IC.P.O.Pa")
@@ -316,7 +331,8 @@ if(!model_name %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Sea
 ##Set up forecast
 settings.IC.P.O.Pa.D <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
                              Nmc = Nmc,
-                             IC = IC)
+                             IC = IC,
+                             IC_S = IC_S)
 
 params.IC.P.O.Pa.D <- get_params(model_name = model_name,
                                  forecast_type = "IC.P.O.Pa.D")
@@ -336,27 +352,27 @@ write.csv(forecast.IC.P.O.Pa.D,file=file.path(my_directory,paste(site,paste0(mod
 
 ##############CALCULATING TOTAL AND RELATIVE VARIANCE FROM FORECASTS
 model_names <- c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error",
-                 "Seasonal_AR","Seasonal_AR_Mintemp",
-                 "Seasonal_DayLength_Quad","Seasonal_DayLength_Quad_Mintemp")
-forecast_week = 4
+                 "Seasonal_AR","Seasonal_AR_MinSchmidt_Diff", "Seasonal_SWradiation_Quad",
+                 "Seasonal_AR_Minwind_MinSchmidt_Diff","Seasonal_AR_SWradiation_MinSchmidt_Diff")
+forecast_week = 1
 
 for (j in 1:length(model_names)){
 my_directory <- "C:/Users/Mary Lofton/Dropbox/Ch5/Final_analysis/Data_assim"
 site = "Midge"
-N_weeks <- c(1:40)
+N_weeks <- c(1:20)
 
-vardat.IC <- matrix(NA, 5000, 40)
+vardat.IC <- matrix(NA, 5000, 20)
 vardat.IC <- data.frame(vardat.IC)
 
 
-vardat.IC.P <- matrix(NA, 5000, 40)
+vardat.IC.P <- matrix(NA, 5000, 20)
 vardat.IC.P <- data.frame(vardat.IC.P)
 
 
-vardat.IC.P.O <- matrix(NA, 5000, 40)
+vardat.IC.P.O <- matrix(NA, 5000, 20)
 vardat.IC.P.O <- data.frame(vardat.IC.P.O)
 
-vardat.IC.P.O.Pa <- matrix(NA, 5000, 40)
+vardat.IC.P.O.Pa <- matrix(NA, 5000, 20)
 vardat.IC.P.O.Pa <- data.frame(vardat.IC.P.O.Pa)
 
 
@@ -364,7 +380,7 @@ vardat.IC.P.O.Pa.D <- matrix(NA, 5000, 40)
 vardat.IC.P.O.Pa.D <- data.frame(vardat.IC.P.O.Pa.D)
 
 
-for (i in 1:40){
+for (i in 1:20){
   
   dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC_',N_weeks[i],'.csv'),sep = '_')))
   vardat.IC[,N_weeks[i]] <- dat[,forecast_week]
@@ -385,11 +401,11 @@ for (i in 1:40){
   
 }
 
-vardat.IC <- vardat.IC[,c(1:16,21:36)]
-vardat.IC.P <- vardat.IC.P[,c(1:16,21:36)]
-vardat.IC.P.O <- vardat.IC.P.O[,c(1:16,21:36)]
-vardat.IC.P.O.Pa <- vardat.IC.P.O.Pa[,c(1:16,21:36)]
-vardat.IC.P.O.Pa.D <- vardat.IC.P.O.Pa.D[,c(1:16,21:36)]
+vardat.IC <- vardat.IC[,c(1:16)]
+vardat.IC.P <- vardat.IC.P[,c(1:16)]
+vardat.IC.P.O <- vardat.IC.P.O[,c(1:16)]
+vardat.IC.P.O.Pa <- vardat.IC.P.O.Pa[,c(1:16)]
+vardat.IC.P.O.Pa.D <- vardat.IC.P.O.Pa.D[,c(1:16)]
 
 
 
@@ -398,17 +414,21 @@ source('RCode/Helper_functions/forecast_plug_n_play_data_assim.R')
 
 varMat   <- make_varMat(model_name = model_names[j])
 rowMeans(varMat, na.rm = TRUE)
-write.csv(varMat, file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_names[j],'_total_var.csv'), sep = '_')),row.names = FALSE)
-
+if(forecast_week == 4){
+write.csv(varMat, file=file.path("Results/Uncertainty_partitioning/w_Data_assim_4wk",paste(site,paste0(model_names[j],'_total_var.csv'), sep = '_')),row.names = FALSE)
+} else {
+write.csv(varMat, file=file.path("Results/Uncertainty_partitioning/w_Data_assim_1wk",paste(site,paste0(model_names[j],'_total_var.csv'), sep = '_')),row.names = FALSE)
+}
 ###consider adding code here to make sure the intervals are ordered from smallest to greatest 
 #to avoid weird overlapping when plotting due to small decreases in predictions
 #with all uncertainties incorporated due to chance
-V.pred.rel.2015 <- apply(varMat[,1:16],2,function(x) {x/max(x)})
-V.pred.rel.2016 <- apply(varMat[,17:32],2,function(x) {x/max(x)})
-write.csv(V.pred.rel.2015,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_names[j],'_varMat_2015.csv'), sep = '_')),row.names = FALSE)
-write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning",paste(site,paste0(model_names[j],'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
-
-
+V.pred.rel.2016 <- apply(varMat[,1:16],2,function(x) {x/max(x)})
+if(forecast_week == 4){
+write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning/w_Data_assim_4wk",paste(site,paste0(model_names[j],'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
+} else {
+write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning/w_Data_assim_1wk",paste(site,paste0(model_names[j],'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
+}
+}
 # #plot variances
 # dev.off(dev.list()["RStudioGD"])
 # plot_varMat(model_name = model_name)
@@ -421,7 +441,7 @@ write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning",past
 #
 # ##looking at percentile of obs in forecast distribution
 forecast_y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)
-forecast_y <- exp(forecast_y[7:8,])
+forecast_y <- exp(forecast_y[8,])
 forecast_ys <- forecast_y[,-c(17:20)]
 
 obs_quantile <- NULL
