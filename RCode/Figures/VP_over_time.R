@@ -4,15 +4,16 @@ library(lubridate)
 
 ##############CALCULATING TOTAL AND RELATIVE VARIANCE FROM FORECASTS
 model_names <- c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error",
-                 "Seasonal_AR","Seasonal_AR_Mintemp",
-                 "Seasonal_DayLength_Quad","Seasonal_DayLength_Quad_Mintemp")
-mod_abbrevs <- c("a. RW","b. RW_obs","e. AR","f. AR_mintemp","i. Quad_daylength","j. Daylength_mintemp")
+                 "Seasonal_AR","Seasonal_AR_MinSchmidt_Diff",
+                 "Seasonal_SWradiation_Quad","Seasonal_AR_Minwind_MinSchmidt_Diff",
+                 "Seasonal_AR_SWradiation_MinSchmidt_Diff")
+mod_abbrevs <- c("a. RW","b. RW_obs","e. AR","f. AR_minSchmidtdiff","i. Quad_SWradiation","j. MinSchmidtdiff_minwind")
 forecast_week = 1
 
 dat <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp_forecast.csv") %>%
   filter(site == "midge")
 
-forecast_dat <- dat %>% filter(year(date) %in% c(2015:2016))
+forecast_dat <- dat %>% filter(year(date) %in% c(2016))
 forecast_times <- as.Date(as.character(forecast_dat$date))
 
 

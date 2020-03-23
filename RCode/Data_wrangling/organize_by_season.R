@@ -292,11 +292,15 @@ write.csv(temp_seasonal, "./Datasets/Sunapee/SummarizedData/Midge_year_by_week_a
 
 #same thing for water temp
 watertemp_seasonal <- cleaned_dat1 %>%
-  filter(site == "midge") %>%
-  select(year, date, season_week, watertemp_min) %>%
-  spread(key = season_week, value = watertemp_min) 
+  filter(site == "fichter") %>%
+  select(year, season_week, watertemp_min) %>%
+  spread(key = season_week, value = watertemp_min)  %>%
+  select(-year) 
 
-write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/seasonal_data_mintemp_forecast.csv",row.names = FALSE)
+colnames(watertemp_seasonal) <- paste("wk", colnames(watertemp_seasonal), sep = "_")
+
+
+write.csv(watertemp_seasonal, "./Datasets/Sunapee/SummarizedData/seasonal_data_mintemp_Fichter_forecast_03MAR20.csv",row.names = FALSE)
 
 colnames(watertemp_seasonal) <- paste("wk", colnames(watertemp_seasonal), sep = "_")
 
@@ -319,8 +323,7 @@ schmidt <- readRDS("~/RProjects/GLEON_Bayesian_WG/Datasets/Sunapee/Stability_met
 
 dates <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp_forecast.csv") %>%
   filter(site == "midge") %>%
-  select(date) %>%
-  filter(!year(date) %in% c(2015:2016))
+  select(date) 
 
 #####MAX SCHMIDT
 schmidt1 <- left_join(dates,schmidt, by = "date") %>%
@@ -335,13 +338,14 @@ schmidt1 <- left_join(dates,schmidt, by = "date") %>%
 schmidt1[schmidt1 == -Inf] <- NA
 schmidt1[schmidt1 == Inf] <- NA
 schmidt1[schmidt1 < 0] <- 0
+schmidt1$schmidt[28] <- NA
 
 ggplot(data = schmidt1, aes(x = date, y = schmidt))+
   geom_point(size = 2)+
   theme_bw()
 
 schmidt2 <- schmidt1 %>%
-  mutate(season_week = rep(c(1:20),times = 6),
+  mutate(season_week = rep(c(1:20),times = 8),
          year = year(date)) %>%
   select(year, season_week, schmidt) %>%
   spread(key = season_week, value = schmidt) %>%
@@ -355,7 +359,7 @@ mean(schmidt1$schmidt,na.rm = TRUE)
 1/(sd(schmidt1$schmidt,na.rm = TRUE)^2)
 #3.11e-5
 
-write.csv(schmidt2, "./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_28JAN20.csv", row.names = FALSE)
+write.csv(schmidt2, "./Datasets/Sunapee/SummarizedData/seasonal_data_minSchmidt_05MAR20.csv", row.names = FALSE)
 
 ##precip
 precip <- read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/gloeo_Midge_airtemp_precip.csv")
@@ -554,17 +558,18 @@ check <- read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/midge_wind_perc90_14
 gdd <- cleaned_dat1 %>%
   filter(!date %in% bad_dates) %>%
   arrange(year,date,site) %>%
-  mutate(season_week = rep(c(1:20),times = 6, each = 4))
+  mutate(season_week = rep(c(1:20),times = 8, each = 4))
 
 gdd1 <- gdd %>%
   filter(site == "midge") %>%
-  select(year, season_week, watertemp_max, watertemp_min) %>%
+  select(year, date, season_week, watertemp_max, watertemp_min) %>%
   mutate(watertemp_gdd = ((watertemp_max + watertemp_min)/2) - 4) %>%
   mutate(watertemp_gdd = ifelse(is.na(watertemp_gdd),0,watertemp_gdd))%>%
-  select(-watertemp_max,-watertemp_min) %>%
+  select(-watertemp_max,-watertemp_min,-date) %>%
   spread(key = year, value = watertemp_gdd) %>%
   select(-season_week)
 
+#write.csv(gdd1, "./Datasets/Sunapee/SummarizedData/midge_cumulativeGDD_27FEB20.csv", row.names = FALSE)
 
 for (i in 1:ncol(gdd1)){
   gdd1[,i] <- cumsum(na.omit(gdd1[,i]))
@@ -577,7 +582,7 @@ gdd2 <- as.tibble(t(gdd1))
 
 colnames(gdd2) <- colnames(gloeo_seasonal)
 
-#write.csv(gdd2, "./Datasets/Sunapee/SummarizedData/GDD_year_by_week_28JAN20.csv", row.names = FALSE)
+write.csv(gdd2, "./Datasets/Sunapee/SummarizedData/GDD_year_by_week_forecast_03MAR20.csv", row.names = FALSE)
 
 gdd_reg <- as.numeric(c(gdd2[1,],gdd2[2,],gdd2[3,],gdd2[4,],gdd2[5,],gdd2[6,]))
 

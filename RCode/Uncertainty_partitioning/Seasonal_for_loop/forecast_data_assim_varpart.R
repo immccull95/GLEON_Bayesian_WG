@@ -16,10 +16,11 @@ library(geosphere)
 library(googledrive)
 source('RCode/Helper_functions/seasonal_plug_n_play.R')
 source('RCode/Helper_functions/forecast_plug_n_play_data_assim.R')
+#source('RCode/Helper_functions/get_forecast_data.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_RandomWalk' #pick a model name
+model_name = 'Seasonal_AR_Mintemp' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -43,7 +44,6 @@ Temp_prior <- scale(Temp_prior, center = TRUE, scale = TRUE)
 
 #for DayLength
 DayLength <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/daylength_year_by_week_28JAN20.csv"))
-DayLength <- scale(DayLength, center = TRUE, scale = TRUE)
 
 #for max Schmidt
 Schmidt <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_max_Schmidt_28JAN20.csv"))
@@ -75,9 +75,17 @@ week_avg = colMeans(DayLength, na.rm = TRUE)
 #for max Schmidt
 week_max = colMeans(Schmidt, na.rm = TRUE)
 
+#for cv Wnd
+week_cv = colMeans(Wnd, na.rm = TRUE)
+
 #for combined covariate model
 week_avg_T = colMeans(Temp_prior, na.rm = TRUE)
 week_avg_S = colMeans(Schmidt, na.rm = TRUE)
+
+#for combined covariate model
+week_min_T = colMeans(Temp_prior, na.rm = TRUE)
+week_min_S = colMeans(Schmidt, na.rm = TRUE)
+week_min_W = colMeans(Wnd, na.rm = TRUE)
 
 #6) Run forecasts with data assimilation
 
@@ -90,10 +98,14 @@ Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week
 Temp <- scale(Temp, center = TRUE, scale = TRUE)
 observ_Temp <- c(Temp[7,],Temp[8,])
 
+SW <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_SW_forecast_03MAR20.csv"))
+SW <- scale(SW, center = TRUE, scale = TRUE)
+observ_SW <- c(SW[7,],SW[8,])
 
-DayLength <- read_csv("./Datasets/Sunapee/SummarizedData/daylength_year_by_week_forecast_09FEB20.csv")
-DayLength <- scale(DayLength, center = TRUE, scale = TRUE)
-observ_DayLength <- c(DayLength[7,],DayLength[8,])
+GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_forecast_03MAR20.csv"))
+GDD <- scale(GDD, center = TRUE, scale = TRUE)
+observ_GDD <- c(GDD[7,],GDD[8,])
+
 
 ######## deterministic prediction #######
 ##Set up forecast
@@ -105,10 +117,23 @@ for (i in 1:length(N_weeks)){
   observ <- c(forecast_y[1,],forecast_y[2,])
   y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)
   
+  Temp <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_watertemp_min_forecast_05OCT19.csv"))
+  Temp <- scale(Temp, center = TRUE, scale = TRUE)
+  observ_Temp <- c(Temp[7,],Temp[8,])
+  
+  SW <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_SW_forecast_03MAR20.csv"))
+  SW <- scale(SW, center = TRUE, scale = TRUE)
+  observ_SW <- c(SW[7,],SW[8,])
+  
+  GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_forecast_03MAR20.csv"))
+  GDD <- scale(GDD, center = TRUE, scale = TRUE)
+  observ_GDD <- c(GDD[7,],GDD[8,])
+  
   if(i == 1){
     obs_data <- rep(NA,40)
     obs_Temp <- rep(NA,40)
-    obs_DayLength <- rep(NA,40)
+    obs_SW <- rep(NA,40)
+    obs_GDD <- rep(NA,40)
   } else{
   obs_data <- rep(NA,40)
   obs_data[1:N_weeks[i-1]] <- observ[1:N_weeks[i-1]]
@@ -116,8 +141,12 @@ for (i in 1:length(N_weeks)){
   obs_Temp <- rep(NA,40)
   obs_Temp[1:N_weeks[i-1]] <- observ_Temp[1:N_weeks[i-1]]
   
-  obs_DayLength <- rep(NA,40)
-  obs_DayLength[1:N_weeks[i-1]] <- observ_DayLength[1:N_weeks[i-1]]
+  obs_SW <- rep(NA,40)
+  obs_SW[1:N_weeks[i-1]] <- observ_SW[1:N_weeks[i-1]]
+  
+  obs_GDD <- rep(NA,40)
+  obs_GDD[1:N_weeks[i-1]] <- observ_GDD[1:N_weeks[i-1]]
+  
   }
   
   y[7,] <- obs_data[1:20]
@@ -126,8 +155,25 @@ for (i in 1:length(N_weeks)){
   Temp[7,] <- obs_Temp[1:20]
   Temp[8,] <- obs_Temp[21:40]
   
-  DayLength[7,] <- obs_DayLength[1:20]
-  DayLength[8,] <- obs_DayLength[21:40]
+  SW[7,] <- obs_SW[1:20]
+  SW[8,] <- obs_SW[21:40]
+  
+  GDD[7,] <- obs_GDD[1:20]
+  GDD[8,] <- obs_GDD[21:40]
+  
+  if(N_weeks[i] %in% c(1:20)){
+    y <- y[1:7,]
+    Temp <- Temp[1:7,]
+    SW <- SW[1:7,]
+    GDD <- GDD[1:7,]
+    year_no = as.numeric(as.factor(c(2009:2015)))
+  } else {
+    y <- y[1:8,]
+    Temp <- Temp[1:8,]
+    SW <- SW[1:8,]
+    GDD <- GDD[1:8,]
+    year_no = as.numeric(as.factor(c(2009:2016)))
+  }
   
   
   jags_plug_ins <- jags_plug_ins(model_name = model_name)
