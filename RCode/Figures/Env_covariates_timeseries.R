@@ -6,7 +6,10 @@ Temp <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_mintemp_foreca
 
 SW <- read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_SW_forecast_25FEB20.csv")
 
-Schmidt <- read_csv("./Datasets/Sunapee/SummarizedData/Buoy_year_by_week_min_Schmidt_forecast_04MAR20.csv")
+Schmidt <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_minSchmidt_05MAR20.csv") %>%
+  mutate(Schmidt_diff = c(NA,diff(schmidt)))
+Schmidt$Schmidt_diff[c(1,21,41,61,81,101,121,141)] <- NA
+
 
 
 mytheme <- theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
@@ -15,21 +18,23 @@ mytheme <- theme(panel.grid.major = element_blank(), panel.grid.minor = element_
                  text = element_text(size=16), axis.text.y = element_text(size = 16),
                  axis.text.x = element_text(size = 14))
 
-p2 <- ggplot(data = Temp, aes(x = date, y = watertemp_min))+
+p2 <- ggplot(data = Schmidt, aes(x = date, y = Schmidt_diff))+
   geom_point(colour = "darkgreen")+
   geom_line(size = 1, colour = "darkgreen")+
   facet_wrap(vars(year), nrow = 2, ncol = 4, scales = "free_x")+
-  ylab("Min. water temp")+
+  ylab("Min. Schmidt stability")+
   theme(strip.background.x = element_blank())+
   xlab("")+
   mytheme
 p2  
 
-ggsave(p2, filename = "C:/Users/Mary Lofton/Dropbox/Ch5/Final_figs/Supp_fig_mintemp.tif", 
+ggsave(p2, filename = "C:/Users/Mary Lofton/Dropbox/Ch5/Final_figs/Supp_fig_minSchmidt.tif", 
        device = "tiff", height = 6, width = 10, units = "in")
 
-mean(Temp$watertemp_min, na.rm = TRUE)
-sd(Temp$watertemp_min, na.rm = TRUE)
+mean(Schmidt$Schmidt_diff, na.rm = TRUE)
+sd(Schmidt$Schmidt_diff, na.rm = TRUE)
+min(Schmidt$Schmidt_diff, na.rm = TRUE)
+max(Schmidt$Schmidt_diff, na.rm = TRUE)
 
 week1 <- Temp %>%
   filter(season_week == 1)

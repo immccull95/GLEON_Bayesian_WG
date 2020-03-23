@@ -68,15 +68,15 @@ for (j in 1:length(model_names)){
   }
   
   vardat.IC <- vardat.IC[,c(1:20)]
-  forecast.ci.IC <- apply(vardat.IC,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+  forecast.ci.IC <- apply(vardat.IC,2,quantile,c(0.005,0.5,0.995), na.rm=TRUE)
   vardat.IC.P <- vardat.IC.P[,c(1:20)]
-  forecast.ci.IC.P <- apply(vardat.IC.P,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+  forecast.ci.IC.P <- apply(vardat.IC.P,2,quantile,c(0.005,0.5,0.995), na.rm=TRUE)
   vardat.IC.P.O <- vardat.IC.P.O[,c(1:20)]
-  forecast.ci.IC.P.O <- apply(vardat.IC.P.O,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+  forecast.ci.IC.P.O <- apply(vardat.IC.P.O,2,quantile,c(0.005,0.5,0.995), na.rm=TRUE)
   vardat.IC.P.O.Pa <- vardat.IC.P.O.Pa[,c(1:20)]
-  forecast.ci.IC.P.O.Pa <- apply(vardat.IC.P.O.Pa,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+  forecast.ci.IC.P.O.Pa <- apply(vardat.IC.P.O.Pa,2,quantile,c(0.005,0.5,0.995), na.rm=TRUE)
   vardat.IC.P.O.Pa.D <- vardat.IC.P.O.Pa.D[,c(1:20)]
-  forecast.ci.IC.P.O.Pa.D <- apply(vardat.IC.P.O.Pa.D,2,quantile,c(0.025,0.5,0.975), na.rm=TRUE)
+  forecast.ci.IC.P.O.Pa.D <- apply(vardat.IC.P.O.Pa.D,2,quantile,c(0.005,0.5,0.995), na.rm=TRUE)
   
   # loading in observations
   forecast_y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)

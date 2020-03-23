@@ -20,7 +20,7 @@ source('RCode/Helper_functions/forecast_plug_n_play_data_assim.R')
 
 #1) Model options => pick date range, site, time step, and type of model -----------------------------------------------------
 
-model_name = 'Seasonal_AR_Minwind_MinSchmidt_Diff' #pick a model name
+model_name = 'Seasonal_SWradiation_Quad' #pick a model name
 model=paste0("RCode/Jags_Models/Seasonal_for_loop/",model_name, '.R') #this is the folder where your models are stored
 
 #How many times do you want to sample to get predictive interval for each sampling day?
@@ -67,7 +67,7 @@ GDD <- as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/GDD_year_by_week_fo
 
 #for SW
 SW <- as.matrix(read_csv("./Datasets/Sunapee/Bayes_Covariates_Data/Midge_year_by_week_SW_forecast_03MAR20.csv"))
-SW <- scale(SWs, center = TRUE, scale = TRUE)
+SW <- scale(SW, center = TRUE, scale = TRUE)
 
 years <- c(2009:2016)
 forecast_years <- c(2016)
@@ -159,21 +159,21 @@ for (i in 1:length(N_weeks)){
     obs_GDD <- rep(NA,20)
     obs_Schmidt <- rep(NA,20)
   } else{
-  obs_data <- rep(NA,20)
-  obs_data[1:N_weeks[i-1]] <- observ[1:N_weeks[i-1]]
-  
-  obs_Temp <- rep(NA,20)
-  obs_Temp[1:N_weeks[i-1]] <- observ_Temp[1:N_weeks[i-1]]
-  
-  obs_SW <- rep(NA,20)
-  obs_SW[1:N_weeks[i-1]] <- observ_SW[1:N_weeks[i-1]]
-  
-  obs_GDD <- rep(NA,20)
-  obs_GDD[1:N_weeks[i-1]] <- observ_GDD[1:N_weeks[i-1]]
-  
-  obs_Schmidt <- rep(NA,20)
-  obs_Schmidt[1:N_weeks[i-1]] <- observ_Schmidt[1:N_weeks[i-1]]
-  
+    obs_data <- rep(NA,20)
+    obs_data[1:N_weeks[i-1]] <- observ[1:N_weeks[i-1]]
+    
+    obs_Temp <- rep(NA,20)
+    obs_Temp[1:N_weeks[i-1]] <- observ_Temp[1:N_weeks[i-1]]
+    
+    obs_SW <- rep(NA,20)
+    obs_SW[1:N_weeks[i-1]] <- observ_SW[1:N_weeks[i-1]]
+    
+    obs_GDD <- rep(NA,20)
+    obs_GDD[1:N_weeks[i-1]] <- observ_GDD[1:N_weeks[i-1]]
+    
+    obs_Schmidt <- rep(NA,20)
+    obs_Schmidt[1:N_weeks[i-1]] <- observ_Schmidt[1:N_weeks[i-1]]
+    
   }
   
   y[8,] <- obs_data[1:20]
@@ -219,133 +219,133 @@ for (i in 1:length(N_weeks)){
   
   if(N_weeks[i]==1){ #first week uses IC prior from Holly
     IC = rnorm(Nmc,-5,sqrt(1/100))
-    IC_S = rnorm(Nmc, week_min[1],1/sqrt(out[prow,"tau_S_proc"]))
+    #IC_S = rnorm(Nmc, week_min[1],1/sqrt(out[prow,"tau_S_proc"]))
   } else if(N_weeks[i] %in% c(2:20)) { #other weeks use last mu from spin-up model calibration
     mycol <- paste0("mu","[8,",colnums[N_weeks[i-1]],"]") 
     IC = out[prow,mycol]
-    IC_S = rnorm(Nmc, week_min[i-1],1/sqrt(out[prow,"tau_S_proc"]))
+    #IC_S = rnorm(Nmc, week_min[i-1],1/sqrt(out[prow,"tau_S_proc"]))
   } 
-
-settings.det <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
-                 Nmc = 1, #number of Monte Carlo draws
-                 IC = mean(IC),
-                 IC_S = mean(IC_S)) #set initial conditions (will be the same for every model)
-
-#MUST BE EDITED TO REFLECT CORRECT PARAMS FOR MODEL
-params.det <- get_params(model_name = model_name, 
-                         forecast_type = "det") #choose from det, IC, IC.P, IC.P.O, IC.P.O.R, IC.P.O.Pa, IC.P.O.Pa.D, IC.P.O.R.Pa.D
-
-#Run forecast
-det.prediction <- forecast_gloeo(model_name = model_name,
-                           params = params.det, #list of params necessary to run that model
-                           settings = settings.det) #list of settings including N_out, Nmc, and IC
-
-write.csv(det.prediction,file=file.path(my_directory,paste(site,paste0(model_name,'_det.prediction_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
-
-######## initial condition uncertainty #######
-
-
-##Set up forecast
-settings.IC <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
-                    Nmc = Nmc,
-                    IC = IC,
-                    IC_S = IC_S)
-
-params.IC <- get_params(model_name = model_name,
-                        forecast_type = "IC")
-
-
-#Run forecast
-forecast.IC <- forecast_gloeo(model_name = model_name,
-                              params = params.IC,
-                              settings = settings.IC)
-
-write.csv(forecast.IC,file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
-
-
-###### process uncertainty ######### 
-
-##Set up forecast
-settings.IC.P <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
-                      Nmc = Nmc,
-                      IC = IC,
-                      IC_S = IC_S)
-
-params.IC.P <- get_params(model_name = model_name,
-                          forecast_type = "IC.P")
-
-#Run forecast
-forecast.IC.P <- forecast_gloeo(model_name = model_name,
-                                params = params.IC.P,
-                                settings = settings.IC.P)
-
-write.csv(forecast.IC.P,file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
-
-
-
-###### observation uncertainty ######### 
-
-##Set up forecast
-settings.IC.P.O <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
-                        Nmc = Nmc,
-                        IC = IC,
-                        IC_S = IC_S)
-
-params.IC.P.O <- get_params(model_name = model_name,
-                            forecast_type = "IC.P.O")
-
-
-#Run forecast
-forecast.IC.P.O <- forecast_gloeo(model_name = model_name,
-                                  params = params.IC.P.O,
-                                  settings = settings.IC.P.O)
-
-write.csv(forecast.IC.P.O,file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
-
-if(!model_name %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error")){
-###### parameter uncertainty #######
-
-##Set up forecast
-settings.IC.P.O.Pa <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
-                           Nmc = Nmc,
-                           IC = IC,
-                           IC_S = IC_S)
-
-params.IC.P.O.Pa <- get_params(model_name = model_name,
-                               forecast_type = "IC.P.O.Pa")
-
-
-#Run forecast
-forecast.IC.P.O.Pa <- forecast_gloeo(model_name = model_name,
-                                     params = params.IC.P.O.Pa,
-                                     settings = settings.IC.P.O.Pa)
-
-write.csv(forecast.IC.P.O.Pa,file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O.Pa_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
-
-}
-
-if(!model_name %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Seasonal_AR")){
   
-###### driver uncertainty ########## 
-
-##Set up forecast
-settings.IC.P.O.Pa.D <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
-                             Nmc = Nmc,
-                             IC = IC,
-                             IC_S = IC_S)
-
-params.IC.P.O.Pa.D <- get_params(model_name = model_name,
-                                 forecast_type = "IC.P.O.Pa.D")
-
-
-#Run forecast
-forecast.IC.P.O.Pa.D <- forecast_gloeo(model_name = model_name,
-                                       params = params.IC.P.O.Pa.D,
-                                       settings = settings.IC.P.O.Pa.D)
-
-write.csv(forecast.IC.P.O.Pa.D,file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O.Pa.D_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
-}
-
+  settings.det <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
+                       Nmc = 1, #number of Monte Carlo draws
+                       IC = mean(IC))
+  #IC_S = mean(IC_S)) #set initial conditions (will be the same for every model)
+  
+  #MUST BE EDITED TO REFLECT CORRECT PARAMS FOR MODEL
+  params.det <- get_params(model_name = model_name, 
+                           forecast_type = "det") #choose from det, IC, IC.P, IC.P.O, IC.P.O.R, IC.P.O.Pa, IC.P.O.Pa.D, IC.P.O.R.Pa.D
+  
+  #Run forecast
+  det.prediction <- forecast_gloeo(model_name = model_name,
+                                   params = params.det, #list of params necessary to run that model
+                                   settings = settings.det) #list of settings including N_out, Nmc, and IC
+  
+  write.csv(det.prediction,file=file.path(my_directory,paste(site,paste0(model_name,'_det.prediction_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
+  
+  ######## initial condition uncertainty #######
+  
+  
+  ##Set up forecast
+  settings.IC <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
+                      Nmc = Nmc,
+                      IC = IC)
+  #IC_S = IC_S)
+  
+  params.IC <- get_params(model_name = model_name,
+                          forecast_type = "IC")
+  
+  
+  #Run forecast
+  forecast.IC <- forecast_gloeo(model_name = model_name,
+                                params = params.IC,
+                                settings = settings.IC)
+  
+  write.csv(forecast.IC,file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
+  
+  
+  ###### process uncertainty ######### 
+  
+  ##Set up forecast
+  settings.IC.P <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
+                        Nmc = Nmc,
+                        IC = IC)
+  #IC_S = IC_S)
+  
+  params.IC.P <- get_params(model_name = model_name,
+                            forecast_type = "IC.P")
+  
+  #Run forecast
+  forecast.IC.P <- forecast_gloeo(model_name = model_name,
+                                  params = params.IC.P,
+                                  settings = settings.IC.P)
+  
+  write.csv(forecast.IC.P,file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
+  
+  
+  
+  ###### observation uncertainty ######### 
+  
+  ##Set up forecast
+  settings.IC.P.O <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
+                          Nmc = Nmc,
+                          IC = IC)
+  #IC_S = IC_S)
+  
+  params.IC.P.O <- get_params(model_name = model_name,
+                              forecast_type = "IC.P.O")
+  
+  
+  #Run forecast
+  forecast.IC.P.O <- forecast_gloeo(model_name = model_name,
+                                    params = params.IC.P.O,
+                                    settings = settings.IC.P.O)
+  
+  write.csv(forecast.IC.P.O,file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
+  
+  if(!model_name %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error")){
+    ###### parameter uncertainty #######
+    
+    ##Set up forecast
+    settings.IC.P.O.Pa <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
+                               Nmc = Nmc,
+                               IC = IC)
+    #IC_S = IC_S)
+    
+    params.IC.P.O.Pa <- get_params(model_name = model_name,
+                                   forecast_type = "IC.P.O.Pa")
+    
+    
+    #Run forecast
+    forecast.IC.P.O.Pa <- forecast_gloeo(model_name = model_name,
+                                         params = params.IC.P.O.Pa,
+                                         settings = settings.IC.P.O.Pa)
+    
+    write.csv(forecast.IC.P.O.Pa,file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O.Pa_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
+    
+  }
+  
+  if(!model_name %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Seasonal_AR")){
+    
+    ###### driver uncertainty ########## 
+    
+    ##Set up forecast
+    settings.IC.P.O.Pa.D <- list(N_out = 5, #length of forecast time points (2 years x 20 weeks)
+                                 Nmc = Nmc,
+                                 IC = IC)
+    #IC_S = IC_S)
+    
+    params.IC.P.O.Pa.D <- get_params(model_name = model_name,
+                                     forecast_type = "IC.P.O.Pa.D")
+    
+    
+    #Run forecast
+    forecast.IC.P.O.Pa.D <- forecast_gloeo(model_name = model_name,
+                                           params = params.IC.P.O.Pa.D,
+                                           settings = settings.IC.P.O.Pa.D)
+    
+    write.csv(forecast.IC.P.O.Pa.D,file=file.path(my_directory,paste(site,paste0(model_name,'_forecast.IC.P.O.Pa.D_',N_weeks[i],'.csv'),sep = '_')),row.names = FALSE)
+  }
+  
 }
 
 
@@ -357,77 +357,77 @@ model_names <- c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error",
 forecast_week = 1
 
 for (j in 1:length(model_names)){
-my_directory <- "C:/Users/Mary Lofton/Dropbox/Ch5/Final_analysis/Data_assim"
-site = "Midge"
-N_weeks <- c(1:20)
-
-vardat.IC <- matrix(NA, 5000, 20)
-vardat.IC <- data.frame(vardat.IC)
-
-
-vardat.IC.P <- matrix(NA, 5000, 20)
-vardat.IC.P <- data.frame(vardat.IC.P)
-
-
-vardat.IC.P.O <- matrix(NA, 5000, 20)
-vardat.IC.P.O <- data.frame(vardat.IC.P.O)
-
-vardat.IC.P.O.Pa <- matrix(NA, 5000, 20)
-vardat.IC.P.O.Pa <- data.frame(vardat.IC.P.O.Pa)
-
-
-vardat.IC.P.O.Pa.D <- matrix(NA, 5000, 40)
-vardat.IC.P.O.Pa.D <- data.frame(vardat.IC.P.O.Pa.D)
-
-
-for (i in 1:20){
+  my_directory <- "C:/Users/Mary Lofton/Dropbox/Ch5/Final_analysis/Data_assim"
+  site = "Midge"
+  N_weeks <- c(1:20)
   
-  dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC_',N_weeks[i],'.csv'),sep = '_')))
-  vardat.IC[,N_weeks[i]] <- dat[,forecast_week]
+  vardat.IC <- matrix(NA, 5000, 20)
+  vardat.IC <- data.frame(vardat.IC)
   
-  dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P_',N_weeks[i],'.csv'),sep = '_')))
-  vardat.IC.P[,i] <- dat[,forecast_week]
   
-  dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P.O_',N_weeks[i],'.csv'),sep = '_')))
-  vardat.IC.P.O[,i] <- dat[,forecast_week]
+  vardat.IC.P <- matrix(NA, 5000, 20)
+  vardat.IC.P <- data.frame(vardat.IC.P)
   
-  if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error")){
-    dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P.O.Pa_',N_weeks[i],'.csv'),sep = '_')))
-    vardat.IC.P.O.Pa[,i] <- dat[,forecast_week]}
   
-  if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Seasonal_AR")){
-    dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P.O.Pa.D_',N_weeks[i],'.csv'),sep = '_')))
-    vardat.IC.P.O.Pa.D[,i] <- dat[,forecast_week]}
+  vardat.IC.P.O <- matrix(NA, 5000, 20)
+  vardat.IC.P.O <- data.frame(vardat.IC.P.O)
   
-}
-
-vardat.IC <- vardat.IC[,c(1:16)]
-vardat.IC.P <- vardat.IC.P[,c(1:16)]
-vardat.IC.P.O <- vardat.IC.P.O[,c(1:16)]
-vardat.IC.P.O.Pa <- vardat.IC.P.O.Pa[,c(1:16)]
-vardat.IC.P.O.Pa.D <- vardat.IC.P.O.Pa.D[,c(1:16)]
-
-
-
-### calculation of variances
-source('RCode/Helper_functions/forecast_plug_n_play_data_assim.R')
-
-varMat   <- make_varMat(model_name = model_names[j])
-rowMeans(varMat, na.rm = TRUE)
-if(forecast_week == 4){
-write.csv(varMat, file=file.path("Results/Uncertainty_partitioning/w_Data_assim_4wk",paste(site,paste0(model_names[j],'_total_var.csv'), sep = '_')),row.names = FALSE)
-} else {
-write.csv(varMat, file=file.path("Results/Uncertainty_partitioning/w_Data_assim_1wk",paste(site,paste0(model_names[j],'_total_var.csv'), sep = '_')),row.names = FALSE)
-}
-###consider adding code here to make sure the intervals are ordered from smallest to greatest 
-#to avoid weird overlapping when plotting due to small decreases in predictions
-#with all uncertainties incorporated due to chance
-V.pred.rel.2016 <- apply(varMat[,1:16],2,function(x) {x/max(x)})
-if(forecast_week == 4){
-write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning/w_Data_assim_4wk",paste(site,paste0(model_names[j],'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
-} else {
-write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning/w_Data_assim_1wk",paste(site,paste0(model_names[j],'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
-}
+  vardat.IC.P.O.Pa <- matrix(NA, 5000, 20)
+  vardat.IC.P.O.Pa <- data.frame(vardat.IC.P.O.Pa)
+  
+  
+  vardat.IC.P.O.Pa.D <- matrix(NA, 5000, 20)
+  vardat.IC.P.O.Pa.D <- data.frame(vardat.IC.P.O.Pa.D)
+  
+  
+  for (i in 1:20){
+    
+    dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC_',N_weeks[i],'.csv'),sep = '_')))
+    vardat.IC[,N_weeks[i]] <- dat[,forecast_week]
+    
+    dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P_',N_weeks[i],'.csv'),sep = '_')))
+    vardat.IC.P[,i] <- dat[,forecast_week]
+    
+    dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P.O_',N_weeks[i],'.csv'),sep = '_')))
+    vardat.IC.P.O[,i] <- dat[,forecast_week]
+    
+    if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error")){
+      dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P.O.Pa_',N_weeks[i],'.csv'),sep = '_')))
+      vardat.IC.P.O.Pa[,i] <- dat[,forecast_week]}
+    
+    if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Seasonal_AR")){
+      dat <- read_csv(file=file.path(my_directory,paste(site,paste0(model_names[j],'_forecast.IC.P.O.Pa.D_',N_weeks[i],'.csv'),sep = '_')))
+      vardat.IC.P.O.Pa.D[,i] <- dat[,forecast_week]}
+    
+  }
+  
+  vardat.IC <- vardat.IC[,c(1:20)]
+  vardat.IC.P <- vardat.IC.P[,c(1:20)]
+  vardat.IC.P.O <- vardat.IC.P.O[,c(1:20)]
+  vardat.IC.P.O.Pa <- vardat.IC.P.O.Pa[,c(1:20)]
+  vardat.IC.P.O.Pa.D <- vardat.IC.P.O.Pa.D[,c(1:20)]
+  
+  
+  
+  ### calculation of variances
+  source('RCode/Helper_functions/forecast_plug_n_play_data_assim.R')
+  
+  varMat   <- make_varMat(model_name = model_names[j])
+  rowMeans(varMat, na.rm = TRUE)
+  if(forecast_week == 4){
+    write.csv(varMat, file=file.path("Results/Uncertainty_partitioning/w_Data_assim_4wk",paste(site,paste0(model_names[j],'_total_var.csv'), sep = '_')),row.names = FALSE)
+  } else {
+    write.csv(varMat, file=file.path("Results/Uncertainty_partitioning/w_Data_assim_1wk",paste(site,paste0(model_names[j],'_total_var.csv'), sep = '_')),row.names = FALSE)
+  }
+  ###consider adding code here to make sure the intervals are ordered from smallest to greatest 
+  #to avoid weird overlapping when plotting due to small decreases in predictions
+  #with all uncertainties incorporated due to chance
+  V.pred.rel.2016 <- apply(varMat[,1:20],2,function(x) {x/max(x)})
+  if(forecast_week == 4){
+    write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning/w_Data_assim_4wk",paste(site,paste0(model_names[j],'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
+  } else {
+    write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning/w_Data_assim_1wk",paste(site,paste0(model_names[j],'_varMat_2016.csv'), sep = '_')),row.names = FALSE)
+  }
 }
 # #plot variances
 # dev.off(dev.list()["RStudioGD"])
@@ -440,25 +440,27 @@ write.csv(V.pred.rel.2016,file=file.path("Results/Uncertainty_partitioning/w_Dat
 #
 #
 # ##looking at percentile of obs in forecast distribution
+for (j in 1:length(model_names)){
+
 forecast_y <- log(as.matrix(read_csv("./Datasets/Sunapee/SummarizedData/Midge_year_by_week_totalperL_forecast_05OCT19.csv"))+0.003)
 forecast_y <- exp(forecast_y[8,])
 forecast_ys <- forecast_y[,-c(17:20)]
 
 obs_quantile <- NULL
 if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error")){
-for (i in 1:length(forecast_ys)){
-percentile1 <- ecdf(exp(vardat.IC.P.O.Pa[,i])) ##be sure to change this as needed - needs to be made into a function!!!
-obs_quantile[i] <- percentile1(forecast_ys[i])
-}} else if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Seasonal_AR")){
   for (i in 1:length(forecast_ys)){
-    percentile1 <- ecdf(exp(vardat.IC.P.O.Pa.D[,i])) ##be sure to change this as needed - needs to be made into a function!!!
+    percentile1 <- ecdf(exp(vardat.IC.P.O.Pa[,i])) ##be sure to change this as needed - needs to be made into a function!!!
     obs_quantile[i] <- percentile1(forecast_ys[i])
-  }} else{
+  }} else if(!model_names[j] %in% c("Seasonal_RandomWalk","Seasonal_RandomWalk_Obs_error","Seasonal_AR")){
     for (i in 1:length(forecast_ys)){
-      percentile1 <- ecdf(exp(vardat.IC.P.O[,i])) ##be sure to change this as needed - needs to be made into a function!!!
+      percentile1 <- ecdf(exp(vardat.IC.P.O.Pa.D[,i])) ##be sure to change this as needed - needs to be made into a function!!!
       obs_quantile[i] <- percentile1(forecast_ys[i])
-    }}
-
+    }} else{
+      for (i in 1:length(forecast_ys)){
+        percentile1 <- ecdf(exp(vardat.IC.P.O[,i])) ##be sure to change this as needed - needs to be made into a function!!!
+        obs_quantile[i] <- percentile1(forecast_ys[i])
+      }}
+}
 
 #should add vertical line at 0.5 to this
 png(file=file.path(my_directory,paste(site,paste0(model_names[j],'_obs_decile_4wk.png'), sep = '_')), res=300, width=10, height=10, units='cm')
@@ -470,7 +472,7 @@ png(file=file.path(my_directory,paste(site,paste0(model_names[j],'_obs_quartile_
 hist(obs_quantile,xlab = "Quantile of obs. in forecast interval", main = "",
      cex.axis = 1.2, cex.lab = 1.2, xlim = c(0,1), breaks = seq(0,1,0.25))
 dev.off()
-}
+
 # #a perfect forecast
 # obs_quantile <- rep(0.5, 40)
 # png(file=file.path(my_directory,paste("perfect_forecast.png")), res=300, width=10, height=10, units='cm')

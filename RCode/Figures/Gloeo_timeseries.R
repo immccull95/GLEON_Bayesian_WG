@@ -3,7 +3,8 @@
 library(tidyverse)
 
 dat <- read_csv("./Datasets/Sunapee/SummarizedData/seasonal_data_temp_forecast.csv") %>%
-  filter(site == "midge")
+  filter(site == "midge") %>%
+  select(date, totalperL)
 
 mytheme <- theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
                  panel.background = element_blank(), axis.line = element_line(colour = "black"),
