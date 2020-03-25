@@ -6,14 +6,18 @@
 ### Gloeo exploratory analysis
 #Created 1 January 2018 - JAB
 
-#### Install R Packages ####
-install.packages("plyr")
+# Install R Packages ####
 library(plyr)
 library(tidyverse)
 library(readxl)
 library(lubridate)
 library(doBy) #included by LSB to aggregate water temp data following Bethel Steele code.
 
+# Wind direction packages
+install.packages("openair")
+library(openair)
+
+# Not currently using these wind packages
 install.packages("rWind")
 devtools::install_github("jabiologo/rWind")  
 library(rWind)
@@ -745,7 +749,7 @@ ggsave("Datasets/Sunapee/Data Visualizations/Water Temp/All_Sites_minwatertemp-b
 
 #cor() pearson used by default but can call spearman or kendall
 
-# Data Exploration for hourly water temp & light ####
+# Data Exploration for light data ####
 #setwd("~/Documents/GLEON_Bayesian_WG/Datasets/Sunapee/SummarizedData")
 
 # Read in gloeo & light data
@@ -1247,7 +1251,6 @@ ggsave("Prism_MeanAirTemp_Newbury-Season.pdf",width=15, height=8.5)
 
 
 # Wind data ####
-
 buoy_wind <- read_csv("Datasets/Sunapee/RawData/Sunapee buoy data/met_data/2007-2017_wind_L1.csv", col_types = cols(
   datetime = col_datetime(format = ""),
   location = col_character(),
@@ -1308,9 +1311,13 @@ ggsave("Buoy_Mean_Daily_WindSpeed.pdf",width=15, height=8.5)
 ggsave("Buoy_Mean_Daily_WindSpeed_Instant.pdf",width=15, height=8.5)
 
 # Correlations with log gloeo vs. wind speed ####
+gloeo_Midge_watertemp_day <- read_csv("Datasets/Sunapee/SummarizedData/gloeo_Midge_watertemp_day_14Aug2019.csv")
+
 wind_sp_summary <- read_csv("Datasets/Sunapee/SummarizedData/wind_sp_summary.csv", guess_max = 2000)
 
 gloeo_Midge_wind_sp <- left_join(gloeo_Midge_watertemp_day,wind_sp_summary,by=c("date","year"))
+
+write_csv(gloeo_Midge_wind_sp, "Datasets/Sunapee/SummarizedData/gloeo_Midge_windspeed.csv")
 
 summary(gloeo_Midge_wind_sp)
 
@@ -1331,9 +1338,10 @@ wind_sp_summary_lag <- wind_sp_summary %>%
 gloeo_Midge_wind_sp_1week_lag <- left_join(gloeo_Midge_1week_lag, wind_sp_summary_lag,by = "date_1weeklag")
 
 gloeo_Midge_noNA <- gloeo_Midge_wind_sp_1week_lag %>% 
-  filter(WindSp_ms_max!="NA") %>% 
+  filter(MaxWindSp_ms_max!="NA") %>% 
   filter(totalperL != 0)
 
+#Function for extracting equation and r2 for linear model (requires plyr library and best if loaded before tidyverse since older version)
 lm_labels <- function(dat) {
   mod <- lm(log_gloeo ~ MaxWindSp_ms_max, data = dat)
   formula <- sprintf("italic(y) == %.2f %+.2f * italic(x)",
@@ -1342,7 +1350,6 @@ lm_labels <- function(dat) {
   r2 <- sprintf("italic(R^2) == %.2f", r^2)
   data.frame(formula = formula, r2 = r2, stringsAsFactors = F)
 }
-
 
 labels <- ddply(gloeo_Midge_noNA, "year", lm_labels)
 labels
@@ -1405,10 +1412,8 @@ wind_direction_summary <- replace(x,x == Inf|x == -Inf, NA)
 write_csv(wind_direction_summary, "Datasets/Sunapee/SummarizedData/wind_direction_summary.csv")
 
 # Wind direction packages
-
 install.packages("openair")
 library(openair)
-
 
 #Instantaneous wind dir & speed
 inst_buoy_wind_2007_2016_noNA <- buoy_wind_2007_2016 %>% 
@@ -1439,7 +1444,6 @@ quartz.save("~/Desktop/Gloeo Plots/Sunapee_Ave_WindDir_Summer_2009-2016.jpeg",ty
 windRose(ave_buoy_wind_2007_2016_noNA, ws = "AveWindSp_ms", wd = "AveWindDir_deg", breaks = c(0,2,4,6,8,10), type = "month",paddle = F) #T, width = 2)
 
 quartz.save("~/Desktop/Gloeo Plots/Sunapee_Ave_WindDir_Summer_2009-2016-month.jpeg",type="jpeg", width=11, height=8.5)
-
 
 # Filter for specific year - 2013, big bloom
 buoy_wind_2013_noNA <- buoy_wind_2007_2016 %>% 
@@ -1863,6 +1867,20 @@ write.csv(data_cal_month,"~/Desktop/all_data_NA.csv")
 # Final Midge gloeo + water temp data with SD and onset interp added
 gloeo_Midge_watertemp_day <- read_csv("Datasets/Sunapee/SummarizedData/gloeo_Midge_watertemp_day_14Aug2019.csv")
 
+gloeo_Midge_watertemp_day_season <- gloeo_Midge_watertemp_day %>% 
+  filter(20 < week, week < 41)
+  
+  
+min_watertemp <- gloeo_Midge_watertemp_day %>% 
+  filter(20 < week, week < 41) %>% 
+  group_by(year) %>% 
+  summarize(min_temp = min(watertemp_daily_min, na.rm = T))
+
+min_watertemp_interp <- gloeo_Midge_watertemp_day %>%
+  filter(20 < week, week < 41) %>% 
+  group_by(year) %>% 
+  summarize(min_temp = min(watertemp_min_interp, na.rm = T))
+
 #1 week lag
 gloeo_Midge_1week = read_csv("Datasets/Sunapee/SummarizedData/gloeo_Midge_watertemp_day-1weeklag_14Aug2019.csv")
 
@@ -1896,14 +1914,20 @@ gloeo_Midge_watertemp_week <- gloeo_Midge_watertemp_week %>%
 
 # calculate week to week difference in water temp - mean,min, max ####
 wtr_mean_diff <- vector("double", nrow(gloeo_Midge_watertemp_day))  # 1. output
+wtr_median_diff <- vector("double", nrow(gloeo_Midge_watertemp_day))  # 1. output
 wtr_max_diff <- vector("double", nrow(gloeo_Midge_watertemp_day))  # 1. output
 wtr_min_diff <- vector("double", nrow(gloeo_Midge_watertemp_day))  # 1. output
+wtr_sd_diff <- vector("double", nrow(gloeo_Midge_watertemp_day))  # 1. output
+wtr_range_diff <- vector("double", nrow(gloeo_Midge_watertemp_day))  # 1. output
 
 for (i in 1:nrow(gloeo_Midge_watertemp_day)) {
-  wtr_mean_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_mean_interp[i+1] - gloeo_Midge_watertemp_day$watertemp_mean_interp[i]
-  wtr_max_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_max_interp[i+1] - gloeo_Midge_watertemp_day$watertemp_max_interp[i]
-  wtr_min_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_min_interp[i+1] - gloeo_Midge_watertemp_day$watertemp_min_interp[i]
-  wtr_diff_output <- data.frame(date = gloeo_Midge_watertemp_day$date,log_gloeo = gloeo_Midge_watertemp_day$log_gloeo, wtr_mean_diff = wtr_mean_diff[-230], wtr_max_diff = wtr_max_diff[-230], wtr_min_diff = wtr_min_diff[-230])
+  wtr_mean_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_daily_mean[i+1] - gloeo_Midge_watertemp_day$watertemp_daily_mean[i]
+  wtr_median_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_daily_median[i+1] - gloeo_Midge_watertemp_day$watertemp_daily_median[i]
+  wtr_max_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_daily_max[i+1] - gloeo_Midge_watertemp_day$watertemp_daily_max[i]
+  wtr_min_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_daily_min[i+1] - gloeo_Midge_watertemp_day$watertemp_daily_min[i]
+  wtr_sd_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_daily_sd[i+1] - gloeo_Midge_watertemp_day$watertemp_daily_sd[i]
+  wtr_range_diff[i+1] <- gloeo_Midge_watertemp_day$watertemp_daily_range[i+1] - gloeo_Midge_watertemp_day$watertemp_daily_range[i]
+  wtr_diff_output <- data.frame(date = gloeo_Midge_watertemp_day$date,log_gloeo = gloeo_Midge_watertemp_day$log_gloeo, wtr_mean_diff = wtr_mean_diff[-230], wtr_median_diff = wtr_median_diff[-230], wtr_max_diff = wtr_max_diff[-230], wtr_min_diff = wtr_min_diff[-230], wtr_sd_diff = wtr_sd_diff[-230], wtr_range_diff = wtr_range_diff[-230])
 }
 
 write_csv(wtr_diff_output, "~/Desktop/wtr_diff_output.csv")
@@ -2001,7 +2025,7 @@ prism_midge_2005 <- prism_midge %>% #[1:13514,]
   filter(year > 2004 & year < 2017) 
 
 gloeo_Midge_prism <- left_join(gloeo_Midge_watertemp_day,prism_midge_2005,by=c("date","year"))
-
+write_csv(gloeo_Midge_prism, "Datasets/Sunapee/SummarizedData/gloeo_Midge_airtemp_precip.csv")
 
 lm_labels <- function(dat) {
   mod <- lm(log_gloeo ~ airtemp_max_degrees_C, data = dat)
